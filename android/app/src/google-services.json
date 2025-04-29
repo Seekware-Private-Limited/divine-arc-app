@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1072160672117",
+    "project_id": "geetagpt-50aba",
+    "storage_bucket": "geetagpt-50aba.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1072160672117:android:b2afe11658fde3a6442b3c",
+        "android_client_info": {
+          "package_name": "com.seekware.geetagpt"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUevHav1YFunSntXbZbYc1TSroFb2OLps"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

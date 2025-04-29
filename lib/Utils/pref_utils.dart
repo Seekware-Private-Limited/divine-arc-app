@@ -1,12 +1,12 @@
 import 'package:gita_gpt/Utils/shared_preference.dart';
 
 class PrefUtils {
-  static void setToken(String value) {
-    Prefs.prefs?.setString(SharedPrefsKeys.token, value);
+  static setLanguage(String value) {
+    Prefs.prefs?.setString(SharedPrefsKeys.lang, value);
   }
 
-  static String getToken() {
-    final String? value = Prefs.prefs?.getString(SharedPrefsKeys.token);
+  static String getLanguage() {
+    final String? value = Prefs.prefs?.getString(SharedPrefsKeys.lang);
     return value ?? '';
   }
 
@@ -22,6 +22,6 @@ class PrefUtils {
 }
 
 class SharedPrefsKeys {
-  static const token = 'token';
+  static const lang = 'lang';
   static const unreadNotificationCount = 'unreadNotificationCount';
 }

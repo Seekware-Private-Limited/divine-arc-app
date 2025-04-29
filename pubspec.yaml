@@ -41,7 +41,20 @@ dev_dependencies:
   connectivity_plus:
   permission_handler:
   shared_preferences:
+  google_sign_in:
+  sign_in_with_apple: ^7.0.1
+  crypto:
+  loading_animation_widget:
+  flutter_bloc:
+  firebase_core:
+  firebase_auth:
+  firebase_messaging:
+  http:
+  change_app_package_name: ^1.5.0
   flutter_svg:
+  image_picker:
+  flutter_localization: ^0.3.2
+
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -65,6 +78,7 @@ flutter:
   assets:
       - assets/fonts/
       - assets/images/
+      - lib/l10n/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

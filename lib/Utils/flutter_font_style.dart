@@ -39,6 +39,13 @@ class FTextStyle {
     fontWeight: FontWeight.w700,
     color: Colors.black,
   );
+
+  static const dohaText = TextStyle(
+    fontFamily: 'DM_Sans',
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    color: AppColors.gradientStart,
+  );
   static const defaultTextSemiBold = TextStyle(
     fontFamily: 'DM_Sans',
     fontSize: 16,
