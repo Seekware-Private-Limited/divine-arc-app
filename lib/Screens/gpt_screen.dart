@@ -8,7 +8,7 @@ class GptScreen extends StatefulWidget {
 }
 
 class _GptScreenState extends State<GptScreen> {
-
+  List<bool> _isExpandedList = List.generate(4, (index) => false);
   void _showFeedbackPopup(BuildContext context) {
     showDialog(
       context: context,
@@ -27,11 +27,26 @@ class _GptScreenState extends State<GptScreen> {
                 children: [
                   Row(
                     children: [
-                      Image.asset('assets/images/thumbsupunlike.png', height: 20, width: 20, color: Colors.black),
+                      Image.asset(
+                        'assets/images/thumbsupunlike.png',
+                        height: 20,
+                        width: 20,
+                        color: Colors.black,
+                      ),
                       const SizedBox(width: 10),
-                      Image.asset('assets/images/thumbsdownunlike.png', height: 20, width: 20, color: Colors.black),
+                      Image.asset(
+                        'assets/images/thumbsdownunlike.png',
+                        height: 20,
+                        width: 20,
+                        color: Colors.black,
+                      ),
                       SizedBox(width: 16),
-                      Text(AppLocalizations.of(context)!.translate('feedback'), style: FTextStyle.boldText.copyWith(color: Colors.black)),
+                      Text(
+                        AppLocalizations.of(context)!.translate('feedback'),
+                        style: FTextStyle.boldText.copyWith(
+                          color: Colors.black,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(width: 20),
@@ -47,23 +62,23 @@ class _GptScreenState extends State<GptScreen> {
             ],
           ),
           content: SizedBox(
-            width: MediaQuery.of(context).size.width * 0.8, // 80% of screen width
+            width:
+                MediaQuery.of(context).size.width * 0.8, // 80% of screen width
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: Colors.black,
-                      width: 1,
-                    ),
+                    border: Border.all(color: Colors.black, width: 1),
                     color: Colors.white,
                   ),
                   child: TextFormField(
                     style: FTextStyle.defaultText,
                     decoration: InputDecoration(
-                      hintText: AppLocalizations.of(context)!.translate('enterFeedbackHere'),
+                      hintText: AppLocalizations.of(
+                        context,
+                      )!.translate('enterFeedbackHere'),
                       hintStyle: FTextStyle.defaultText,
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
@@ -86,7 +101,12 @@ class _GptScreenState extends State<GptScreen> {
                   ),
                   height: 45,
                   width: double.infinity,
-                  child: Center(child: Text(AppLocalizations.of(context)!.translate('submit'), style: FTextStyle.buttonText)),
+                  child: Center(
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('submit'),
+                      style: FTextStyle.buttonText,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -95,10 +115,13 @@ class _GptScreenState extends State<GptScreen> {
       },
     );
   }
+
   @override
   Widget build(BuildContext context) {
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)),
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: const TextScaler.linear(1)),
       child: Scaffold(
         backgroundColor: AppColors.GlobalBG,
         body: SafeArea(
@@ -110,11 +133,16 @@ class _GptScreenState extends State<GptScreen> {
                 children: [
                   Stack(
                     children: [
-                      Center(child: Text(AppLocalizations.of(context)!.translate('home'), style: FTextStyle.homeText)),
+                      Center(
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('home'),
+                          style: FTextStyle.homeText,
+                        ),
+                      ),
                       Positioned(
                         right: 0,
                         top: 5,
-                        child:  const LanguageDropdown()
+                        child: const LanguageDropdown(),
                       ),
                     ],
                   ),
@@ -133,49 +161,102 @@ class _GptScreenState extends State<GptScreen> {
                     ),
                     child: Column(
                       children: [
-                          Row(
-                            children: [
-                              Expanded(child: Text(AppLocalizations.of(context)!.translate('loremQuestion'),style: FTextStyle.defaultText)),
-                             SizedBox(width: 16),
-                             Image.asset('assets/images/edit.png',height: 20,width: 20)
-                            ],
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                AppLocalizations.of(
+                                  context,
+                                )!.translate('loremQuestion'),
+                                style: FTextStyle.defaultText,
+                              ),
+                            ),
+                            SizedBox(width: 16),
+                            Image.asset(
+                              'assets/images/edit.png',
+                              height: 20,
+                              width: 20,
+                            ),
+                          ],
+                        ),
                         SizedBox(height: 16),
                         Row(
                           children: [
-                            Image.asset('assets/images/infinite.png',height: 20,width: 20),
+                            Image.asset(
+                              'assets/images/infinite.png',
+                              height: 20,
+                              width: 20,
+                            ),
                             SizedBox(width: 10),
-                            Text(AppLocalizations.of(context)!.translate('answer'),style: FTextStyle.answerText,)
+                            Text(
+                              AppLocalizations.of(context)!.translate('answer'),
+                              style: FTextStyle.answerText,
+                            ),
                           ],
                         ),
                         const SizedBox(height: 16),
-                        Text(AppLocalizations.of(context)!.translate('loremAnswer'),style: FTextStyle.defaultText),
+                        Text(
+                          AppLocalizations.of(
+                            context,
+                          )!.translate('loremAnswer'),
+                          style: FTextStyle.defaultText,
+                        ),
                         const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Row(
                               children: [
-                                Image.asset('assets/images/refresh.png',height: 16,width: 16),
+                                Image.asset(
+                                  'assets/images/refresh.png',
+                                  height: 16,
+                                  width: 16,
+                                ),
                                 SizedBox(width: 10),
-                                Text(AppLocalizations.of(context)!.translate('regenerate'),style: FTextStyle.selectedRadioColorText),
+                                Text(
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.translate('regenerate'),
+                                  style: FTextStyle.selectedRadioColorText,
+                                ),
                               ],
                             ),
                             Row(
                               children: [
-                                Image.asset('assets/images/thumbsupunlike.png',height: 20,width: 20),
+                                Image.asset(
+                                  'assets/images/thumbsupunlike.png',
+                                  height: 20,
+                                  width: 20,
+                                ),
                                 const SizedBox(width: 10),
                                 GestureDetector(
                                   onTap: () {
                                     _showFeedbackPopup(context);
                                   },
-                                    child: Image.asset('assets/images/thumbsdownunlike.png',height: 20,width: 20)),
+                                  child: Image.asset(
+                                    'assets/images/thumbsdownunlike.png',
+                                    height: 20,
+                                    width: 20,
+                                  ),
+                                ),
                                 const SizedBox(width: 10),
-                                Image.asset('assets/images/unsave.png',height: 20,width: 20),
+                                Image.asset(
+                                  'assets/images/unsave.png',
+                                  height: 20,
+                                  width: 20,
+                                ),
                                 const SizedBox(width: 10),
-                                Image.asset('assets/images/unbookmark.png',height: 16,width: 16),
+                                Image.asset(
+                                  'assets/images/unbookmark.png',
+                                  height: 16,
+                                  width: 16,
+                                ),
                                 const SizedBox(width: 10),
-                                Image.asset('assets/images/unshare.png',height: 20,width: 20),
+                                Image.asset(
+                                  'assets/images/unshare.png',
+                                  height: 20,
+                                  width: 20,
+                                ),
                               ],
                             ),
                           ],
@@ -183,9 +264,18 @@ class _GptScreenState extends State<GptScreen> {
                         const SizedBox(height: 16),
                         Row(
                           children: [
-                            Image.asset('assets/images/Edit.png',height: 17,width: 17),
+                            Image.asset(
+                              'assets/images/Edit.png',
+                              height: 17,
+                              width: 17,
+                            ),
                             const SizedBox(width: 10),
-                            Text(AppLocalizations.of(context)!.translate('relatedSearches'),style: FTextStyle.defaultTextBold),
+                            Text(
+                              AppLocalizations.of(
+                                context,
+                              )!.translate('relatedSearches'),
+                              style: FTextStyle.defaultTextBold,
+                            ),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -194,15 +284,44 @@ class _GptScreenState extends State<GptScreen> {
                           shrinkWrap: true,
                           itemCount: 4,
                           itemBuilder: (context, index) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(AppLocalizations.of(context)!.translate('suggestions'),style: FTextStyle.defaultText),
-                                  Icon(Icons.add,size: 24),
-                                ],
-                              ),
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 5),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.translate('suggestions'),
+                                        style: FTextStyle.defaultText,
+                                      ),
+                                      IconButton(
+                                        icon: Icon(
+                                          _isExpandedList[index]
+                                              ? Icons.remove
+                                              : Icons.add,
+                                          size: 24,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _isExpandedList[index] =
+                                                !_isExpandedList[index];
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (_isExpandedList[index])
+                                  Text(
+                                    AppLocalizations.of(context)!.translate('dummyText'),
+                                    style: FTextStyle.defaultText,
+                                  ),
+                              ],
                             );
                           },
                         ),
@@ -224,7 +343,9 @@ class _GptScreenState extends State<GptScreen> {
                                 child: TextFormField(
                                   style: FTextStyle.defaultText,
                                   decoration: InputDecoration(
-                                    hintText: AppLocalizations.of(context)!.translate('askAnything'),
+                                    hintText: AppLocalizations.of(
+                                      context,
+                                    )!.translate('askAnything'),
                                     hintStyle: FTextStyle.defaultText,
                                     border: InputBorder.none,
                                     contentPadding: const EdgeInsets.symmetric(
@@ -293,8 +414,7 @@ class _GptScreenState extends State<GptScreen> {
                               ),
                             ],
                           ),
-                        )
-
+                        ),
                       ],
                     ),
                   ),

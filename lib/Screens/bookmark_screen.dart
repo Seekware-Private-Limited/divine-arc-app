@@ -17,18 +17,18 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(AppLocalizations.of(context)!.translate('bookmark'), style: FTextStyle.homeText),
-                      const LanguageDropdown()
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(AppLocalizations.of(context)!.translate('bookmark'), style: FTextStyle.homeText),
+                    const LanguageDropdown()
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
@@ -39,9 +39,7 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
                       color: Colors.white,
                     ),
                     child: ListView.builder(
-                      shrinkWrap: true,
                       itemCount: 10,
-                      physics: NeverScrollableScrollPhysics(),
                       itemBuilder: (context, index) {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
@@ -60,11 +58,11 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
                           ),
                         );
                       },
-              
+
                     )
-                  )
-                ],
-              ),
+                  ),
+                )
+              ],
             ),
           ),
         ),

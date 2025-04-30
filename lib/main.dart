@@ -6,7 +6,7 @@ import 'package:gita_gpt/Utils/shared_preference.dart';
 
 Future<void> main() async {
   ErrorWidget.builder = (FlutterErrorDetails details) {
-    return ErrorScreen(errorDetails: details); // 👈 Pass error details
+    return ErrorScreen(errorDetails: details);
   };
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -48,7 +48,7 @@ class MyApp extends StatelessWidget {
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
             ),
-            home: const SignUpScreen(),
+            home: SignUpScreen(),
           ),
         );
       },

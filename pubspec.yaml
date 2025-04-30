@@ -46,6 +46,7 @@ dev_dependencies:
   crypto:
   loading_animation_widget:
   flutter_bloc:
+  web_socket_channel:
   firebase_core:
   firebase_auth:
   firebase_messaging:
