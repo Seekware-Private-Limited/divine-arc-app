@@ -65,240 +65,259 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  @override
   Widget build(BuildContext context) {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)),
       child: Scaffold(
-        backgroundColor: AppColors.GlobalBG,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(AppLocalizations.of(context)!.translate('profile'), style: FTextStyle.homeText),
-                      const LanguageDropdown()
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: AppColors.gradientStart,
-                          width: 1.5,
-                        ),
-                        color: Colors.white,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Center(
-                            child: Stack(
-                      alignment: Alignment.center,
-                        children: [
-                          ClipOval(
-                            child: SizedBox(
-                              height: 120,
-                              width: 120,
-                              child: _image != null
-                                  ? Image.file(File(_image!.path), fit: BoxFit.cover)
-                                  : Image.asset('assets/images/defaultProfile.jpg', fit: BoxFit.cover),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: GestureDetector(
-                              onTap: () => _showImageSourceActionSheet(context),
-                              child: Container(
-                                padding: EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white,
-                                  border: Border.all(color: AppColors.gradientStart),
-                                ),
-                                child: Image.asset('assets/images/edit.png', height: 18, width: 18),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                  ),
-                          const SizedBox(height: 10),
-                          Center(child: Text(AppLocalizations.of(context)!.translate('princeSingh'),style: FTextStyle.defaultText)),
-                          const SizedBox(height: 10),
-                          Center(child: Text(AppLocalizations.of(context)!.translate('princeEmail'),style: FTextStyle.defaultText)),
-                          const SizedBox(height: 30),
-                          TextFormField(
-                            controller: nameController,
-                            style: FTextStyle.defaultText,
-                            decoration: InputDecoration(
-                              hintText: AppLocalizations.of(context)!.translate('name'),
-                              hintStyle: FTextStyle.defaultText,
-                              filled: true,
-                              fillColor: AppColors.GlobalBG,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                            onChanged: (value) {
-                              setState(() {
-                                if (value.isEmpty) {
-                                  nameError = true;
-                                  nameErrorText = AppLocalizations.of(context)!.translate('emptyNameError');
-                                } else {
-                                  nameError = false;
-                                  nameErrorText = null;
-                                }
-                              });
-                            },
-                          ),
-                          Visibility(
-                            visible: nameError,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 5),
-                                Text(nameErrorText ?? '', style: FTextStyle.errorTextStyle),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          // Email Field
-                          TextFormField(
-                            controller: emailController,
-                            style: FTextStyle.defaultText,
-                            decoration: InputDecoration(
-                              hintText: AppLocalizations.of(context)!.translate('emailAddress'),
-                              hintStyle: FTextStyle.defaultText,
-                              filled: true,
-                              fillColor: AppColors.GlobalBG,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                            onChanged: (value) {
-                              setState(() {
-                                if (value.isEmpty) {
-                                  emailError = true;
-                                  emailErrorText = AppLocalizations.of(context)!.translate('emptyEmailError');
-                                } else if (!isValidEmail(value)) {
-                                  emailError = true;
-                                  emailErrorText = AppLocalizations.of(context)!.translate('invalidEmailError');
-                                } else {
-                                  emailError = false;
-                                  emailErrorText = null;
-                                }
-                              });
-                            },
-                          ),
-                          Visibility(
-                            visible: emailError,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 5),
-                                Text(emailErrorText ?? '', style: FTextStyle.errorTextStyle),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          // Password Field
-                          TextFormField(
-                            controller: passwordController,
-                            obscureText: true,
-                            style: FTextStyle.defaultText,
-                            decoration: InputDecoration(
-                              hintText: AppLocalizations.of(context)!.translate('password'),
-                              hintStyle: FTextStyle.defaultText,
-                              filled: true,
-                              fillColor: AppColors.GlobalBG,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                            onChanged: (value) {
-                              setState(() {
-                                if (value.isEmpty) {
-                                  passwordError = true;
-                                  passwordErrorText = AppLocalizations.of(context)!.translate('emptyPasswordError');
-                                } else if (value.length < 6) {
-                                  passwordError = true;
-                                  passwordErrorText = AppLocalizations.of(context)!.translate('shortPasswordError');
-                                } else {
-                                  passwordError = false;
-                                  passwordErrorText = null;
-                                }
-                              });
-                            },
-                          ),
-                          Visibility(
-                            visible: passwordError,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 5),
-                                Text(passwordErrorText ?? '', style: FTextStyle.errorTextStyle),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          GestureDetector(
-                            onTap: () {
-                              if (nameController.text.isEmpty){
-                                setState(() {
-                                  nameError = true;
-                                  nameErrorText = AppLocalizations.of(context)!.translate('emptyNameError');
-                                });
-                              }
-                              if(emailController.text.isEmpty){
-                                setState(() {
-                                  emailError = true;
-                                  emailErrorText = AppLocalizations.of(context)!.translate('emptyEmailError');
-                                });
-                              }
-                              if(passwordController.text.isEmpty){
-                                setState(() {
-                                  passwordError = true;
-                                  passwordErrorText = AppLocalizations.of(context)!.translate('emptyPasswordError');
-                                });
-                              }
-                            },
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [AppColors.gradientStart, AppColors.gradientEnd],
-                                ),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              height: 45,
-                              width: double.infinity,
-                              child: Center(child: Text(AppLocalizations.of(context)!.translate('save'), style: FTextStyle.buttonText)),
-                            ),
-                          ),
-                        ],
-                      )
-                  )
-                ],
+        body: Stack(
+          children: [
+            // Background image covers entire screen
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/bgGitaGPT.png',
+                fit: BoxFit.cover,
               ),
             ),
-          ),
+
+            // Foreground content wrapped with SafeArea
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(AppLocalizations.of(context)!.translate('profile'), style: FTextStyle.homeText),
+                          const LanguageDropdown()
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppColors.gradientStart,
+                            width: 1.5,
+                          ),
+                          color: Colors.white,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Center(
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  ClipOval(
+                                    child: SizedBox(
+                                      height: 120,
+                                      width: 120,
+                                      child: _image != null
+                                          ? Image.file(File(_image!.path), fit: BoxFit.cover)
+                                          : Image.asset('assets/images/defaultProfile.jpg', fit: BoxFit.cover),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: GestureDetector(
+                                      onTap: () => _showImageSourceActionSheet(context),
+                                      child: Container(
+                                        padding: EdgeInsets.all(6),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.white,
+                                          border: Border.all(color: AppColors.gradientStart),
+                                        ),
+                                        child: Image.asset('assets/images/edit.png', height: 18, width: 18),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Center(child: Text(AppLocalizations.of(context)!.translate('princeSingh'), style: FTextStyle.defaultText)),
+                            const SizedBox(height: 10),
+                            Center(child: Text(AppLocalizations.of(context)!.translate('princeEmail'), style: FTextStyle.defaultText)),
+                            const SizedBox(height: 30),
+
+                            // Name Field
+                            TextFormField(
+                              controller: nameController,
+                              style: FTextStyle.defaultText,
+                              decoration: InputDecoration(
+                                hintText: AppLocalizations.of(context)!.translate('name'),
+                                hintStyle: FTextStyle.defaultText,
+                                filled: true,
+                                fillColor: AppColors.GlobalBG,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  if (value.isEmpty) {
+                                    nameError = true;
+                                    nameErrorText = AppLocalizations.of(context)!.translate('emptyNameError');
+                                  } else {
+                                    nameError = false;
+                                    nameErrorText = null;
+                                  }
+                                });
+                              },
+                            ),
+                            Visibility(
+                              visible: nameError,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 5),
+                                  Text(nameErrorText ?? '', style: FTextStyle.errorTextStyle),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+
+                            // Email Field
+                            TextFormField(
+                              controller: emailController,
+                              style: FTextStyle.defaultText,
+                              decoration: InputDecoration(
+                                hintText: AppLocalizations.of(context)!.translate('emailAddress'),
+                                hintStyle: FTextStyle.defaultText,
+                                filled: true,
+                                fillColor: AppColors.GlobalBG,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  if (value.isEmpty) {
+                                    emailError = true;
+                                    emailErrorText = AppLocalizations.of(context)!.translate('emptyEmailError');
+                                  } else if (!isValidEmail(value)) {
+                                    emailError = true;
+                                    emailErrorText = AppLocalizations.of(context)!.translate('invalidEmailError');
+                                  } else {
+                                    emailError = false;
+                                    emailErrorText = null;
+                                  }
+                                });
+                              },
+                            ),
+                            Visibility(
+                              visible: emailError,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 5),
+                                  Text(emailErrorText ?? '', style: FTextStyle.errorTextStyle),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+
+                            // Password Field
+                            TextFormField(
+                              controller: passwordController,
+                              obscureText: true,
+                              style: FTextStyle.defaultText,
+                              decoration: InputDecoration(
+                                hintText: AppLocalizations.of(context)!.translate('password'),
+                                hintStyle: FTextStyle.defaultText,
+                                filled: true,
+                                fillColor: AppColors.GlobalBG,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
+                                ),
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  if (value.isEmpty) {
+                                    passwordError = true;
+                                    passwordErrorText = AppLocalizations.of(context)!.translate('emptyPasswordError');
+                                  } else if (value.length < 6) {
+                                    passwordError = true;
+                                    passwordErrorText = AppLocalizations.of(context)!.translate('shortPasswordError');
+                                  } else {
+                                    passwordError = false;
+                                    passwordErrorText = null;
+                                  }
+                                });
+                              },
+                            ),
+                            Visibility(
+                              visible: passwordError,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 5),
+                                  Text(passwordErrorText ?? '', style: FTextStyle.errorTextStyle),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+
+                            // Save Button
+                            GestureDetector(
+                              onTap: () {
+                                if (nameController.text.isEmpty) {
+                                  setState(() {
+                                    nameError = true;
+                                    nameErrorText = AppLocalizations.of(context)!.translate('emptyNameError');
+                                  });
+                                }
+                                if (emailController.text.isEmpty) {
+                                  setState(() {
+                                    emailError = true;
+                                    emailErrorText = AppLocalizations.of(context)!.translate('emptyEmailError');
+                                  });
+                                }
+                                if (passwordController.text.isEmpty) {
+                                  setState(() {
+                                    passwordError = true;
+                                    passwordErrorText = AppLocalizations.of(context)!.translate('emptyPasswordError');
+                                  });
+                                }
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [AppColors.gradientStart, AppColors.gradientEnd],
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                height: 45,
+                                width: double.infinity,
+                                child: Center(child: Text(AppLocalizations.of(context)!.translate('save'), style: FTextStyle.buttonText)),
+                              ),
+                            ),
+                            const SizedBox(height: 30),
+                          ],
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            )
+          ],
         ),
       ),
     );
   }
+
 }
