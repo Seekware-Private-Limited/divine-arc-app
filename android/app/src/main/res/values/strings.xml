@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<resources>
+    <string name="facebook_app_id">1108027864461862</string>
+    <string name="fb_login_protocol_scheme">fb1234</string>
+    <string name="facebook_client_token">f97361d9f36bb7a1c31e827e00e71d37</string>
+    <string name="app_name">GitaGPT</string>
+</resources>
+
+

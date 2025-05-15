@@ -1,3 +1,4 @@
+import 'package:gita_gpt/Utils/FontSizeDropdown.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
 
 class ChalisaScreen extends StatefulWidget {
@@ -8,11 +9,13 @@ class ChalisaScreen extends StatefulWidget {
 }
 
 class _ChalisaScreenState extends State<ChalisaScreen> {
-
+  double _fontSizeMultiplier = 1.0;
   @override
   Widget build(BuildContext context) {
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)),
+      data: MediaQuery.of(context).copyWith(
+        textScaler: TextScaler.linear(_fontSizeMultiplier),
+      ),
       child: Scaffold(
         backgroundColor: AppColors.GlobalBG,
         body: SafeArea(
@@ -28,13 +31,19 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Column(
                   children: [
-                    Stack(
+                    Text(AppLocalizations.of(context)!.translate('home'), style: FTextStyle.homeText),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Center(child: Text(AppLocalizations.of(context)!.translate('home'), style: FTextStyle.homeText)),
-                        Positioned(
-                          right: 0,
-                          top: 5,
-                          child: const LanguageDropdown()
+                        LanguageDropdown(),
+                        FontSizeDropdown(
+                          currentScale: _fontSizeMultiplier,
+                          onFontSizeChanged: (newScale) {
+                            setState(() {
+                              _fontSizeMultiplier = newScale;
+                            });
+                          },
                         ),
                       ],
                     ),

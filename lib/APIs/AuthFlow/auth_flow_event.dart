@@ -8,3 +8,6 @@ class GoogleLoginEventHandler extends AuthFlowEvent {}
 
 // Apple Login Event
 class AppleLoginEventHandler extends AuthFlowEvent {}
+
+// Facebook Login Event
+class FacebookLoginEventHandler extends AuthFlowEvent {}

@@ -38,6 +38,22 @@ class AppleLoginError extends AuthFlowState {
   AppleLoginError(this.errorMessage);
 }
 
+// Facebook Login States
+class FacebookLoginLoading extends AuthFlowState {}
+
+class FacebookLoginSuccess extends AuthFlowState {
+  final String name;
+  final String email;
+  final String profileImage;
+  final String id;
+  FacebookLoginSuccess(this.name, this.email, this.profileImage, this.id);
+}
+
+class FacebookLoginFailure extends AuthFlowState {
+  final String error;
+  FacebookLoginFailure(this.error);
+}
+
 
 
 

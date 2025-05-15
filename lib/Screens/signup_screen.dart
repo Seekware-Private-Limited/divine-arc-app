@@ -44,7 +44,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: SingleChildScrollView(
                   child: BlocListener<AuthFlowBloc, AuthFlowState>(
                     listener: (context, state) {
-                      if (state is GoogleLoginLoading) {
+                      if (state is GoogleLoginLoading || state is FacebookLoginLoading) {
                         setState(() {
                           isLoading = true;
                         });
@@ -52,7 +52,40 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         setState(() {
                           isLoading = false;
                         });
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          backgroundColor: Colors.green,
+                            content: Row(
+                              children: [
+                                ClipOval(
+                                    child: Image.network(state.image,height: 20,width: 20,)),
+                                const SizedBox(width: 10),
+                                Text('Logged in as ${state.name}',style: FTextStyle.tabbarTextStyle),
+                              ],
+                            )));
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => CustomBottomNavBar()));
+
                       } else if (state is GoogleLoginFailure) {
+                        setState(() {
+                          isLoading = false;
+                        });
+                      }
+                      else if (state is FacebookLoginSuccess){
+                        setState(() {
+                          isLoading = false;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            backgroundColor: Colors.green,
+                            content: Row(
+                              children: [
+                                ClipOval(
+                                    child: Image.network(state.profileImage,height: 20,width: 20,)),
+                                const SizedBox(width: 10),
+                                Text('Logged in as ${state.name}',style: FTextStyle.tabbarTextStyle),
+                              ],
+                            )));
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => CustomBottomNavBar()));
+                      }
+                      else if(state is FacebookLoginFailure){
                         setState(() {
                           isLoading = false;
                         });
@@ -396,31 +429,36 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                                Container(
-                                  height: 45,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: AppColors.gradientStart,
-                                      width: 1.5,
+                                GestureDetector(
+                                  onTap: () {
+                                    BlocProvider.of<AuthFlowBloc>(context).add(FacebookLoginEventHandler());
+                                  },
+                                  child: Container(
+                                    height: 45,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: AppColors.gradientStart,
+                                        width: 1.5,
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SvgPicture.asset(
-                                        'assets/images/microsoft.svg',
-                                        height: 24,
-                                        width: 24,
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Text(
-                                        AppLocalizations.of(
-                                          context,
-                                        )!.translate('continueWithMicrosoft'),
-                                        style: FTextStyle.socialloginbuttonText,
-                                      ),
-                                    ],
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Image.asset(
+                                          'assets/images/facebook.png',
+                                          height: 24,
+                                          width: 24,
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.translate('continueWithFacebook'),
+                                          style: FTextStyle.socialloginbuttonText,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 24),

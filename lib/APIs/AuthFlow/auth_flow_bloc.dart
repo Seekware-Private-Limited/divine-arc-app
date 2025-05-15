@@ -1,5 +1,6 @@
 import 'package:gita_gpt/Utils/app_imports.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'dart:developer' as developer;
 part 'auth_flow_event.dart';
 part 'auth_flow_state.dart';
@@ -102,6 +103,38 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         emit(AppleLoginError(errorDetails));
       }
     });
+
+    // Facebook Login Bloc
+    on<FacebookLoginEventHandler>((event, emit) async {
+      emit(FacebookLoginLoading());
+      try {
+        final LoginResult result = await FacebookAuth.instance.login();
+
+        if (result.status == LoginStatus.success) {
+          final userData = await FacebookAuth.instance.getUserData();
+
+          final String name = userData['name'] ?? '';
+          final String email = userData['email'] ?? '';
+          final String profileImage = userData['picture']['data']['url'] ?? '';
+          final String id = userData['id'] ?? '';
+
+          emit(FacebookLoginSuccess(name, email, profileImage, id));
+
+          developer.log('Facebook Name: $name');
+          developer.log('Facebook Email: $email');
+          developer.log('Facebook Picture: $profileImage');
+          developer.log('Facebook ID: $id');
+        } else {
+          emit(FacebookLoginFailure(result.message ?? 'Login failed'));
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print("Facebook login error: $e");
+        }
+        emit(FacebookLoginFailure(e.toString()));
+      }
+    });
+
   }
   // Helper methods for generating nonce and SHA256 hash.
   String generateNonce([int length = 32]) {
