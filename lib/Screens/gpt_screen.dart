@@ -1,4 +1,14 @@
+import 'package:flutter/animation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_sound/flutter_sound.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_sound/flutter_sound.dart';
 
 class GptScreen extends StatefulWidget {
   const GptScreen({super.key});
@@ -7,9 +17,123 @@ class GptScreen extends StatefulWidget {
   State<GptScreen> createState() => _GptScreenState();
 }
 
-class _GptScreenState extends State<GptScreen> {
+class _GptScreenState extends State<GptScreen> with SingleTickerProviderStateMixin {
+  final TextEditingController inputController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final FlutterSoundRecorder recorder = FlutterSoundRecorder();
+  bool isRecording = false;
+  String? audioPath;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  List<Map<String, String>> chatHistory = [];
+  String currentResponse = "";
   List<bool> _isExpandedList = List.generate(4, (index) => false);
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeRecorder();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  Future<void> _initializeRecorder() async {
+    try {
+      await recorder.openRecorder();
+    } catch (e) {
+      print('Failed to initialize recorder: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to initialize recorder: $e')),
+      );
+    }
+  }
+
+  Future<void> startRecording() async {
+    try {
+      // Check for unsupported platforms
+      if (Theme.of(context).platform == TargetPlatform.windows ||
+          Theme.of(context).platform == TargetPlatform.linux ||
+          Theme.of(context).platform == TargetPlatform.macOS) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Recording not supported on this platform')),
+        );
+        return;
+      }
+
+      // Request microphone permission
+      final status = await Permission.microphone.request();
+      if (!status.isGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Microphone permission denied')),
+        );
+        return;
+      }
+
+      // Get temporary directory to save recording
+      final dir = await getTemporaryDirectory();
+      audioPath = '${dir.path}/input.wav';
+
+      // Start recording
+      await recorder.startRecorder(
+        toFile: audioPath,
+        codec: Codec.pcm16WAV,
+      );
+
+      setState(() {
+        isRecording = true;
+      });
+
+      print('Recording started... Path: $audioPath');
+    } catch (e) {
+      print('Error starting recording: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to start recording: $e')),
+      );
+    }
+  }
+
+  Future<void> stopRecording() async {
+    try {
+      await recorder.stopRecorder();
+
+      setState(() {
+        isRecording = false;
+      });
+
+      print('Recording stopped. File: $audioPath');
+
+      // Ensure audioPath is not null before proceeding
+      if (audioPath != null) {
+        final audioFile = File(audioPath!);
+
+        // Dispatch event with audio file
+        BlocProvider.of<HomeFlowBloc>(context).add(
+          VoiceConversationEvent(
+            audioFile: audioFile,
+            language: PrefUtils.getLanguage(),
+            sessionId: PrefUtils.getSessionID(),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No recording file found')),
+        );
+      }
+    } catch (e) {
+      print('Error stopping recording: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to stop recording: $e')),
+      );
+    }
+  }
+
   void _showFeedbackPopup(BuildContext context) {
+    final feedbackController = TextEditingController();
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -20,96 +144,53 @@ class _GptScreenState extends State<GptScreen> {
             side: BorderSide(color: AppColors.gradientStart),
             borderRadius: BorderRadius.circular(10),
           ),
-          title: Column(
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Image.asset(
-                        'assets/images/thumbsupunlike.png',
-                        height: 20,
-                        width: 20,
-                        color: Colors.black,
-                      ),
-                      const SizedBox(width: 10),
-                      Image.asset(
-                        'assets/images/thumbsdownunlike.png',
-                        height: 20,
-                        width: 20,
-                        color: Colors.black,
-                      ),
-                      SizedBox(width: 16),
-                      Text(
-                        AppLocalizations.of(context)!.translate('feedback'),
-                        style: FTextStyle.boldText.copyWith(
-                          color: Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 20),
-                  IconButton(
-                    icon: Icon(Icons.close, color: Colors.black),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                ],
+              Text(
+                AppLocalizations.of(context)!.translate('feedback'),
+                style: FTextStyle.defaultTextBold,
               ),
-              Divider(),
+              IconButton(
+                icon: Icon(Icons.close, color: Colors.black),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
             ],
           ),
-          content: SizedBox(
-            width:
-                MediaQuery.of(context).size.width * 0.8, // 80% of screen width
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.black, width: 1),
-                    color: Colors.white,
-                  ),
-                  child: TextFormField(
-                    style: FTextStyle.defaultText,
-                    decoration: InputDecoration(
-                      hintText: AppLocalizations.of(
-                        context,
-                      )!.translate('enterFeedbackHere'),
-                      hintStyle: FTextStyle.defaultText,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                    ),
-                    maxLines: 4,
-                  ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: feedbackController,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context)?.translate('enterFeedbackHere'),
+                  border: OutlineInputBorder(),
                 ),
-                SizedBox(height: 16),
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [AppColors.gradientStart, AppColors.gradientEnd],
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  height: 45,
-                  width: double.infinity,
-                  child: Center(
-                    child: Text(
-                      AppLocalizations.of(context)!.translate('submit'),
-                      style: FTextStyle.buttonText,
-                    ),
-                  ),
+              ),
+              SizedBox(height: 16),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.gradientStart,
                 ),
-              ],
-            ),
+                onPressed: () {
+                  final feedback = feedbackController.text.trim();
+                  if (feedback.isNotEmpty) {
+                    // Placeholder for feedback submission logic
+                    print('Feedback submitted: $feedback');
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Feedback submitted')),
+                    );
+                    Navigator.of(context).pop();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Please enter feedback')),
+                    );
+                  }
+                },
+                child: Text(AppLocalizations.of(context)!.translate('submit')),
+              ),
+            ],
           ),
         );
       },
@@ -117,14 +198,44 @@ class _GptScreenState extends State<GptScreen> {
   }
 
   @override
+  void dispose() {
+    inputController.dispose();
+    _scrollController.dispose();
+    _animationController.stop();
+    _animationController.dispose();
+    recorder.closeRecorder();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MediaQuery(
-      data: MediaQuery.of(
-        context,
-      ).copyWith(textScaler: const TextScaler.linear(1)),
-      child: Scaffold(
-        backgroundColor: AppColors.GlobalBG,
-        body: SafeArea(
+    return Scaffold(
+      backgroundColor: AppColors.GlobalBG,
+      body: SafeArea(
+        child: BlocListener<HomeFlowBloc, HomeFlowState>(
+          listener: (context, state) {
+            if (state is ChatStreamingState) {
+              setState(() {
+                if (chatHistory.isNotEmpty) {
+                  currentResponse += state.response;
+                  chatHistory[chatHistory.length - 1]['answer'] = currentResponse;
+                }
+              });
+              _scrollToBottom();
+            } else if (state is ChatLoadedState) {
+              setState(() {
+                if (chatHistory.isNotEmpty) {
+                  currentResponse = state.partialResponse;
+                  chatHistory[chatHistory.length - 1]['answer'] = currentResponse;
+                }
+              });
+              _scrollToBottom();
+            } else if (state is ChatErrorState) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Error: ${state.error['error'] ?? 'Unknown error'}")),
+              );
+            }
+          },
           child: Stack(
             children: [
               Positioned.fill(
@@ -136,141 +247,139 @@ class _GptScreenState extends State<GptScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Stack(
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Center(
-                          child: Text(
-                            AppLocalizations.of(context)!.translate('home'),
-                            style: FTextStyle.homeText,
-                          ),
+                        Text(
+                          AppLocalizations.of(context)!.translate('home'),
+                          style: FTextStyle.homeText,
                         ),
-                        Positioned(
-                          right: 0,
-                          top: 5,
-                          child: const LanguageDropdown(),
-                        ),
+                        const LanguageDropdown(),
                       ],
                     ),
-                    const SizedBox(height: 20),
-
-                    // Main card
+                    const SizedBox(height: 10),
                     Expanded(
-                      child: SingleChildScrollView(
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppColors.gradientStart,
-                              width: 1.5,
-                            ),
-                            color: Colors.white,
-                          ),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.gradientStart),
+                          color: Colors.white,
+                        ),
+                        child: SingleChildScrollView(
+                          controller: _scrollController,
                           child: Column(
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      AppLocalizations.of(
-                                        context,
-                                      )!.translate('loremQuestion'),
-                                      style: FTextStyle.defaultText,
-                                    ),
-                                  ),
-                                  SizedBox(width: 16),
-                                  Image.asset(
-                                    'assets/images/edit.png',
-                                    height: 20,
-                                    width: 20,
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  Image.asset(
-                                    'assets/images/infinite.png',
-                                    height: 20,
-                                    width: 20,
-                                  ),
-                                  SizedBox(width: 10),
-                                  Text(
-                                    AppLocalizations.of(context)!.translate('answer'),
-                                    style: FTextStyle.answerText,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                AppLocalizations.of(
-                                  context,
-                                )!.translate('loremAnswer'),
-                                style: FTextStyle.defaultText,
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Row(
+                              // Chat Messages
+                              ListView.builder(
+                                shrinkWrap: true,
+                                physics: NeverScrollableScrollPhysics(),
+                                itemCount: chatHistory.length,
+                                itemBuilder: (context, index) {
+                                  final question = chatHistory[index]['question'] ?? '';
+                                  final answer = chatHistory[index]['answer'] ?? '';
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Image.asset(
-                                        'assets/images/refresh.png',
-                                        height: 16,
-                                        width: 16,
-                                      ),
-                                      SizedBox(width: 10),
-                                      Text(
-                                        AppLocalizations.of(
-                                          context,
-                                        )!.translate('regenerate'),
-                                        style: FTextStyle.selectedRadioColorText,
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      Image.asset(
-                                        'assets/images/thumbsupunlike.png',
-                                        height: 20,
-                                        width: 20,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      GestureDetector(
-                                        onTap: () {
-                                          _showFeedbackPopup(context);
-                                        },
-                                        child: Image.asset(
-                                          'assets/images/thumbsdownunlike.png',
-                                          height: 20,
-                                          width: 20,
+                                      Container(
+                                        width: double.infinity,
+                                        padding: EdgeInsets.all(12),
+                                        margin: EdgeInsets.only(bottom: 20),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          border: Border.all(color: AppColors.gradientStart),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    question,
+                                                    style: FTextStyle.defaultTextBold,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 16),
+                                                Image.asset(
+                                                  'assets/images/edit.png',
+                                                  height: 16,
+                                                  width: 16,
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Text(
+                                              answer,
+                                              style: FTextStyle.defaultText,
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Image.asset(
+                                                      'assets/images/refresh.png',
+                                                      height: 16,
+                                                      width: 16,
+                                                    ),
+                                                    SizedBox(width: 10),
+                                                    Text(
+                                                      AppLocalizations.of(context)!.translate('regenerate'),
+                                                      style: FTextStyle.selectedRadioColorText,
+                                                    ),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    Image.asset(
+                                                      'assets/images/thumbsupunlike.png',
+                                                      height: 16,
+                                                      width: 16,
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                    GestureDetector(
+                                                      onTap: () => _showFeedbackPopup(context),
+                                                      child: Image.asset(
+                                                        'assets/images/thumbsdownunlike.png',
+                                                        height: 16,
+                                                        width: 16,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                    Image.asset(
+                                                      'assets/images/unsave.png',
+                                                      height: 16,
+                                                      width: 16,
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                    Image.asset(
+                                                      'assets/images/unbookmark.png',
+                                                      height: 16,
+                                                      width: 16,
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                    Image.asset(
+                                                      'assets/images/unshare.png',
+                                                      height: 16,
+                                                      width: 16,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      const SizedBox(width: 10),
-                                      Image.asset(
-                                        'assets/images/unsave.png',
-                                        height: 20,
-                                        width: 20,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Image.asset(
-                                        'assets/images/unbookmark.png',
-                                        height: 16,
-                                        width: 16,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Image.asset(
-                                        'assets/images/unshare.png',
-                                        height: 20,
-                                        width: 20,
-                                      ),
                                     ],
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
-                              const SizedBox(height: 16),
+                              // Related Searches
+                              const SizedBox(height: 10),
                               Row(
                                 children: [
                                   Image.asset(
@@ -278,157 +387,168 @@ class _GptScreenState extends State<GptScreen> {
                                     height: 17,
                                     width: 17,
                                   ),
-                                  const SizedBox(width: 10),
+                                  SizedBox(width: 10),
                                   Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.translate('relatedSearches'),
+                                    AppLocalizations.of(context)!.translate('relatedSearches'),
                                     style: FTextStyle.defaultTextBold,
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
-                              Divider(),
+                              const SizedBox(height: 10),
+                              Divider(color: Colors.black),
                               ListView.builder(
                                 shrinkWrap: true,
+                                physics: NeverScrollableScrollPhysics(),
                                 itemCount: 4,
                                 itemBuilder: (context, index) {
                                   return Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Padding(
-                                        padding: const EdgeInsets.only(bottom: 5),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              AppLocalizations.of(
-                                                context,
-                                              )!.translate('suggestions'),
-                                              style: FTextStyle.defaultText,
-                                            ),
-                                            IconButton(
-                                              icon: Icon(
-                                                _isExpandedList[index]
-                                                    ? Icons.remove
-                                                    : Icons.add,
-                                                size: 24,
-                                              ),
-                                              onPressed: () {
-                                                setState(() {
-                                                  _isExpandedList[index] =
-                                                      !_isExpandedList[index];
-                                                });
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      if (_isExpandedList[index])
-                                        Text(
-                                          AppLocalizations.of(context)!.translate('dummyText'),
-                                          style: FTextStyle.defaultText,
-                                        ),
-                                    ],
-                                  );
-                                },
-                              ),
-
-                              const SizedBox(height: 20),
-                              Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: AppColors.gradientStart,
-                                    width: 1.5,
-                                  ),
-                                  color: Colors.white,
-                                ),
-                                child: Stack(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 80),
-                                      child: TextFormField(
-                                        style: FTextStyle.defaultText,
-                                        decoration: InputDecoration(
-                                          hintText: AppLocalizations.of(
-                                            context,
-                                          )!.translate('askAnything'),
-                                          hintStyle: FTextStyle.defaultText,
-                                          border: InputBorder.none,
-                                          contentPadding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 16,
-                                          ),
-                                        ),
-                                        maxLines: 5,
-                                        minLines: 1,
-                                      ),
-                                    ),
-                                    Positioned(
-                                      top: 8,
-                                      right: 8,
-                                      child: Row(
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Container(
-                                            height: 35,
-                                            width: 35,
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                color: AppColors.gradientStart,
-                                              ),
-                                              borderRadius: BorderRadius.circular(40),
-                                              color: Colors.white,
-                                            ),
-                                            child: IconButton(
-                                              padding: EdgeInsets.zero,
-                                              icon: Icon(
-                                                Icons.mic,
-                                                size: 20,
-                                                color: AppColors.gradientStart,
-                                              ),
-                                              onPressed: () {
-                                                // handle mic
-                                              },
-                                            ),
+                                          Text(
+                                            AppLocalizations.of(context)!.translate('suggestions'),
+                                            style: FTextStyle.defaultText,
                                           ),
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            height: 35,
-                                            width: 35,
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                colors: [
-                                                  AppColors.gradientStart,
-                                                  AppColors.gradientEnd,
-                                                ],
-                                              ),
-                                              shape: BoxShape.circle,
+                                          IconButton(
+                                            icon: Icon(
+                                              _isExpandedList[index] ? Icons.remove : Icons.add,
                                             ),
-                                            child: IconButton(
-                                              padding: EdgeInsets.zero,
-                                              icon: const Icon(
-                                                Icons.arrow_forward,
-                                                size: 20,
-                                                color: Colors.white,
-                                              ),
-                                              onPressed: () {
-                                                // handle send
-                                              },
-                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                _isExpandedList[index] = !_isExpandedList[index];
+                                              });
+                                            },
                                           ),
                                         ],
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                    ],
+                                  );
+                                },
                               ),
                             ],
                           ),
                         ),
                       ),
                     ),
+                    const SizedBox(height: 10),
+                    // Bottom Input
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: AppColors.gradientStart),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: inputController,
+                              decoration: InputDecoration(
+                                hintText: AppLocalizations.of(context)!.translate('askAnything'),
+                                border: InputBorder.none,
+                              ),
+                              style: FTextStyle.defaultText,
+                              minLines: 1,
+                              maxLines: 4,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Ripple effect when recording
+                              if (isRecording)
+                                AnimatedBuilder(
+                                  animation: _animationController,
+                                  builder: (context, child) {
+                                    return Container(
+                                      height: 35 + (_animationController.value * 5),
+                                      width: 35 + (_animationController.value * 5),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.green.withOpacity(0.3 * (1 - _animationController.value)),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              // Main button with scale animation
+                              ScaleTransition(
+                                scale: isRecording ? _scaleAnimation : AlwaysStoppedAnimation(1.0),
+                                child: Container(
+                                  height: 30,
+                                  width: 30,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: isRecording ? Colors.white : AppColors.gradientStart),
+                                    borderRadius: BorderRadius.circular(40),
+                                    color: isRecording ? Colors.green : Colors.white,
+                                  ),
+                                  child: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    icon: Icon(
+                                      Icons.mic,
+                                      size: 20,
+                                      color: isRecording ? Colors.white : AppColors.gradientStart,
+                                    ),
+                                    onPressed: () async {
+                                      if (isRecording) {
+                                        await stopRecording();
+                                      } else {
+                                        await startRecording();
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () {
+                              final message = inputController.text.trim();
+                              if (message.isNotEmpty) {
+                                setState(() {
+                                  chatHistory.add({
+                                    'question': message,
+                                    'answer': '',
+                                  });
+                                  currentResponse = "";
+                                });
+                                BlocProvider.of<HomeFlowBloc>(context).add(
+                                  ChatEvent(
+                                    message: message,
+                                    language: PrefUtils.getLanguage(),
+                                    sessionId: PrefUtils.getSessionID(),
+                                  ),
+                                );
+                                inputController.clear();
+                                _scrollToBottom();
+                              }
+                            },
+                            child: Container(
+                              height: 35,
+                              width: 35,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.gradientStart,
+                                    AppColors.gradientEnd,
+                                  ],
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.send,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                   ],
                 ),
               ),
@@ -437,5 +557,17 @@ class _GptScreenState extends State<GptScreen> {
         ),
       ),
     );
+  }
+
+  void _scrollToBottom() {
+    Future.delayed(Duration(milliseconds: 300), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 }

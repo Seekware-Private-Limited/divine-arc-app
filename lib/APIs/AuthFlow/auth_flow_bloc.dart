@@ -1,7 +1,10 @@
+import 'package:gita_gpt/Utils/api_constant.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
+import 'package:gita_gpt/Utils/connectivity_service.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'dart:developer' as developer;
+import 'package:http/http.dart' as http;
 part 'auth_flow_event.dart';
 part 'auth_flow_state.dart';
 
@@ -10,97 +13,39 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
 
     // Google Login Bloc
     on<GoogleLoginEventHandler>((event, emit) async {
+      if (!await ConnectivityService.isConnected()) {
+        emit(CheckNetworkConnection());
+        developer.log("No internet connection.");
+        return;
+      }
+
       emit(GoogleLoginLoading());
 
-      var googleSignIn = GoogleSignIn();
-      GoogleSignInAccount? googleSignInAccount;
-      try {
-        await googleSignIn.signOut();
-        googleSignInAccount = await googleSignIn.signIn();
+      final requestUrl = Uri.parse(
+        APIEndPoints.googleLogin,
+      ); // Replace with actual URL
 
-        if (googleSignInAccount != null) {
-          emit(GoogleLoginSuccess(
-            googleSignInAccount.displayName.toString(),
-            googleSignInAccount.email,
-            googleSignInAccount.photoUrl.toString(),
-            googleSignInAccount.id.toString(),
-          ));
-          developer.log('User Name Is : ${googleSignInAccount.displayName}');
-          developer.log('User Email Is : ${googleSignInAccount.email}');
-          developer.log('User Photo Is : ${googleSignInAccount.photoUrl}');
-          developer.log('User Id Is : ${googleSignInAccount.id}');
+      developer.log("Google Login API Request URL: $requestUrl");
+
+      try {
+        final response = await http.get(
+          requestUrl,
+          headers: {"Content-Type": "application/json"},
+        );
+
+        developer.log("Google Login API Response Body: ${response.body}");
+
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        if (response.statusCode == 200) {
+          final url = responseData['url'];
+          emit(GoogleLoginSuccess(url));
         } else {
-          emit(GoogleLoginFailure(""));
+          emit(GoogleLoginFailure(responseData['message']));
         }
       } catch (e) {
-        if (kDebugMode) {
-          emit(GoogleLoginFailure(e.toString()));
-          print(e.toString());
-        }
-      }
-    });
-
-    // Apple Login Bloc
-    on<AppleLoginEventHandler>((event, emit) async {
-      try {
-        emit(AppleLoginLoading());
-        final rawNonce = generateNonce();
-        final nonce = sha256ofString(rawNonce);
-
-        // Request credential for the currently signed-in Apple account.
-        final appleCredential = await SignInWithApple.getAppleIDCredential(
-          scopes: [
-            AppleIDAuthorizationScopes.email,
-            AppleIDAuthorizationScopes.fullName,
-          ],
-          nonce: nonce,
-        );
-
-        // Create OAuthCredential from the credential returned by Apple.
-        final oauthCredential = OAuthProvider("apple.com").credential(
-          idToken: appleCredential.identityToken,
-          accessToken: appleCredential.authorizationCode,
-          rawNonce: rawNonce,
-        );
-
-
-        // Sign in to Firebase with the Apple credential.
-        final jsonResponse = await FirebaseAuth.instance.signInWithCredential(
-          oauthCredential,
-        );
-
-        final user = jsonResponse.user;
-
-        // Handle first-time sign-in or if email is provided
-        String? email = user?.email ??
-            appleCredential.email; // Prefer Firebase email if available
-        String? displayName = user?.displayName ?? appleCredential.givenName ??
-            appleCredential.familyName;
-
-        email ??= "Unknown";
-
-        if (user != null) {
-          emit(AppleLoginSuccess(
-            displayName ?? "",
-            email,
-            user.photoURL ?? "",
-            user.uid,
-          ));
-        } else {
-          emit(AppleLoginError(const {"error": "User authentication failed"}));
-        }
-      } catch (e) {
-        // Handle errors during sign-in
-        Map<String, dynamic> errorDetails = {
-          "error": e.toString(),
-          "stackTrace": e is Error ? e.stackTrace.toString() : null,
-        };
-
-        if (kDebugMode) {
-          print("Apple Login Error: $errorDetails");
-        }
-
-        emit(AppleLoginError(errorDetails));
+        emit(CommonServerFailure(e.toString()));
+        developer.log("Exception occurred: $e");
       }
     });
 
@@ -135,18 +80,91 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
       }
     });
 
-  }
-  // Helper methods for generating nonce and SHA256 hash.
-  String generateNonce([int length = 32]) {
-    const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
-    final random = Random.secure();
-    return List.generate(
-        length, (_) => charset[random.nextInt(charset.length)]).join();
+    // SignUp Bloc
+    on<SignupEventHandler>((event, emit) async {
+      if (!await ConnectivityService.isConnected()) {
+        emit(CheckNetworkConnection());
+        developer.log("No internet connection.");
+        return;
+      }
+
+      emit(SignUpLoading());
+
+      final requestUrl = Uri.parse(
+        APIEndPoints.signup,
+      ); // Replace with actual URL
+
+      final Map<String, dynamic> requestBody = {
+        "name": event.name,
+        "email": event.email,
+        "password": event.password,
+      };
+
+      developer.log("Signup API Request URL: $requestUrl");
+      developer.log("Signup API Request Body: ${jsonEncode(requestBody)}");
+
+      try {
+        final response = await http.post(
+          requestUrl,
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode(requestBody),
+        );
+
+        developer.log("Signup API Response Body: ${response.body}");
+
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        if (response.statusCode == 201) {
+          emit(SignUpSuccess(responseData));
+        } else {
+          emit(SignUpFailure(responseData));
+        }
+      } catch (e) {
+        emit(CommonServerFailure(e.toString()));
+        developer.log("Exception occurred: $e");
+      }
+    });
+
+    // Login Bloc
+    on<LoginEventHandler>((event, emit) async {
+      if (!await ConnectivityService.isConnected()) {
+        emit(CheckNetworkConnection());
+        developer.log("No internet connection.");
+        return;
+      }
+      emit(LoginLoading());
+      final requestUrl = Uri.parse(
+        APIEndPoints.login,
+      ); // Replace with actual URL
+      final Map<String, dynamic> requestBody = {
+        "email": event.email,
+        "password": event.password,
+      };
+
+      developer.log("Login API Request URL: $requestUrl");
+      developer.log("Login API Request Body: ${jsonEncode(requestBody)}");
+
+      try {
+        final response = await http.post(
+          requestUrl,
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode(requestBody),
+        );
+
+        developer.log("Login API Response Body: ${response.body}");
+
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        if (response.statusCode == 200) {
+          emit(LoginSuccess(responseData));
+        } else {
+          emit(LoginFailure(responseData));
+        }
+      } catch (e) {
+        emit(CommonServerFailure(e.toString()));
+        developer.log("Exception occurred: $e");
+      }
+    });
   }
 
-  String sha256ofString(String input) {
-    final bytes = utf8.encode(input);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
 }

@@ -44,10 +44,15 @@ dev_dependencies:
   google_sign_in:
   sign_in_with_apple: ^7.0.1
   crypto:
+  fluttertoast: ^8.2.12
   loading_animation_widget:
   flutter_bloc:
   flutter_facebook_auth: ^7.1.2
   firebase_core:
+  url_launcher:
+  flutter_sound:
+  speech_to_text:
+  audioplayers:
   firebase_auth:
   firebase_messaging:
   http:

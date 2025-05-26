@@ -1,6 +1,12 @@
+import 'dart:developer' as developer;
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
+import 'package:gita_gpt/Utils/common_utils.dart';
 import 'package:gita_gpt/Utils/flutter_color_themes.dart';
 import 'package:gita_gpt/Utils/flutter_font_style.dart';
+import 'package:gita_gpt/Utils/pref_utils.dart';
 import 'package:gita_gpt/l10n/language_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -23,7 +29,7 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
 
   void _showCustomDropdown(BuildContext context) async {
     final RenderBox renderBox =
-    _dropdownKey.currentContext!.findRenderObject() as RenderBox;
+        _dropdownKey.currentContext!.findRenderObject() as RenderBox;
     final Offset offset = renderBox.localToGlobal(Offset.zero);
     final Size size = renderBox.size;
 
@@ -47,28 +53,31 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
           ),
         ),
         ..._languages.map(
-              (lang) => PopupMenuItem<String>(
+          (lang) => PopupMenuItem<String>(
             value: lang,
             child: Consumer<LanguageProvider>(
               builder: (context, provider, child) {
-                final selectedLanguage =
-                _getDisplayLanguage(provider.locale.languageCode);
+                final selectedLanguage = _getDisplayLanguage(
+                  provider.locale.languageCode,
+                );
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       lang,
-                      style: selectedLanguage == lang
-                          ? FTextStyle.selectedRadioColorText
-                          : FTextStyle.socialloginbuttonText,
+                      style:
+                          selectedLanguage == lang
+                              ? FTextStyle.selectedRadioColorText
+                              : FTextStyle.socialloginbuttonText,
                     ),
                     Icon(
                       selectedLanguage == lang
                           ? Icons.radio_button_checked
                           : Icons.radio_button_unchecked,
-                      color: selectedLanguage == lang
-                          ? AppColors.gradientStart
-                          : Colors.grey,
+                      color:
+                          selectedLanguage == lang
+                              ? AppColors.gradientStart
+                              : Colors.grey,
                     ),
                   ],
                 );
@@ -83,8 +92,15 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
 
     if (selected != null) {
       final languageCode = _languageToCode[selected] ?? 'en';
-      Provider.of<LanguageProvider>(context, listen: false)
-          .changeLanguage(languageCode);
+      Provider.of<LanguageProvider>(
+        context,
+        listen: false,
+      ).changeLanguage(languageCode);
+      developer.log('LANGUAGE CHANGED TO - ${languageCode}');
+      PrefUtils.setLanguage(languageCode);
+      BlocProvider.of<HomeFlowBloc>(
+        context,
+      ).add(CreateSessionEvent(language: languageCode));
     }
   }
 
@@ -92,28 +108,44 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
   Widget build(BuildContext context) {
     return Consumer<LanguageProvider>(
       builder: (context, provider, child) {
-        final selectedLanguage =
-        _getDisplayLanguage(provider.locale.languageCode);
+        final selectedLanguage = _getDisplayLanguage(
+          provider.locale.languageCode,
+        );
 
-        return GestureDetector(
-          key: _dropdownKey,
-          onTap: () => _showCustomDropdown(context),
-          child: Container(
-            height: 35,
-            width: 110,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(4),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                Text(
-                  selectedLanguage,
-                  style: FTextStyle.socialloginbuttonText,
-                ),
-                const Icon(Icons.keyboard_arrow_down_sharp),
-              ],
+        return BlocListener<HomeFlowBloc,HomeFlowState>(
+          listener: (context, state) {
+            if (state is CreateSessionSuccess) {
+              final response = state.successResponse;
+              final sessionID = response['session_id'];
+              PrefUtils.setSessionID(sessionID);
+            } else if (state is CreateSessionFailure) {
+              CommonUtils.showToast(state.error,backgroundColor: Colors.red,textColor: Colors.white);
+            } else if (state is CheckNetworkConnection) {
+              CommonUtils.showToast('No Internet Connection!',backgroundColor: Colors.red,textColor: Colors.white);
+            } else if (state is CommonServerFailure) {
+              CommonUtils.showToast(state.error,backgroundColor: Colors.red,textColor: Colors.white);
+            }
+          },
+          child: GestureDetector(
+            key: _dropdownKey,
+            onTap: () => _showCustomDropdown(context),
+            child: Container(
+              height: 35,
+              width: 110,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Text(
+                    selectedLanguage,
+                    style: FTextStyle.socialloginbuttonText,
+                  ),
+                  const Icon(Icons.keyboard_arrow_down_sharp),
+                ],
+              ),
             ),
           ),
         );

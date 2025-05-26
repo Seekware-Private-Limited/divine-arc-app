@@ -9,33 +9,13 @@ final class AuthFlowInitial extends AuthFlowState {}
 class GoogleLoginLoading extends AuthFlowState {}
 
 class GoogleLoginSuccess extends AuthFlowState {
-  final String name;
-  final String email;
-  final String image;
-  final String id;
-  GoogleLoginSuccess(this.name, this.email, this.image, this.id);
+  final String url;
+  GoogleLoginSuccess(this.url);
 
 }
 class GoogleLoginFailure extends AuthFlowState {
   final String errorMessage;
   GoogleLoginFailure(this.errorMessage);
-}
-
-
-// Apple Login States
-class AppleLoginLoading extends AuthFlowState {}
-
-class AppleLoginSuccess extends AuthFlowState {
-  final String name;
-  final String email;
-  final String image;
-  final String id;
-  AppleLoginSuccess(this.name, this.email, this.image, this.id);
-}
-
-class AppleLoginError extends AuthFlowState {
-  final Map<String,dynamic>  errorMessage;
-  AppleLoginError(this.errorMessage);
 }
 
 // Facebook Login States
@@ -53,6 +33,62 @@ class FacebookLoginFailure extends AuthFlowState {
   final String error;
   FacebookLoginFailure(this.error);
 }
+
+
+// SignUp States
+class SignUpLoading extends AuthFlowState {}
+
+class SignUpSuccess extends AuthFlowState {
+  Map<String,dynamic> successResponse;
+  SignUpSuccess(this.successResponse);
+}
+
+class SignUpFailure extends AuthFlowState {
+  Map<String,dynamic> failureResponse;
+  SignUpFailure(this.failureResponse);
+}
+
+// Login States
+class LoginLoading extends AuthFlowState {}
+
+class LoginSuccess extends AuthFlowState {
+  Map<String,dynamic> successResponse;
+  LoginSuccess(this.successResponse);
+}
+
+class LoginFailure extends AuthFlowState {
+  Map<String,dynamic> failureResponse;
+  LoginFailure(this.failureResponse);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Common Server Failure State
+class CommonServerFailure extends AuthFlowState {
+  final String error;
+  CommonServerFailure(this.error);
+
+}
+
+// Check Network Connection State
+class CheckNetworkConnection extends AuthFlowState {}
+
 
 
 

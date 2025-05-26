@@ -28,7 +28,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return MediaQuery(
-      data: MediaQuery.of(context,).copyWith(textScaler: const TextScaler.linear(1)),
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: const TextScaler.linear(1)),
       child: Scaffold(
         resizeToAvoidBottomInset: false,
         body: SafeArea(
@@ -43,61 +45,143 @@ class _SignUpScreenState extends State<SignUpScreen> {
               Center(
                 child: SingleChildScrollView(
                   child: BlocListener<AuthFlowBloc, AuthFlowState>(
-                    listener: (context, state) {
-                      if (state is GoogleLoginLoading || state is FacebookLoginLoading) {
+                    listener: (context, state) async {
+                      if (state is GoogleLoginLoading ||
+                          state is FacebookLoginLoading ||
+                          state is SignUpLoading) {
                         setState(() {
                           isLoading = true;
                         });
                       } else if (state is GoogleLoginSuccess) {
-                        setState(() {
-                          isLoading = false;
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          backgroundColor: Colors.green,
-                            content: Row(
-                              children: [
-                                ClipOval(
-                                    child: Image.network(state.image,height: 20,width: 20,)),
-                                const SizedBox(width: 10),
-                                Text('Logged in as ${state.name}',style: FTextStyle.tabbarTextStyle),
-                              ],
-                            )));
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => CustomBottomNavBar()));
+                        final url = state.url;
 
-                      } else if (state is GoogleLoginFailure) {
-                        setState(() {
-                          isLoading = false;
-                        });
+                        // Try launching the URL
+                        if (await canLaunchUrl(Uri.parse(url))) {
+                          await launchUrl(
+                            Uri.parse(url),
+                            mode: LaunchMode.externalApplication, // Opens in browser
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Could not launch Google login URL')),
+                          );
+                        }
                       }
-                      else if (state is FacebookLoginSuccess){
+                      else if (state is GoogleLoginFailure) {
                         setState(() {
                           isLoading = false;
                         });
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: Colors.red,
+                            content: Text(
+                              'Error : ${state.errorMessage}',
+                              style: FTextStyle.tabbarTextStyle,
+                            ),
+                          ),
+                        );
+                      } else if (state is FacebookLoginSuccess) {
+                        setState(() {
+                          isLoading = false;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
                             backgroundColor: Colors.green,
                             content: Row(
                               children: [
                                 ClipOval(
-                                    child: Image.network(state.profileImage,height: 20,width: 20,)),
+                                  child: Image.network(
+                                    state.profileImage,
+                                    height: 20,
+                                    width: 20,
+                                  ),
+                                ),
                                 const SizedBox(width: 10),
-                                Text('Logged in as ${state.name}',style: FTextStyle.tabbarTextStyle),
+                                Text(
+                                  'Logged in as ${state.name}',
+                                  style: FTextStyle.tabbarTextStyle,
+                                ),
                               ],
-                            )));
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => CustomBottomNavBar()));
-                      }
-                      else if(state is FacebookLoginFailure){
+                            ),
+                          ),
+                        );
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CustomBottomNavBar(),
+                          ),
+                        );
+                      } else if (state is FacebookLoginFailure) {
                         setState(() {
                           isLoading = false;
                         });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: Colors.red,
+                            content: Text(
+                              'Error : ${state.error}',
+                              style: FTextStyle.tabbarTextStyle,
+                            ),
+                          ),
+                        );
+                      } else if (state is SignUpSuccess) {
+                        PrefUtils.setIsLogin(true);
+                        setState(() {
+                          isLoading = false;
+                        });
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CustomBottomNavBar(),
+                          ),
+                        );
+                      } else if (state is SignUpFailure) {
+                        setState(() {
+                          isLoading = false;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: Colors.red,
+                            content: Text(
+                              'Error : ${state.failureResponse['message']}',
+                              style: FTextStyle.tabbarTextStyle,
+                            ),
+                          ),
+                        );
                       }
                     },
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: [
-                          Align(
-                            alignment: Alignment.centerRight,
-                              child: const LanguageDropdown()),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const LanguageDropdown(),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) => CustomBottomNavBar(),
+                                    ),
+                                  );
+                                },
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Skip',
+                                      style: FTextStyle.defaultTextBold,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(Icons.skip_next, size: 18),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 20),
                           Container(
                             decoration: BoxDecoration(
@@ -166,7 +250,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 Visibility(
                                   visible: nameError,
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const SizedBox(height: 5),
                                       Text(
@@ -219,7 +304,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 Visibility(
                                   visible: emailError,
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const SizedBox(height: 5),
                                       Text(
@@ -273,7 +359,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 Visibility(
                                   visible: passwordError,
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const SizedBox(height: 5),
                                       Text(
@@ -286,6 +373,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 const SizedBox(height: 16),
                                 GestureDetector(
                                   onTap: () {
+                                    bool hasError = false;
+
                                     if (nameController.text.isEmpty) {
                                       setState(() {
                                         nameError = true;
@@ -293,7 +382,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                           context,
                                         )!.translate('emptyNameError');
                                       });
+                                      hasError = true;
                                     }
+
                                     if (emailController.text.isEmpty) {
                                       setState(() {
                                         emailError = true;
@@ -301,7 +392,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                           context,
                                         )!.translate('emptyEmailError');
                                       });
+                                      hasError = true;
                                     }
+
                                     if (passwordController.text.isEmpty) {
                                       setState(() {
                                         passwordError = true;
@@ -309,8 +402,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                           context,
                                         )!.translate('emptyPasswordError');
                                       });
+                                      hasError = true;
+                                    }
+
+                                    if (!hasError) {
+                                      // No validation errors, proceed with API call
+                                      BlocProvider.of<AuthFlowBloc>(
+                                        context,
+                                      ).add(
+                                        SignupEventHandler(
+                                          name: nameController.text.trim(),
+                                          email: emailController.text.trim(),
+                                          password:
+                                              passwordController.text.trim(),
+                                        ),
+                                      );
                                     }
                                   },
+
                                   child: Container(
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
@@ -364,13 +473,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 40),
                                 // Social Login Buttons (Google, Apple, Microsoft)
                                 GestureDetector(
                                   onTap: () {
-                                    BlocProvider.of<AuthFlowBloc>(
-                                      context,
-                                    ).add(GoogleLoginEventHandler());
+                                    BlocProvider.of<AuthFlowBloc>(context).add(GoogleLoginEventHandler());
                                   },
                                   child: Container(
                                     height: 45,
@@ -382,7 +489,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                      MainAxisAlignment.center,
                                       children: [
                                         SvgPicture.asset(
                                           'assets/images/google.svg',
@@ -394,44 +502,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                           AppLocalizations.of(
                                             context,
                                           )!.translate('continueWithGoogle'),
-                                          style: FTextStyle.socialloginbuttonText,
+                                          style:
+                                          FTextStyle.socialloginbuttonText,
                                         ),
                                       ],
                                     ),
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                                Container(
-                                  height: 45,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: AppColors.gradientStart,
-                                      width: 1.5,
-                                    ),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SvgPicture.asset(
-                                        'assets/images/apple-logo.svg',
-                                        height: 24,
-                                        width: 24,
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Text(
-                                        AppLocalizations.of(
-                                          context,
-                                        )!.translate('continueWithApple'),
-                                        style: FTextStyle.socialloginbuttonText,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
                                 GestureDetector(
                                   onTap: () {
-                                    BlocProvider.of<AuthFlowBloc>(context).add(FacebookLoginEventHandler());
+                                    BlocProvider.of<AuthFlowBloc>(
+                                      context,
+                                    ).add(FacebookLoginEventHandler());
                                   },
                                   child: Container(
                                     height: 45,
@@ -443,7 +526,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Image.asset(
                                           'assets/images/facebook.png',
@@ -455,7 +539,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                           AppLocalizations.of(
                                             context,
                                           )!.translate('continueWithFacebook'),
-                                          style: FTextStyle.socialloginbuttonText,
+                                          style:
+                                              FTextStyle.socialloginbuttonText,
                                         ),
                                       ],
                                     ),

@@ -9,8 +9,10 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   String? emailErrorText;
+  String? passwordErrorText;
   bool isLoading = false;
   final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
 
   // Email validation regex
   bool isValidEmail(String email) {
@@ -39,47 +41,47 @@ class _LoginScreenState extends State<LoginScreen> {
               Center(
                 child: SingleChildScrollView(
                   child: BlocListener<AuthFlowBloc, AuthFlowState>(
-                    listener: (context, state) {
+                    listener: (context, state) async {
                       if (state is GoogleLoginLoading ||
-                          state is FacebookLoginLoading) {
+                          state is FacebookLoginLoading ||
+                          state is LoginLoading) {
                         setState(() {
                           isLoading = true;
                         });
-                      } else if (state is GoogleLoginSuccess) {
+                      }
+                      if (state is GoogleLoginSuccess) {
+                        final url = state.url;
+
+                        // Try launching the URL
+                        if (await canLaunchUrl(Uri.parse(url))) {
+                          await launchUrl(
+                            Uri.parse(url),
+                            mode:
+                                LaunchMode
+                                    .externalApplication, // Opens in browser
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Could not launch Google login URL',
+                              ),
+                            ),
+                          );
+                        }
+                      } else if (state is GoogleLoginFailure) {
                         setState(() {
                           isLoading = false;
                         });
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            backgroundColor: Colors.green,
-                            content: Row(
-                              children: [
-                                ClipOval(
-                                  child: Image.network(
-                                    state.image,
-                                    height: 20,
-                                    width: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  'Logged in as ${state.name}',
-                                  style: FTextStyle.tabbarTextStyle,
-                                ),
-                              ],
+                            backgroundColor: Colors.red,
+                            content: Text(
+                              'Error : ${state..errorMessage}',
+                              style: FTextStyle.tabbarTextStyle,
                             ),
                           ),
                         );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CustomBottomNavBar(),
-                          ),
-                        );
-                      } else if (state is GoogleLoginFailure) {
-                        setState(() {
-                          isLoading = false;
-                        });
                       } else if (state is FacebookLoginSuccess) {
                         setState(() {
                           isLoading = false;
@@ -115,15 +117,72 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() {
                           isLoading = false;
                         });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: Colors.red,
+                            content: Text(
+                              'Error : ${state.error}',
+                              style: FTextStyle.tabbarTextStyle,
+                            ),
+                          ),
+                        );
+                      } else if (state is LoginSuccess) {
+                        PrefUtils.setIsLogin(true);
+                        setState(() {
+                          isLoading = false;
+                        });
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CustomBottomNavBar(),
+                          ),
+                        );
+                      } else if (state is LoginFailure) {
+                        setState(() {
+                          isLoading = false;
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: Colors.red,
+                            content: Text(
+                              'Error : ${state..failureResponse['message']}',
+                              style: FTextStyle.tabbarTextStyle,
+                            ),
+                          ),
+                        );
                       }
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: [
-                          const Align(
-                            alignment: Alignment.centerRight,
-                            child: const LanguageDropdown(),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const LanguageDropdown(),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) => CustomBottomNavBar(),
+                                    ),
+                                  );
+                                },
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Skip',
+                                      style: FTextStyle.defaultTextBold,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Icon(Icons.skip_next, size: 18),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 20),
                           Container(
@@ -209,23 +268,95 @@ class _LoginScreenState extends State<LoginScreen> {
                                     style: FTextStyle.errorTextStyle,
                                   ),
                                 ),
+                                const SizedBox(height: 8),
+                                TextFormField(
+                                  controller: passwordController,
+                                  style: FTextStyle.defaultText,
+                                  decoration: InputDecoration(
+                                    hintText: AppLocalizations.of(
+                                      context,
+                                    )!.translate('password'),
+                                    hintStyle: FTextStyle.defaultText,
+                                    filled: true,
+                                    fillColor: AppColors.GlobalBG,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 14,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                  ),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      if (value.isEmpty) {
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('emptyPasswordError');
+                                      } else {
+                                        passwordErrorText = null;
+                                      }
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 5),
+                                Visibility(
+                                  visible: passwordErrorText != null,
+                                  child: Text(
+                                    passwordErrorText ?? '',
+                                    style: FTextStyle.errorTextStyle,
+                                  ),
+                                ),
                                 const SizedBox(height: 16),
                                 GestureDetector(
                                   onTap: () {
+                                    bool hasError = false;
+
                                     if (emailController.text.isEmpty) {
                                       setState(() {
                                         emailErrorText = AppLocalizations.of(
                                           context,
                                         )!.translate('emptyEmailError');
                                       });
-                                    } else if (isValidEmail(
+                                      hasError = true;
+                                    } else if (!isValidEmail(
                                       emailController.text,
                                     )) {
-                                      Navigator.push(
+                                      setState(() {
+                                        emailErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('invalidEmailError');
+                                      });
+                                      hasError = true;
+                                    }
+
+                                    if (passwordController.text.isEmpty) {
+                                      setState(() {
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('emptyPasswordError');
+                                      });
+                                      hasError = true;
+                                    }
+
+                                    if (!hasError) {
+                                      // Everything is valid, call the SignIn API
+                                      BlocProvider.of<AuthFlowBloc>(
                                         context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (context) => CustomBottomNavBar(),
+                                      ).add(
+                                        LoginEventHandler(
+                                          email: emailController.text.trim(),
+                                          password:
+                                              passwordController.text.trim(),
                                         ),
                                       );
                                     }
@@ -283,7 +414,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 40),
                                 GestureDetector(
                                   onTap: () {
                                     BlocProvider.of<AuthFlowBloc>(
@@ -318,34 +449,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                       ],
                                     ),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Container(
-                                  height: 45,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: AppColors.gradientStart,
-                                      width: 1.5,
-                                    ),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SvgPicture.asset(
-                                        'assets/images/apple-logo.svg',
-                                        height: 24,
-                                        width: 24,
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Text(
-                                        AppLocalizations.of(
-                                          context,
-                                        )!.translate('continueWithApple'),
-                                        style: FTextStyle.socialloginbuttonText,
-                                      ),
-                                    ],
                                   ),
                                 ),
                                 const SizedBox(height: 10),

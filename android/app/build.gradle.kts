@@ -21,7 +21,7 @@ dependencies {
 }
 
 android {
-    namespace = "com.seekware.geetagpt"
+    namespace = "com.seekware.gitagpt"
     compileSdk = 35
     ndkVersion = "27.0.12077973"
 
@@ -35,8 +35,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.seekware.geetagpt"
-        minSdk = 23
+        applicationId = "com.seekware.gitagpt"
+        minSdk = 24
         targetSdk = 33
         versionCode = flutter.versionCode
         versionName = flutter.versionName

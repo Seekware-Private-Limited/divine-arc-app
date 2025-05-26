@@ -40,9 +40,9 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                         children: [
                           Center(child: Text(AppLocalizations.of(context)!.translate('home'), style: FTextStyle.homeText)),
                           Positioned(
-                            right: 0,
-                            top: 5,
-                            child: const LanguageDropdown()
+                              right: 0,
+                              top: 5,
+                              child: const LanguageDropdown()
                           ),
                         ],
                       ),

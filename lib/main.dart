@@ -1,5 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gita_gpt/APIs/AuthFlow/auth_flow_bloc.dart';
+import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
+import 'package:gita_gpt/Screens/splash_screen.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:gita_gpt/Utils/shared_preference.dart';
@@ -30,6 +32,7 @@ class MyApp extends StatelessWidget {
         return MultiBlocProvider(
           providers: [
             BlocProvider(create: (context) => AuthFlowBloc()),
+            BlocProvider(create: (context) => HomeFlowBloc()),
           ],
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
@@ -48,7 +51,7 @@ class MyApp extends StatelessWidget {
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
             ),
-            home: SignUpScreen(),
+            home: SplashScreen(),
           ),
         );
       },

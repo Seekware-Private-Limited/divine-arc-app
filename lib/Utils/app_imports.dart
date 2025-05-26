@@ -3,6 +3,7 @@ export 'package:gita_gpt/Utils/flutter_color_themes.dart';
 export 'package:gita_gpt/Utils/flutter_font_style.dart';
 export 'package:flutter_svg/flutter_svg.dart';
 export '../Screens/home_screen.dart';
+export 'package:url_launcher/url_launcher.dart';
 export '../Screens/profile_screen.dart';
 export '../Screens/history_screen.dart';
 export 'package:gita_gpt/l10n/language_provider.dart';
