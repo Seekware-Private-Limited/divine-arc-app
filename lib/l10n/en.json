@@ -45,5 +45,25 @@
   "chalisa": "Victory to you, O Hanuman! Ocean of knowledge and virtues,\nVictory to the chief of monkeys, who is famous across all three worlds!\n\nYou are the messenger of Rama, an abode of incomparable strength,\nYou are Anjani’s son, and known as the Wind God's child.\n\nMighty hero, strong as a thunderbolt,\nRemover of evil thoughts, companion of good wisdom.\n\nGolden-colored and beautifully dressed,\nWearing earrings, with curly hair.\n\nHolding a thunderbolt and a flag in your hands,\nA sacred thread made of munja grass adorns your shoulder.\n\nYou are the incarnation of Lord Shiva, son of Kesari,\nYour glory and splendor are revered throughout the world.\n\nFull of knowledge, virtue, and extremely clever,\nYou are always eager to serve Lord Rama.\n\nYou delight in listening to the Lord's story,\nAnd you reside in the hearts of Rama, Lakshman, and Sita.\n\nIn your subtle form, you showed yourself to Sita,\nIn a terrifying form, you set Lanka ablaze.\n\nAssuming a monstrous form, you destroyed demons,\nYou fulfilled Lord Rama’s mission.\n\nYou brought the Sanjeevani to revive Lakshman,\nLord Rama embraced you joyfully.\n\nRama praised you highly,\nHe said, \"You are as dear to me as my brother Bharat.\"\n\nThousands of mouths sing your glory,\nAnd so said Lord Vishnu, as He embraced you.\n\nSaints like Sanaka, Brahma, Narad, Saraswati, and the serpent god,\nEven Yama, Kubera, and the guardians of the directions — all fail to describe your greatness.\n\nYou helped Sugriva,\nIntroduced him to Rama and helped him regain his kingdom.\n\nVibhishan followed your advice,\nHe became king of Lanka — the whole world knows this.\n\nYou swallowed the sun from thousands of yojanas away,\nThinking it to be a sweet fruit.\n\nWith Rama’s ring in your mouth,\nYou leapt over the ocean — it was no surprise.\n\nAll the difficult tasks in the world\nBecome easy with your grace.\n\nYou are the guardian of Lord Rama’s door,\nNo one can enter without your permission.\n\nAll happiness comes from taking shelter in you,\nThose under your protection need not fear anything.\n\nYou alone can control your immense power,\nAll the three worlds tremble at your roar.\n\nEvil spirits and ghosts do not come near\nWhen they hear the name of Mahaveer Hanuman.\n\nAll ailments and pain are destroyed,\nWhen your name is chanted continuously.\n\nHanuman frees one from troubles\nFor those who meditate on you with mind, words, and actions.\n\nLord Rama is the ascetic king of all,\nAnd you accomplish all His works.\n\nWhoever brings their wishes to you\nReceives immeasurable rewards in life.\n\nYour glory spans the four ages (yugas),\nYou are famous throughout the universe.\n\nYou protect sages and saints,\nYou destroy demons, and are dear to Lord Rama.\n\nYou are the giver of the eight siddhis and nine treasures,\nThis boon was given to you by Mother Sita.\n\nYou hold the elixir of devotion to Rama,\nYou forever remain His faithful servant.\n\nThrough your devotion, one can attain Rama,\nAnd forget all sufferings of countless lifetimes.\n\nAt life’s end, one goes to Rama’s abode\nAnd takes rebirth as His devoted follower.\n\nOther deities may not come to mind,\nBut devotion to Hanuman brings all joy.\n\nAll problems and pains are removed\nFor those who remember Hanuman, the brave hero.\n\nVictory, victory, victory to you, O Lord Hanuman!\nPlease bless me like a true Guru would.\n\nWhoever recites this a hundred times\nWill be freed from bondage and attain great happiness.\n\nOne who reads this Hanuman Chalisa\nWill achieve success, as testified by Lord Shiva.\n\nTulsidas, the eternal servant of Lord Hari,\nPrays for the Lord to dwell in his heart.",
   "save": "Save",
   "princeSingh":"Prince Singh",
-  "princeEmail": "princesingh26lmp@gmail.com"
+  "princeEmail": "princesingh26lmp@gmail.com",
+  "forgotPassword": "Forgot Password",
+  "forgotPasswordsubText": "No worries! We’ll help you get back into your account.",
+  "otpVerification": "OTP Verification",
+  "otpVerifcationsubText": "Please enter the OTP (One-Time-Password) sent to your registered email address to complete your verification process.",
+
+
+
+
+  "emptyNameError": "Name is required.",
+  "nameLengthError": "Name must not exceed 32 characters.",
+  "invalidNameError": "Name should not contain numbers or special characters.",
+
+  "emptyEmailError": "Email address is required.",
+  "invalidEmailError": "Please enter a valid email address.",
+  "emailLengthError": "Email address must not exceed 255 characters.",
+
+  "emptyPasswordError": "Password is required.",
+  "shortPasswordError": "Password must be at least 9 characters long.",
+  "longPasswordError": "Password must not exceed 32 characters.",
+  "invalidPasswordError": "Password must include at least one uppercase letter, one lowercase letter, one number, and one special character."
 }

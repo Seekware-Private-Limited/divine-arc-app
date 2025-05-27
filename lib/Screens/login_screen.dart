@@ -1,4 +1,5 @@
 import 'package:gita_gpt/Utils/app_imports.dart';
+import 'package:gita_gpt/Utils/common_utils.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -8,6 +9,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  bool emailError = false;
+  bool passwordError = false;
   String? emailErrorText;
   String? passwordErrorText;
   bool isLoading = false;
@@ -16,7 +19,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Email validation regex
   bool isValidEmail(String email) {
-    return RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$").hasMatch(email);
+    return email.length <= 255 &&
+        RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$").hasMatch(email);
+  }
+
+  // Password validation regex
+  bool isValidPassword(String password) {
+    return password.length >= 9 &&
+        password.length <= 32 &&
+        RegExp(
+          r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{9,32}$',
+        ).hasMatch(password);
   }
 
   @override
@@ -61,52 +74,18 @@ class _LoginScreenState extends State<LoginScreen> {
                                     .externalApplication, // Opens in browser
                           );
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Could not launch Google login URL',
-                              ),
-                            ),
-                          );
+                          CommonUtils.showErrorToast('Could not launch Google login URL');
                         }
                       } else if (state is GoogleLoginFailure) {
                         setState(() {
                           isLoading = false;
                         });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: Colors.red,
-                            content: Text(
-                              'Error : ${state..errorMessage}',
-                              style: FTextStyle.tabbarTextStyle,
-                            ),
-                          ),
-                        );
+                        CommonUtils.showErrorToast(state.errorMessage);
                       } else if (state is FacebookLoginSuccess) {
                         setState(() {
                           isLoading = false;
                         });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: Colors.green,
-                            content: Row(
-                              children: [
-                                ClipOval(
-                                  child: Image.network(
-                                    state.profileImage,
-                                    height: 20,
-                                    width: 20,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(
-                                  'Logged in as ${state.name}',
-                                  style: FTextStyle.tabbarTextStyle,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
+                        CommonUtils.showSuccessToast('Logged in as ${state.name}');
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -117,15 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() {
                           isLoading = false;
                         });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: Colors.red,
-                            content: Text(
-                              'Error : ${state.error}',
-                              style: FTextStyle.tabbarTextStyle,
-                            ),
-                          ),
-                        );
+                        CommonUtils.showErrorToast(state.error);
                       } else if (state is LoginSuccess) {
                         PrefUtils.setIsLogin(true);
                         setState(() {
@@ -141,15 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() {
                           isLoading = false;
                         });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: Colors.red,
-                            content: Text(
-                              'Error : ${state..failureResponse['message']}',
-                              style: FTextStyle.tabbarTextStyle,
-                            ),
-                          ),
-                        );
+                        CommonUtils.showErrorToast(state.failureMessage);
                       }
                     },
                     child: Padding(
@@ -162,6 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               const LanguageDropdown(),
                               GestureDetector(
                                 onTap: () {
+                                  PrefUtils.setIsGuest(true);
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -247,14 +211,22 @@ class _LoginScreenState extends State<LoginScreen> {
                                   onChanged: (value) {
                                     setState(() {
                                       if (value.isEmpty) {
+                                        emailError = true;
                                         emailErrorText = AppLocalizations.of(
                                           context,
                                         )!.translate('emptyEmailError');
                                       } else if (!isValidEmail(value)) {
+                                        emailError = true;
                                         emailErrorText = AppLocalizations.of(
                                           context,
                                         )!.translate('invalidEmailError');
+                                      } else if (value.length > 255) {
+                                        emailError = true;
+                                        emailErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('emailLengthError');
                                       } else {
+                                        emailError = false;
                                         emailErrorText = null;
                                       }
                                     });
@@ -299,10 +271,27 @@ class _LoginScreenState extends State<LoginScreen> {
                                   onChanged: (value) {
                                     setState(() {
                                       if (value.isEmpty) {
+                                        passwordError = true;
                                         passwordErrorText = AppLocalizations.of(
                                           context,
                                         )!.translate('emptyPasswordError');
+                                      } else if (value.length < 9) {
+                                        passwordError = true;
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('shortPasswordError');
+                                      } else if (value.length > 32) {
+                                        passwordError = true;
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('longPasswordError');
+                                      } else if (!isValidPassword(value)) {
+                                        passwordError = true;
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('invalidPasswordError');
                                       } else {
+                                        passwordError = false;
                                         passwordErrorText = null;
                                       }
                                     });
@@ -323,6 +312,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                                     if (emailController.text.isEmpty) {
                                       setState(() {
+                                        emailError = true;
                                         emailErrorText = AppLocalizations.of(
                                           context,
                                         )!.translate('emptyEmailError');
@@ -332,18 +322,57 @@ class _LoginScreenState extends State<LoginScreen> {
                                       emailController.text,
                                     )) {
                                       setState(() {
+                                        emailError = true;
                                         emailErrorText = AppLocalizations.of(
                                           context,
                                         )!.translate('invalidEmailError');
+                                      });
+                                      hasError = true;
+                                    } else if (emailController.text.length >
+                                        255) {
+                                      setState(() {
+                                        emailError = true;
+                                        emailErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('emailLengthError');
                                       });
                                       hasError = true;
                                     }
 
                                     if (passwordController.text.isEmpty) {
                                       setState(() {
+                                        passwordError = true;
                                         passwordErrorText = AppLocalizations.of(
                                           context,
                                         )!.translate('emptyPasswordError');
+                                      });
+                                      hasError = true;
+                                    } else if (passwordController.text.length <
+                                        9) {
+                                      setState(() {
+                                        passwordError = true;
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('shortPasswordError');
+                                      });
+                                      hasError = true;
+                                    } else if (passwordController.text.length >
+                                        32) {
+                                      setState(() {
+                                        passwordError = true;
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('longPasswordError');
+                                      });
+                                      hasError = true;
+                                    } else if (!isValidPassword(
+                                      passwordController.text,
+                                    )) {
+                                      setState(() {
+                                        passwordError = true;
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('invalidPasswordError');
                                       });
                                       hasError = true;
                                     }
@@ -391,7 +420,12 @@ class _LoginScreenState extends State<LoginScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => SignUpScreen(),
+                                        builder:
+                                            (context) => BlocProvider(
+                                              create:
+                                                  (context) => AuthFlowBloc(),
+                                              child: SignUpScreen(),
+                                            ),
                                       ),
                                     );
                                   },

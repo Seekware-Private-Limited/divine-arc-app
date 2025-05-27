@@ -1,13 +1,13 @@
 import 'package:gita_gpt/Utils/app_imports.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+class OtpVerificationPasswordScreen extends StatefulWidget {
+  const OtpVerificationPasswordScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  State<OtpVerificationPasswordScreen> createState() => _OtpVerificationPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _OtpVerificationPasswordScreenState extends State<OtpVerificationPasswordScreen> {
   String? emailErrorText;
   bool isLoading = false;
   final TextEditingController emailController = TextEditingController();
@@ -47,7 +47,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       child: Column(
                         children: [
                           Align(
-                            alignment: Alignment.centerRight,
+                              alignment: Alignment.centerRight,
                               child: const LanguageDropdown()),
                           const SizedBox(height: 20),
                           Container(
@@ -85,10 +85,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 const SizedBox(height: 20),
                                 Text( AppLocalizations.of(
                                   context,
-                                )!.translate('forgotPassword'),style: FTextStyle.defaultTextBold.copyWith(fontSize: 20)),
+                                )!.translate('otpVerification'),style: FTextStyle.defaultTextBold.copyWith(fontSize: 20)),
                                 Text( AppLocalizations.of(
                                   context,
-                                )!.translate('forgotPasswordsubText'),style: FTextStyle.defaultText),
+                                )!.translate('otpVerifcationsubText'),style: FTextStyle.defaultText),
                                 const SizedBox(height: 30),
                                 TextFormField(
                                   controller: emailController,

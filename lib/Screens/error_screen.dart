@@ -58,18 +58,27 @@ class _ErrorScreenState extends State<ErrorScreen> {
 
                         const SizedBox(height: 20),
 
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [AppColors.gradientStart, AppColors.gradientEnd],
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(builder: (context) => const HomeScreen()),
+                                  (Route<dynamic> route) => false,
+                            );
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [AppColors.gradientStart, AppColors.gradientEnd],
+                              ),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            borderRadius: BorderRadius.circular(10),
+                            height: 45,
+                            width: double.infinity,
+                            child: Center(child: Text(AppLocalizations.of(context)!.translate('gotoHomePage'), style: FTextStyle.buttonText)),
                           ),
-                          height: 45,
-                          width: double.infinity,
-                          child: Center(child: Text(AppLocalizations.of(context)!.translate('gotoHomePage'), style: FTextStyle.buttonText)),
                         ),
                       ],
                     ),

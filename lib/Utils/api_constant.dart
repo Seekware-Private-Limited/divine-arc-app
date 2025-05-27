@@ -16,4 +16,8 @@ class APIEndPoints {
    static const String signup = '$baseUrl/auth/register';
    static const String login = '$baseUrl/auth/login';
    static const String googleLogin = '$baseUrl/auth/google/login';
+   static const String initiateChat = '$baseUrl/chat/initiate';
+   static const String storeChatConversation = '$baseUrl/chat/store';
+   static const String sendAPIResponse = '$baseUrl/chat/api-response';
+   static const String getChatHistory = '$baseUrl/chat/history';
 }

@@ -57,25 +57,9 @@ class LoginSuccess extends AuthFlowState {
 }
 
 class LoginFailure extends AuthFlowState {
-  Map<String,dynamic> failureResponse;
-  LoginFailure(this.failureResponse);
+  final String failureMessage;
+  LoginFailure(this.failureMessage);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

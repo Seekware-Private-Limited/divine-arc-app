@@ -119,11 +119,11 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
               final sessionID = response['session_id'];
               PrefUtils.setSessionID(sessionID);
             } else if (state is CreateSessionFailure) {
-              CommonUtils.showToast(state.error,backgroundColor: Colors.red,textColor: Colors.white);
+              CommonUtils.showErrorToast(state.error,);
             } else if (state is CheckNetworkConnection) {
-              CommonUtils.showToast('No Internet Connection!',backgroundColor: Colors.red,textColor: Colors.white);
+              CommonUtils.showErrorToast('No Internet Connection!');
             } else if (state is CommonServerFailure) {
-              CommonUtils.showToast(state.error,backgroundColor: Colors.red,textColor: Colors.white);
+              CommonUtils.showErrorToast(state.error);
             }
           },
           child: GestureDetector(

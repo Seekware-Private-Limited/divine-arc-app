@@ -1,3 +1,4 @@
+import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
 
 class AskAnythingScreen extends StatefulWidget {
@@ -174,7 +175,10 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                               itemBuilder: (context, index) {
                                 return GestureDetector(
                                   onTap: () {
-                                    Navigator.push(context, MaterialPageRoute(builder: (context) => GptScreen()));
+                                    Navigator.push(context, MaterialPageRoute(builder: (context) => BlocProvider(
+  create: (context) => HomeFlowBloc(),
+  child: GptScreen(),
+)));
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.all(16),

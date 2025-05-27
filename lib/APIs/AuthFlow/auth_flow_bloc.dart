@@ -132,10 +132,10 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         developer.log("No internet connection.");
         return;
       }
+
       emit(LoginLoading());
-      final requestUrl = Uri.parse(
-        APIEndPoints.login,
-      ); // Replace with actual URL
+
+      final requestUrl = Uri.parse(APIEndPoints.login);
       final Map<String, dynamic> requestBody = {
         "email": event.email,
         "password": event.password,
@@ -151,20 +151,38 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
           body: jsonEncode(requestBody),
         );
 
+        developer.log("Login API Response Status Code: ${response.statusCode}");
         developer.log("Login API Response Body: ${response.body}");
+
+        // ✅ Extract Set-Cookie token
+        final setCookieHeader = response.headers['set-cookie'];
+        if (setCookieHeader != null) {
+          final authCookie = setCookieHeader
+              .split(';')
+              .firstWhere((c) => c.contains('Authorization='),
+              orElse: () => '');
+
+          if (authCookie.isNotEmpty) {
+            developer.log("Extracted Cookie Token: $authCookie");
+            PrefUtils.setToken(authCookie);
+          }
+        } else {
+          developer.log("Set-Cookie header not found.");
+        }
 
         final Map<String, dynamic> responseData = jsonDecode(response.body);
 
         if (response.statusCode == 200) {
           emit(LoginSuccess(responseData));
         } else {
-          emit(LoginFailure(responseData));
+          emit(LoginFailure(responseData['message']));
         }
       } catch (e) {
         emit(CommonServerFailure(e.toString()));
         developer.log("Exception occurred: $e");
       }
     });
+
   }
 
 }

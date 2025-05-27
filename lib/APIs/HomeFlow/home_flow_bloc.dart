@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:bloc/bloc.dart';
 import 'package:gita_gpt/Utils/api_constant.dart';
 import 'package:gita_gpt/Utils/connectivity_service.dart';
+import 'package:gita_gpt/Utils/pref_utils.dart';
 import 'package:meta/meta.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-
 part 'home_flow_event.dart';
 part 'home_flow_state.dart';
 
@@ -202,6 +202,195 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         }
       } else {
         emit(VoiceConversationFailure("No internet connection"));
+      }
+    });
+
+    // Initiate Chat Bloc
+    on<InitiateChatEvent>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(InitiateChatLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.initiateChat);
+        developer.log("Request URL: $requestUrl");
+
+        try {
+          final response = await http.post(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+            body: jsonEncode({
+              'message': event.message,
+              'chat_id': event.chatId,
+              'is_guest': event.isGuest,
+              'model_name': event.modelName,
+              'search_engine': event.searchEngine,
+              'edited': event.edited,
+              'sender': event.sender,
+            }),
+          );
+
+          if (response.statusCode == 201) {
+            final Map<String, dynamic> responseData = jsonDecode(response.body);
+            emit(InitiateChatSuccess(responseData['data']));
+            developer.log("Response Data: ${responseData['data']}");
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(InitiateChatFailure(errorData));
+            developer.log("Error Response: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("No internet connection.");
+      }
+    });
+
+    // Store Chat Bloc
+    on<StoreChatEvent>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(StoreChatLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.storeChatConversation);
+        developer.log("Request URL: $requestUrl");
+
+        try {
+          final response = await http.post(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+            body: jsonEncode({
+              'message': event.message,
+              'chat_id': event.chatId,
+              'model_name': event.modelName,
+              'search_engine': event.searchEngine,
+              'edited': event.edited,
+              'sender': event.sender,
+            }),
+          );
+
+          if (response.statusCode == 201) {
+            final Map<String, dynamic> responseData = jsonDecode(response.body);
+            emit(StoreChatSuccess(responseData['data']));
+            developer.log("Response Data: ${responseData['data']}");
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(StoreChatError(errorData));
+            developer.log("Error Response: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("No internet connection.");
+      }
+    });
+
+    // Send API Response Bloc
+    on<SendAPIResponseEvent>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(SendAPIResponseLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.sendAPIResponse);
+        developer.log("Request URL: $requestUrl");
+
+        try {
+          final response = await http.post(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+            body: jsonEncode({
+              'message_id': event.messageId,
+              'api_name': event.apiError,
+              'api_type': event.apiType,
+              'api_response': event.apiResponse,
+              'status': event.apiStatus,
+              'api_error': event.apiError,
+            }),
+          );
+
+          if (response.statusCode == 201) {
+            final Map<String, dynamic> responseData = jsonDecode(response.body);
+            emit(SendAPIResponseSuccess(responseData['data']));
+            developer.log("Response Data: ${responseData['data']}");
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(SendAPIResponseFailure(errorData));
+            developer.log("Error Response: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("No internet connection.");
+      }
+    });
+
+    // Get Chat Conversation History Bloc
+    on<GetChatHistoryEvent>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(GetChatHistoryLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.getChatHistory);
+        developer.log("Request URL: $requestUrl");
+
+        try {
+          final response = await http.get(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+          );
+
+          if (response.statusCode == 200) {
+            final responseData = jsonDecode(response.body);
+            emit(GetChatHistorySuccess(responseData));
+            developer.log("Response Data: ${responseData}");
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(GetChatHistoryFailure(errorData));
+            developer.log("Error Response: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("No internet connection.");
       }
     });
 

@@ -60,6 +60,62 @@ class VoiceConversationFailure extends HomeFlowState {
 }
 
 
+// Initiate Chat States
+class InitiateChatLoading extends HomeFlowState {}
+
+class InitiateChatSuccess extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  InitiateChatSuccess(this.successResponse);
+}
+
+class InitiateChatFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  InitiateChatFailure(this.failureResponse);
+}
+
+
+// Store Chat States
+class StoreChatLoading extends HomeFlowState {}
+
+class StoreChatSuccess extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  StoreChatSuccess(this.successResponse);
+}
+
+class StoreChatError extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  StoreChatError(this.failureResponse);
+}
+
+
+// Send API Response States
+class SendAPIResponseLoading extends HomeFlowState {}
+
+class SendAPIResponseSuccess extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  SendAPIResponseSuccess(this.successResponse);
+}
+
+class SendAPIResponseFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  SendAPIResponseFailure(this.failureResponse);
+}
+
+
+// Get Chat History States
+class GetChatHistoryLoading extends HomeFlowState {}
+
+class GetChatHistorySuccess extends HomeFlowState {
+  final Map<String,dynamic> successResponse;
+  GetChatHistorySuccess(this.successResponse);
+}
+
+class GetChatHistoryFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  GetChatHistoryFailure(this.failureResponse);
+}
+
+
 // Common Server Failure State
 class CommonServerFailure extends HomeFlowState {
   final String error;
