@@ -311,7 +311,22 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         emit(SendAPIResponseLoading());
 
         final Uri requestUrl = Uri.parse(APIEndPoints.sendAPIResponse);
-        developer.log("Request URL: $requestUrl");
+        final requestBody = jsonEncode({
+          'message_id': event.messageId,
+          'api_name': event.apiName,
+          'api_type': event.apiType,
+          'api_response': event.apiResponse,
+          'status': event.apiStatus,
+          'api_error': event.apiError,
+        });
+
+        developer.log("🔵 Request URL: $requestUrl");
+        developer.log("🟡 Request Headers: ${{
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Cookie': PrefUtils.getToken(),
+        }}");
+        developer.log("🟠 Request Body: $requestBody");
 
         try {
           final response = await http.post(
@@ -321,35 +336,31 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
               'Content-Type': 'application/json',
               'Cookie': PrefUtils.getToken(),
             },
-            body: jsonEncode({
-              'message_id': event.messageId,
-              'api_name': event.apiError,
-              'api_type': event.apiType,
-              'api_response': event.apiResponse,
-              'status': event.apiStatus,
-              'api_error': event.apiError,
-            }),
+            body: requestBody,
           );
+
+          developer.log("🟣 Response Status Code: ${response.statusCode}");
+          developer.log("🟤 Raw Response Body: ${response.body}");
 
           if (response.statusCode == 201) {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(SendAPIResponseSuccess(responseData['data']));
-            developer.log("Response Data: ${responseData['data']}");
+            developer.log("✅ Parsed Response Data: ${responseData['data']}");
           } else {
             final errorData = jsonDecode(response.body);
             emit(SendAPIResponseFailure(errorData));
-            developer.log("Error Response: $errorData");
+            developer.log("❌ Error Response Data: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("SocketException: No internet connection.");
+          developer.log("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("Exception: $e");
+          developer.log("❗ Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("No internet connection.");
+        developer.log("❗ No internet connection.");
       }
     });
 
@@ -394,5 +405,219 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
       }
     });
 
+    // React On Chat Bloc
+    on<ReactOnChatEvent>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(ReactOnChatLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.reactOnChat);
+        final requestBody = jsonEncode({
+          'message_id': event.message_id,
+          'is_like': event.is_like,
+          'type': event.type,
+          'is_guest':event.is_guest
+
+        });
+
+        developer.log("🔵 Request URL: $requestUrl");
+        developer.log("🟡 Request Headers: ${{
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Cookie': PrefUtils.getToken(),
+        }}");
+        developer.log("🟠 Request Body: $requestBody");
+
+        try {
+          final response = await http.post(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+            body: requestBody,
+          );
+
+          developer.log("🟣 Response Status Code: ${response.statusCode}");
+          developer.log("🟤 Raw Response Body: ${response.body}");
+
+          if (response.statusCode == 200) {
+            final Map<String, dynamic> responseData = jsonDecode(response.body);
+            emit(ReactOnChatSuccess(responseData));
+            developer.log("✅ Parsed Response Data: ${responseData}");
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(ReactOnChatFailure(errorData));
+            developer.log("❌ Error Response Data: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("❗ SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("❗ Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("❗ No internet connection.");
+      }
+    });
+
+    // Chat Feedback Bloc
+    on<ChatFeedbackEvent>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(ChatFeedbackLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.chatFeedback);
+        final requestBody = jsonEncode({
+          'feedbackText': event.feedbackText,
+          'reactionId': event.reactionId,
+        });
+
+        developer.log("🔵 Request URL: $requestUrl");
+        developer.log("🟡 Request Headers: ${{
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Cookie': PrefUtils.getToken(),
+        }}");
+        developer.log("🟠 Request Body: $requestBody");
+
+        try {
+          final response = await http.post(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+            body: requestBody,
+          );
+
+          developer.log("🟣 Response Status Code: ${response.statusCode}");
+          developer.log("🟤 Raw Response Body: ${response.body}");
+
+          if (response.statusCode == 201) {
+            final Map<String, dynamic> responseData = jsonDecode(response.body);
+            emit(ChatFeedbackSuccess(responseData));
+            developer.log("✅ Parsed Response Data: ${responseData}");
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(ChatFeedbackFailure(errorData));
+            developer.log("❌ Error Response Data: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("❗ SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("❗ Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("❗ No internet connection.");
+      }
+    });
+
+    // Chat Feedback Bloc
+    on<ShareChatEvent>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(ShareChatLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.shareChatUrl(event.chatId));
+
+        developer.log("🔵 Request URL: $requestUrl");
+        developer.log("🟡 Request Headers: ${{
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Cookie': PrefUtils.getToken(),
+        }}");
+
+        try {
+          final response = await http.get(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+          );
+
+          developer.log("🟣 Response Status Code: ${response.statusCode}");
+          developer.log("🟤 Raw Response Body: ${response.body}");
+
+          if (response.statusCode == 200) {
+            final responseData = jsonDecode(response.body);
+            emit(ShareChatSuccess(responseData['shareUrl']));
+            developer.log("✅ Parsed Response Data: ${responseData['shareUrl']}");
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(ShareChatFailure(errorData));
+            developer.log("❌ Error Response Data: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("❗ SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("❗ Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("❗ No internet connection.");
+      }
+    });
+
+    on<LogoutEvent>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(LogoutLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.logout);
+
+
+        developer.log("🔵 Request URL: $requestUrl");
+        developer.log("🟡 Request Headers: ${{
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Cookie': PrefUtils.getToken(),
+        }}");
+
+        try {
+          final response = await http.post(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+          );
+
+          developer.log("🟣 Response Status Code: ${response.statusCode}");
+          developer.log("🟤 Raw Response Body: ${response.body}");
+
+          if (response.statusCode == 200) {
+            final responseData = jsonDecode(response.body);
+            emit(LogoutSuccess(successRespose: responseData['message']));
+            developer.log("✅ Parsed Response Data: ${responseData}");
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(LogoutFailure(errorData));
+            developer.log("❌ Error Response Data: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("❗ SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("❗ Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("❗ No internet connection.");
+      }
+    });
   }
 }

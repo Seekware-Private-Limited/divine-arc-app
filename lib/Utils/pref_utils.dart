@@ -1,4 +1,5 @@
 import 'package:gita_gpt/Utils/shared_preference.dart';
+import 'dart:convert'; // Import for JSON encoding/decoding
 
 class PrefUtils {
   static setToken(String value) {
@@ -9,6 +10,26 @@ class PrefUtils {
     final String? value = Prefs.prefs?.getString(SharedPrefsKeys.token);
     return value ?? '';
   }
+
+
+  static setName(String value) {
+    Prefs.prefs?.setString(SharedPrefsKeys.name, value);
+  }
+
+  static String getName() {
+    final String? value = Prefs.prefs?.getString(SharedPrefsKeys.name);
+    return value ?? '';
+  }
+
+  static setEmail(String value) {
+    Prefs.prefs?.setString(SharedPrefsKeys.email, value);
+  }
+
+  static String getEmail() {
+    final String? value = Prefs.prefs?.getString(SharedPrefsKeys.email);
+    return value ?? '';
+  }
+
 
   static setLanguage(String value) {
     Prefs.prefs?.setString(SharedPrefsKeys.lang, value);
@@ -36,7 +57,6 @@ class PrefUtils {
     final String? value = Prefs.prefs?.getString(SharedPrefsKeys.ChatID);
     return value ?? '';
   }
-
 
   static void setOnboardingVisible(bool value) {
     Prefs.prefs?.setBool(SharedPrefsKeys.onboardingVisible, value);
@@ -70,15 +90,31 @@ class PrefUtils {
   }
 
   static int getUnreadNotificationCount() {
-    final int? value = Prefs.prefs?.getInt(
-      SharedPrefsKeys.unreadNotificationCount,
-    );
-    return value ?? 0; // Default to 0 if no value is stored
+    final int? value = Prefs.prefs?.getInt(SharedPrefsKeys.unreadNotificationCount);
+    return value ?? 0;
+  }
+
+  // New method to save chatHistory
+  static void setChatHistory(List<Map<String, String>> chatHistory) {
+    final String chatHistoryJson = jsonEncode(chatHistory);
+    Prefs.prefs?.setString(SharedPrefsKeys.chatHistory, chatHistoryJson);
+  }
+
+  // New method to retrieve chatHistory
+  static List<Map<String, String>> getChatHistory() {
+    final String? chatHistoryJson = Prefs.prefs?.getString(SharedPrefsKeys.chatHistory);
+    if (chatHistoryJson != null && chatHistoryJson.isNotEmpty) {
+      final List<dynamic> decoded = jsonDecode(chatHistoryJson);
+      return decoded.map((item) => Map<String, String>.from(item)).toList();
+    }
+    return [];
   }
 }
 
 class SharedPrefsKeys {
   static const token = 'token';
+  static const name = 'name';
+  static const email = 'email';
   static const lang = 'lang';
   static const sessionID = 'sessionID';
   static const onboardingVisible = 'onboardingVisible';
@@ -86,4 +122,5 @@ class SharedPrefsKeys {
   static const ChatID = 'ChatID';
   static const isGuest = 'isGuest';
   static const unreadNotificationCount = 'unreadNotificationCount';
+  static const chatHistory = 'chatHistory'; // New key for chatHistory
 }

@@ -116,6 +116,61 @@ class GetChatHistoryFailure extends HomeFlowState {
 }
 
 
+// React On Chat states
+class ReactOnChatLoading extends HomeFlowState {}
+
+class ReactOnChatSuccess extends HomeFlowState {
+  final Map<String,dynamic> successResponse;
+  ReactOnChatSuccess(this.successResponse);
+}
+
+class ReactOnChatFailure extends HomeFlowState {
+  final Map<String,dynamic> failureResponse;
+  ReactOnChatFailure(this.failureResponse);
+}
+
+
+// Chat Feedback States
+class ChatFeedbackLoading extends HomeFlowState {}
+
+class ChatFeedbackSuccess extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  ChatFeedbackSuccess(this.successResponse);
+}
+
+class ChatFeedbackFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  ChatFeedbackFailure(this.failureResponse);
+}
+
+// Share Chat States
+class ShareChatLoading extends HomeFlowState {}
+
+class ShareChatSuccess extends HomeFlowState {
+  final String successResponse;
+  ShareChatSuccess(this.successResponse);
+}
+
+class ShareChatFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  ShareChatFailure(this.failureResponse);
+}
+
+
+// Logout States
+class LogoutLoading extends HomeFlowState {}
+
+class LogoutSuccess extends HomeFlowState {
+final String successRespose;
+LogoutSuccess({required this.successRespose});
+}
+
+class LogoutFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  LogoutFailure(this.failureResponse);
+}
+
+
 // Common Server Failure State
 class CommonServerFailure extends HomeFlowState {
   final String error;

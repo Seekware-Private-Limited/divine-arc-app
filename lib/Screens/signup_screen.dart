@@ -113,6 +113,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             builder: (context) => CustomBottomNavBar(),
                           ),
                         );
+                        final response = state.successResponse['data'];
+                        final name = response['name'];
+                        final email = response['email'];
+                        PrefUtils.setName(name);
+                        PrefUtils.setEmail(email);
                       } else if (state is SignUpFailure) {
                         setState(() {
                           isLoading = false;
@@ -294,7 +299,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 // Password Field
                                 TextFormField(
                                   controller: passwordController,
-                                  obscureText: true,
                                   style: FTextStyle.defaultText,
                                   decoration: InputDecoration(
                                     hintText: AppLocalizations.of(

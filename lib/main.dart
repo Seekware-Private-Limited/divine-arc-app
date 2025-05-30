@@ -1,8 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:gita_gpt/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
-import 'package:gita_gpt/Screens/forgot_password.dart';
-import 'package:gita_gpt/Screens/otp_verification_screen.dart';
 import 'package:gita_gpt/Screens/splash_screen.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
 import 'package:firebase_core/firebase_core.dart';

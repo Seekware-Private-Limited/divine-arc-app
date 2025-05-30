@@ -1,8 +1,7 @@
-import 'dart:developer' as developer;
-
 import 'package:flutter/animation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +9,7 @@ import 'package:flutter_sound/flutter_sound.dart';
 import 'package:gita_gpt/Utils/common_utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/services.dart';
 
 class GptScreen extends StatefulWidget {
   final String? searchQueryFromHomeScreen;
@@ -19,9 +19,9 @@ class GptScreen extends StatefulWidget {
   State<GptScreen> createState() => _GptScreenState();
 }
 
-class _GptScreenState extends State<GptScreen>
-    with SingleTickerProviderStateMixin {
+class _GptScreenState extends State<GptScreen> with SingleTickerProviderStateMixin {
   final TextEditingController inputController = TextEditingController();
+  final TextEditingController feedbackTextController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FlutterSoundRecorder recorder = FlutterSoundRecorder();
   bool isRecording = false;
@@ -29,13 +29,15 @@ class _GptScreenState extends State<GptScreen>
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   List<Map<String, String>> chatHistory = [];
-  String currentResponse = "";
-  String messageId = '';
+  String reactionId = '';
   List<bool> _isExpandedList = List.generate(4, (index) => false);
+  int? _editingIndex;
+  int? _currentResponseIndex;
 
   @override
   void initState() {
     super.initState();
+    chatHistory = PrefUtils.getChatHistory();
     _initializeRecorder();
     _animationController = AnimationController(
       vsync: this,
@@ -56,9 +58,23 @@ class _GptScreenState extends State<GptScreen>
         chatHistory.add({
           'question': widget.searchQueryFromHomeScreen!,
           'answer': '',
+          'chatId': '',
+          'messageId': '',
         });
-        currentResponse = "";
+        _currentResponseIndex = chatHistory.length - 1;
+        PrefUtils.setChatHistory(chatHistory);
       });
+      BlocProvider.of<HomeFlowBloc>(context).add(
+        InitiateChatEvent(
+          message: widget.searchQueryFromHomeScreen!,
+          isGuest: PrefUtils.getIsGuest(),
+          modelName: 'Atlas',
+          searchEngine: 'Search',
+          edited: false,
+          sender: 'user',
+          chatId: '',
+        ),
+      );
       BlocProvider.of<HomeFlowBloc>(context).add(
         ChatEvent(
           message: widget.searchQueryFromHomeScreen!,
@@ -82,7 +98,6 @@ class _GptScreenState extends State<GptScreen>
 
   Future<void> startRecording() async {
     try {
-      // Check for unsupported platforms
       if (Theme.of(context).platform == TargetPlatform.windows ||
           Theme.of(context).platform == TargetPlatform.linux ||
           Theme.of(context).platform == TargetPlatform.macOS) {
@@ -90,18 +105,15 @@ class _GptScreenState extends State<GptScreen>
         return;
       }
 
-      // Request microphone permission
       final status = await Permission.microphone.request();
       if (!status.isGranted) {
         CommonUtils.showErrorToast('Microphone permission denied');
         return;
       }
 
-      // Get temporary directory to save recording
       final dir = await getTemporaryDirectory();
       audioPath = '${dir.path}/input.wav';
 
-      // Start recording
       await recorder.startRecorder(toFile: audioPath, codec: Codec.pcm16WAV);
 
       setState(() {
@@ -125,11 +137,9 @@ class _GptScreenState extends State<GptScreen>
 
       print('Recording stopped. File: $audioPath');
 
-      // Ensure audioPath is not null before proceeding
       if (audioPath != null) {
         final audioFile = File(audioPath!);
 
-        // Dispatch event with audio file
         BlocProvider.of<HomeFlowBloc>(context).add(
           VoiceConversationEvent(
             audioFile: audioFile,
@@ -147,7 +157,7 @@ class _GptScreenState extends State<GptScreen>
   }
 
   void _showFeedbackPopup(BuildContext context) {
-    final feedbackController = TextEditingController();
+    feedbackTextController.clear();
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -158,51 +168,109 @@ class _GptScreenState extends State<GptScreen>
             side: BorderSide(color: AppColors.gradientStart),
             borderRadius: BorderRadius.circular(10),
           ),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          title: Column(
             children: [
-              Text(
-                AppLocalizations.of(context)!.translate('feedback'),
-                style: FTextStyle.defaultTextBold,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Image.asset(
+                        'assets/images/thumbsupunlike.png',
+                        height: 20,
+                        width: 20,
+                        color: Colors.black,
+                      ),
+                      const SizedBox(width: 10),
+                      Image.asset(
+                        'assets/images/thumbsdownunlike.png',
+                        height: 20,
+                        width: 20,
+                        color: Colors.black,
+                      ),
+                      SizedBox(width: 16),
+                      Text(
+                        AppLocalizations.of(context)!.translate('feedback'),
+                        style: FTextStyle.boldText.copyWith(
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 20),
+                  IconButton(
+                    icon: Icon(Icons.close, color: Colors.black),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
               ),
-              IconButton(
-                icon: Icon(Icons.close, color: Colors.black),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
+              Divider(),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: feedbackController,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  hintText: AppLocalizations.of(
-                    context,
-                  )?.translate('enterFeedbackHere'),
-                  border: OutlineInputBorder(),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.8,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.black, width: 1),
+                    color: Colors.white,
+                  ),
+                  child: TextFormField(
+                    controller: feedbackTextController,
+                    style: FTextStyle.defaultText,
+                    decoration: InputDecoration(
+                      hintText: AppLocalizations.of(context)!.translate('enterFeedbackHere'),
+                      hintStyle: FTextStyle.defaultText,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                    ),
+                    maxLines: 4,
+                  ),
                 ),
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.gradientStart,
+                SizedBox(height: 16),
+                GestureDetector(
+                  onTap: () {
+                    final feedbackText = feedbackTextController.text.trim();
+                    if (feedbackText.isNotEmpty) {
+                      Navigator.pop(context);
+                      BlocProvider.of<HomeFlowBloc>(context).add(ChatFeedbackEvent(
+                        reactionId: reactionId,
+                        feedbackText: feedbackText,
+                      ));
+                      CommonUtils.showSuccessToast('Feedback submitted successfully!.');
+                    } else {
+                      CommonUtils.showErrorToast('Please enter feedback');
+                    }
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [AppColors.gradientStart, AppColors.gradientEnd],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    height: 45,
+                    width: double.infinity,
+                    child: Center(
+                      child: Text(
+                        AppLocalizations.of(context)!.translate('submit'),
+                        style: FTextStyle.buttonText,
+                      ),
+                    ),
+                  ),
                 ),
-                onPressed: () {
-                  final feedback = feedbackController.text.trim();
-                  if (feedback.isNotEmpty) {
-                    // Placeholder for feedback submission logic
-                    print('Feedback submitted: $feedback');
-                    CommonUtils.showSuccessToast('Feedback submitted');
-                    Navigator.of(context).pop();
-                  } else {
-                    CommonUtils.showErrorToast('Please enter feedback');
-                  }
-                },
-                child: Text(AppLocalizations.of(context)!.translate('submit')),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -212,6 +280,7 @@ class _GptScreenState extends State<GptScreen>
   @override
   void dispose() {
     inputController.dispose();
+    feedbackTextController.dispose();
     _scrollController.dispose();
     _animationController.stop();
     _animationController.dispose();
@@ -228,59 +297,63 @@ class _GptScreenState extends State<GptScreen>
           listener: (context, state) {
             if (state is InitiateChatSuccess) {
               final response = state.successResponse;
-              final ChatID = response['id'];
+              final String ChatID = response['id'];
               PrefUtils.setChatID(ChatID);
-              // Access the question from chatHistory
-              String? latestQuestion;
-              if (chatHistory.isNotEmpty) {
-                latestQuestion = chatHistory.last['question'];
-                print(
-                  'Latest Question in InitiateChatSuccess: $latestQuestion',
+              if (_currentResponseIndex != null && _currentResponseIndex! < chatHistory.length) {
+                setState(() {
+                  chatHistory[_currentResponseIndex!]['chatId'] = ChatID;
+                  PrefUtils.setChatHistory(chatHistory);
+                });
+                String? latestQuestion = chatHistory[_currentResponseIndex!]['question'];
+                print('Latest Question in InitiateChatSuccess: $latestQuestion');
+                BlocProvider.of<HomeFlowBloc>(context).add(
+                  StoreChatEvent(
+                    message: latestQuestion ?? '',
+                    modelName: 'Atlas',
+                    searchEngine: 'Search',
+                    edited: false,
+                    sender: 'user',
+                    chatId: ChatID,
+                  ),
                 );
               }
-
-              // Store the chat event
-              BlocProvider.of<HomeFlowBloc>(context).add(
-                StoreChatEvent(
-                  message: latestQuestion ?? '', // Use the latest question
-                  modelName: 'Atlas',
-                  searchEngine: 'Search',
-                  edited: false,
-                  sender: 'user',
-                  chatId: ChatID,
-                ),
-              );
             } else if (state is InitiateChatFailure) {
               CommonUtils.showErrorToast(state.failureResponse['message']);
             } else if (state is StoreChatSuccess) {
               final response = state.successResponse;
-              messageId = response['id'];
+              final messageId = response['id'];
+              if (_currentResponseIndex != null && _currentResponseIndex! < chatHistory.length) {
+                setState(() {
+                  chatHistory[_currentResponseIndex!]['messageId'] = messageId;
+                  PrefUtils.setChatHistory(chatHistory);
+                });
+              }
             } else if (state is StoreChatError) {
               CommonUtils.showErrorToast(state.failureResponse['message']);
             } else if (state is ChatStreamingState) {
               setState(() {
-                if (chatHistory.isNotEmpty) {
-                  currentResponse += state.response;
-                  chatHistory[chatHistory.length - 1]['answer'] =
-                      currentResponse;
+                if (_currentResponseIndex != null && _currentResponseIndex! < chatHistory.length) {
+                  String currentAnswer = chatHistory[_currentResponseIndex!]['answer'] ?? '';
+                  currentAnswer += state.response;
+                  chatHistory[_currentResponseIndex!]['answer'] = currentAnswer;
+                  PrefUtils.setChatHistory(chatHistory);
                 }
               });
               _scrollToBottom();
             } else if (state is ChatLoadedState) {
               setState(() {
-                if (chatHistory.isNotEmpty) {
-                  currentResponse = state.partialResponse;
-                  chatHistory[chatHistory.length - 1]['answer'] =
-                      currentResponse;
+                if (_currentResponseIndex != null && _currentResponseIndex! < chatHistory.length) {
+                  chatHistory[_currentResponseIndex!]['answer'] = state.partialResponse;
+                  PrefUtils.setChatHistory(chatHistory);
                 }
               });
-              // Access the question from chatHistory
               String? latestAnswer;
-              if (chatHistory.isNotEmpty) {
-                latestAnswer = chatHistory.last['answer'];
+              if (_currentResponseIndex != null && chatHistory.isNotEmpty) {
+                latestAnswer = chatHistory[_currentResponseIndex!]['answer'];
+                final currentMessageId = chatHistory[_currentResponseIndex!]['messageId'] ?? '';
                 BlocProvider.of<HomeFlowBloc>(context).add(
                   SendAPIResponseEvent(
-                    messageId: messageId,
+                    messageId: currentMessageId,
                     apiName: 'Atlas',
                     apiType: 'Chat',
                     apiResponse: latestAnswer!,
@@ -289,10 +362,33 @@ class _GptScreenState extends State<GptScreen>
                   ),
                 );
               }
-
               _scrollToBottom();
             } else if (state is ChatErrorState) {
               CommonUtils.showErrorToast(state.error['message']);
+            } else if (state is ReactOnChatSuccess) {
+              final response = state.successResponse;
+              reactionId = response['data']['id'];
+              _showFeedbackPopup(context);
+              CommonUtils.showSuccessToast(response['message']);
+            } else if (state is ReactOnChatFailure) {
+              CommonUtils.showSuccessToast(state.failureResponse['message']);
+            } else if (state is ChatFeedbackSuccess) {
+              final response = state.successResponse;
+              CommonUtils.showSuccessToast(response['message']);
+            } else if (state is ChatFeedbackFailure) {
+              final response = state.failureResponse;
+              Navigator.pop(context);
+              CommonUtils.showErrorToast(response['message']);
+            } else if (state is ShareChatSuccess) {
+              final shareUrl = state.successResponse;
+              if (shareUrl != null && shareUrl.isNotEmpty) {
+                SharePlus.instance.share(ShareParams(text: shareUrl));
+              } else {
+                CommonUtils.showErrorToast('Failed to share: Invalid URL');
+              }
+            } else if (state is ShareChatFailure) {
+              final response = state.failureResponse;
+              CommonUtils.showErrorToast(response['message']);
             }
           },
           child: Stack(
@@ -304,10 +400,7 @@ class _GptScreenState extends State<GptScreen>
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 child: Column(
                   children: [
                     Row(
@@ -335,19 +428,17 @@ class _GptScreenState extends State<GptScreen>
                             controller: _scrollController,
                             child: Column(
                               children: [
-                                // Chat Messages
                                 ListView.builder(
                                   shrinkWrap: true,
                                   physics: NeverScrollableScrollPhysics(),
                                   itemCount: chatHistory.length,
                                   itemBuilder: (context, index) {
-                                    final question =
-                                        chatHistory[index]['question'] ?? '';
-                                    final answer =
-                                        chatHistory[index]['answer'] ?? '';
+                                    final question = chatHistory[index]['question'] ?? '';
+                                    final answer = chatHistory[index]['answer'] ?? '';
+                                    final messageId = chatHistory[index]['messageId'] ?? '';
+                                    final chatId = chatHistory[index]['chatId'] ?? '';
                                     return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Container(
                                           width: double.infinity,
@@ -355,32 +446,33 @@ class _GptScreenState extends State<GptScreen>
                                           margin: EdgeInsets.only(bottom: 20),
                                           decoration: BoxDecoration(
                                             color: Colors.white,
-                                            border: Border.all(
-                                              color: AppColors.gradientStart,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
+                                            border: Border.all(color: AppColors.gradientStart),
+                                            borderRadius: BorderRadius.circular(10),
                                           ),
                                           child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
                                               Row(
                                                 children: [
                                                   Expanded(
                                                     child: Text(
                                                       question,
-                                                      style:
-                                                          FTextStyle
-                                                              .defaultTextBold,
+                                                      style: FTextStyle.defaultTextBold,
                                                     ),
                                                   ),
                                                   const SizedBox(width: 16),
-                                                  Image.asset(
-                                                    'assets/images/edit.png',
-                                                    height: 16,
-                                                    width: 16,
+                                                  GestureDetector(
+                                                    onTap: () {
+                                                      setState(() {
+                                                        inputController.text = question;
+                                                        _editingIndex = index;
+                                                      });
+                                                    },
+                                                    child: Image.asset(
+                                                      'assets/images/edit.png',
+                                                      height: 16,
+                                                      width: 16,
+                                                    ),
                                                   ),
                                                 ],
                                               ),
@@ -391,9 +483,7 @@ class _GptScreenState extends State<GptScreen>
                                               ),
                                               const SizedBox(height: 16),
                                               Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                 children: [
                                                   Row(
                                                     children: [
@@ -404,31 +494,38 @@ class _GptScreenState extends State<GptScreen>
                                                       ),
                                                       SizedBox(width: 10),
                                                       Text(
-                                                        AppLocalizations.of(
-                                                          context,
-                                                        )!.translate(
-                                                          'regenerate',
-                                                        ),
-                                                        style:
-                                                            FTextStyle
-                                                                .selectedRadioColorText,
+                                                        AppLocalizations.of(context)!.translate('regenerate'),
+                                                        style: FTextStyle.selectedRadioColorText,
                                                       ),
                                                     ],
                                                   ),
                                                   Row(
                                                     children: [
-                                                      Image.asset(
-                                                        'assets/images/thumbsupunlike.png',
-                                                        height: 16,
-                                                        width: 16,
+                                                      GestureDetector(
+                                                        onTap: () {
+                                                          BlocProvider.of<HomeFlowBloc>(context).add(ReactOnChatEvent(
+                                                            message_id: messageId,
+                                                            is_guest: PrefUtils.getIsGuest(),
+                                                            is_like: true,
+                                                            type: 'MESSAGE',
+                                                          ));
+                                                        },
+                                                        child: Image.asset(
+                                                          'assets/images/thumbsupunlike.png',
+                                                          height: 16,
+                                                          width: 16,
+                                                        ),
                                                       ),
                                                       const SizedBox(width: 10),
                                                       GestureDetector(
-                                                        onTap:
-                                                            () =>
-                                                                _showFeedbackPopup(
-                                                                  context,
-                                                                ),
+                                                        onTap: () {
+                                                          BlocProvider.of<HomeFlowBloc>(context).add(ReactOnChatEvent(
+                                                            message_id: messageId,
+                                                            is_guest: PrefUtils.getIsGuest(),
+                                                            is_like: false,
+                                                            type: 'MESSAGE',
+                                                          ));
+                                                        },
                                                         child: Image.asset(
                                                           'assets/images/thumbsdownunlike.png',
                                                           height: 16,
@@ -436,10 +533,16 @@ class _GptScreenState extends State<GptScreen>
                                                         ),
                                                       ),
                                                       const SizedBox(width: 10),
-                                                      Image.asset(
-                                                        'assets/images/unsave.png',
-                                                        height: 16,
-                                                        width: 16,
+                                                      GestureDetector(
+                                                        onTap: () {
+                                                          Clipboard.setData(ClipboardData(text: answer));
+                                                          CommonUtils.showSuccessToast('Response copied to clipboard!');
+                                                        },
+                                                        child: Image.asset(
+                                                          'assets/images/unsave.png',
+                                                          height: 16,
+                                                          width: 16,
+                                                        ),
                                                       ),
                                                       const SizedBox(width: 10),
                                                       Image.asset(
@@ -448,10 +551,19 @@ class _GptScreenState extends State<GptScreen>
                                                         width: 16,
                                                       ),
                                                       const SizedBox(width: 10),
-                                                      Image.asset(
-                                                        'assets/images/unshare.png',
-                                                        height: 16,
-                                                        width: 16,
+                                                      GestureDetector(
+                                                        onTap: () {
+                                                          if (chatId.isNotEmpty) {
+                                                            BlocProvider.of<HomeFlowBloc>(context).add(ShareChatEvent(chatId: chatId));
+                                                          } else {
+                                                            CommonUtils.showErrorToast('Cannot share: Chat ID is missing');
+                                                          }
+                                                        },
+                                                        child: Image.asset(
+                                                          'assets/images/unshare.png',
+                                                          height: 16,
+                                                          width: 16,
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
@@ -464,62 +576,6 @@ class _GptScreenState extends State<GptScreen>
                                     );
                                   },
                                 ),
-                                // Related Searches
-                                const SizedBox(height: 10),
-                                // Row(
-                                //   children: [
-                                //     Image.asset(
-                                //       'assets/images/Edit.png',
-                                //       height: 17,
-                                //       width: 17,
-                                //     ),
-                                //     SizedBox(width: 10),
-                                //     Text(
-                                //       AppLocalizations.of(
-                                //         context,
-                                //       )!.translate('relatedSearches'),
-                                //       style: FTextStyle.defaultTextBold,
-                                //     ),
-                                //   ],
-                                // ),
-                                // const SizedBox(height: 10),
-                                // Divider(color: Colors.black),
-                                // ListView.builder(
-                                //   shrinkWrap: true,
-                                //   physics: NeverScrollableScrollPhysics(),
-                                //   itemCount: 4,
-                                //   itemBuilder: (context, index) {
-                                //     return Column(
-                                //       children: [
-                                //         Row(
-                                //           mainAxisAlignment:
-                                //               MainAxisAlignment.spaceBetween,
-                                //           children: [
-                                //             Text(
-                                //               AppLocalizations.of(
-                                //                 context,
-                                //               )!.translate('suggestions'),
-                                //               style: FTextStyle.defaultText,
-                                //             ),
-                                //             IconButton(
-                                //               icon: Icon(
-                                //                 _isExpandedList[index]
-                                //                     ? Icons.remove
-                                //                     : Icons.add,
-                                //               ),
-                                //               onPressed: () {
-                                //                 setState(() {
-                                //                   _isExpandedList[index] =
-                                //                       !_isExpandedList[index];
-                                //                 });
-                                //               },
-                                //             ),
-                                //           ],
-                                //         ),
-                                //       ],
-                                //     );
-                                //   },
-                                // ),
                               ],
                             ),
                           ),
@@ -527,12 +583,8 @@ class _GptScreenState extends State<GptScreen>
                       ),
                     ),
                     const SizedBox(height: 10),
-                    // Bottom Input
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         border: Border.all(color: AppColors.gradientStart),
@@ -544,9 +596,7 @@ class _GptScreenState extends State<GptScreen>
                             child: TextFormField(
                               controller: inputController,
                               decoration: InputDecoration(
-                                hintText: AppLocalizations.of(
-                                  context,
-                                )!.translate('askAnything'),
+                                hintText: AppLocalizations.of(context)!.translate('askAnything'),
                                 border: InputBorder.none,
                               ),
                               style: FTextStyle.defaultText,
@@ -558,57 +608,38 @@ class _GptScreenState extends State<GptScreen>
                           Stack(
                             alignment: Alignment.center,
                             children: [
-                              // Ripple effect when recording
                               if (isRecording)
                                 AnimatedBuilder(
                                   animation: _animationController,
                                   builder: (context, child) {
                                     return Container(
-                                      height:
-                                          35 + (_animationController.value * 5),
-                                      width:
-                                          35 + (_animationController.value * 5),
+                                      height: 35 + (_animationController.value * 5),
+                                      width: 35 + (_animationController.value * 5),
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: Colors.green.withOpacity(
-                                          0.3 *
-                                              (1 - _animationController.value),
-                                        ),
+                                        color: Colors.green.withOpacity(0.3 * (1 - _animationController.value)),
                                       ),
                                     );
                                   },
                                 ),
-                              // Main button with scale animation
                               ScaleTransition(
-                                scale:
-                                    isRecording
-                                        ? _scaleAnimation
-                                        : AlwaysStoppedAnimation(1.0),
+                                scale: isRecording ? _scaleAnimation : AlwaysStoppedAnimation(1.0),
                                 child: Container(
                                   height: 30,
                                   width: 30,
                                   decoration: BoxDecoration(
                                     border: Border.all(
-                                      color:
-                                          isRecording
-                                              ? Colors.white
-                                              : AppColors.gradientStart,
+                                      color: isRecording ? Colors.white : AppColors.gradientStart,
                                     ),
                                     borderRadius: BorderRadius.circular(40),
-                                    color:
-                                        isRecording
-                                            ? Colors.green
-                                            : Colors.white,
+                                    color: isRecording ? Colors.green : Colors.white,
                                   ),
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     icon: Icon(
                                       Icons.mic,
                                       size: 20,
-                                      color:
-                                          isRecording
-                                              ? Colors.white
-                                              : AppColors.gradientStart,
+                                      color: isRecording ? Colors.white : AppColors.gradientStart,
                                     ),
                                     onPressed: () async {
                                       if (isRecording) {
@@ -627,12 +658,27 @@ class _GptScreenState extends State<GptScreen>
                             onTap: () {
                               final message = inputController.text.trim();
                               if (message.isNotEmpty) {
+                                String chatId = '';
+                                bool isEdited = false;
                                 setState(() {
-                                  chatHistory.add({
-                                    'question': message,
-                                    'answer': '',
-                                  });
-                                  currentResponse = "";
+                                  if (_editingIndex != null) {
+                                    chatHistory[_editingIndex!]['question'] = message;
+                                    chatHistory[_editingIndex!]['answer'] = '';
+                                    _currentResponseIndex = _editingIndex;
+                                    chatId = chatHistory[_editingIndex!]['chatId'] ?? '';
+                                    isEdited = true;
+                                  } else {
+                                    chatHistory.add({
+                                      'question': message,
+                                      'answer': '',
+                                      'chatId': '',
+                                      'messageId': '',
+                                    });
+                                    _currentResponseIndex = chatHistory.length - 1;
+                                    chatId = '';
+                                    isEdited = false;
+                                  }
+                                  PrefUtils.setChatHistory(chatHistory);
                                 });
                                 BlocProvider.of<HomeFlowBloc>(context).add(
                                   InitiateChatEvent(
@@ -640,9 +686,9 @@ class _GptScreenState extends State<GptScreen>
                                     isGuest: PrefUtils.getIsGuest(),
                                     modelName: 'Atlas',
                                     searchEngine: 'Search',
-                                    edited: false,
+                                    edited: isEdited,
                                     sender: 'user',
-                                    chatId: '',
+                                    chatId: chatId,
                                   ),
                                 );
                                 BlocProvider.of<HomeFlowBloc>(context).add(
@@ -653,6 +699,7 @@ class _GptScreenState extends State<GptScreen>
                                   ),
                                 );
                                 inputController.clear();
+                                _editingIndex = null;
                                 _scrollToBottom();
                               }
                             },

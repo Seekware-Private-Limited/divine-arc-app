@@ -54,6 +54,7 @@ dev_dependencies:
   speech_to_text:
   audioplayers:
   firebase_auth:
+  share_plus:
   firebase_messaging:
   http:
   flutter_svg:

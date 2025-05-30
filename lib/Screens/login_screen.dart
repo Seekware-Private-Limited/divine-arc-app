@@ -108,6 +108,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             builder: (context) => CustomBottomNavBar(),
                           ),
                         );
+                        final response = state.successResponse['data'];
+                        final name = response['name'];
+                        final email = response['email'];
+                        PrefUtils.setName(name);
+                        PrefUtils.setEmail(email);
                       } else if (state is LoginFailure) {
                         setState(() {
                           isLoading = false;
