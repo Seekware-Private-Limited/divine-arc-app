@@ -19,14 +19,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     return MediaQuery(
       data: MediaQuery.of(
         context,
       ).copyWith(textScaler: const TextScaler.linear(1)),
       child: Scaffold(
-        resizeToAvoidBottomInset: false,
         body: SafeArea(
           child: Stack(
             children: [
@@ -40,7 +38,28 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 child: SingleChildScrollView(
                   child: BlocListener<AuthFlowBloc, AuthFlowState>(
                     listener: (context, state) async {
-
+                      if (state is ForgotPasswordLoading) {
+                        setState(() {
+                          isLoading = true;
+                        });
+                      } else if (state is ForgotPasswordSuccess) {
+                        setState(() {
+                          isLoading = false;
+                        });
+                        CommonUtils.showSuccessToast(
+                          AppLocalizations.of(
+                            context,
+                          )!.translate('passwordResetLinkSent'),
+                        );
+                        Navigator.pop(context);
+                      } else if (state is ForgotPasswordFailure) {
+                        setState(() {
+                          isLoading = false;
+                        });
+                        CommonUtils.showErrorToast(
+                          state.failureResponse['message'],
+                        );
+                      }
                     },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -48,7 +67,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         children: [
                           Align(
                             alignment: Alignment.centerRight,
-                              child: const LanguageDropdown()),
+                            child: const LanguageDropdown(),
+                          ),
                           const SizedBox(height: 20),
                           Container(
                             height: screenHeight * 0.70,
@@ -83,12 +103,20 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 20),
-                                Text( AppLocalizations.of(
-                                  context,
-                                )!.translate('forgotPassword'),style: FTextStyle.defaultTextBold.copyWith(fontSize: 20)),
-                                Text( AppLocalizations.of(
-                                  context,
-                                )!.translate('forgotPasswordsubText'),style: FTextStyle.defaultText),
+                                Text(
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.translate('forgotPassword'),
+                                  style: FTextStyle.defaultTextBold.copyWith(
+                                    fontSize: 20,
+                                  ),
+                                ),
+                                Text(
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.translate('forgotPasswordsubText'),
+                                  style: FTextStyle.defaultText,
+                                ),
                                 const SizedBox(height: 30),
                                 TextFormField(
                                   controller: emailController,
@@ -141,7 +169,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                     style: FTextStyle.errorTextStyle,
                                   ),
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 10),
                                 GestureDetector(
                                   onTap: () {
                                     bool hasError = false;
@@ -165,7 +193,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                     }
 
                                     if (!hasError) {
-
+                                      BlocProvider.of<AuthFlowBloc>(
+                                        context,
+                                      ).add(
+                                        ForgotPasswordEventHandler(
+                                          email: emailController.text,
+                                        ),
+                                      );
                                     }
                                   },
                                   child: Container(
@@ -186,7 +220,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                       child: Text(
                                         AppLocalizations.of(
                                           context,
-                                        )!.translate('signin'),
+                                        )!.translate('submit'),
                                         style: FTextStyle.buttonText,
                                       ),
                                     ),
@@ -198,8 +232,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     if (Localizations.localeOf(
-                                      context,
-                                    ).languageCode ==
+                                          context,
+                                        ).languageCode ==
                                         'en') ...[
                                       Text(
                                         AppLocalizations.of(

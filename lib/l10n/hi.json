@@ -5,7 +5,6 @@
   "profile": "प्रोफ़ाइल",
   "gitagpt": "गीताजीपीटी",
   "emailAddress": "ईमेल पता",
-  "emptyEmailError": "ईमेल आवश्यक है।",
   "invalidEmailError": "कृपया एक मान्य ईमेल पता दर्ज करें।",
   "signin": "साइन इन करें",
   "signup": "साइन अप करें",
@@ -46,15 +45,30 @@
   "princeSingh":"प्रिन्स सिंह",
   "princeEmail": "princesingh26lmp@gmail.com",
   "forgotPassword": "पासवर्ड भूल गए",
+  "currentPassword": "वर्तमान पासवर्ड",
+  "newPassword": "नया पासवर्ड",
   "forgotPasswordsubText": "चिंता न करें! हम आपको आपके खाते को वापस लाने में मदद करेंगे।",
   "otpVerification": "ओटीपी सत्यापन",
   "otpVerifcationsubText": "कृपया अपने पंजीकृत ईमेल पते पर भेजा गया ओटीपी (वन-टाइम पासवर्ड) दर्ज करें ताकि आप सत्यापन प्रक्रिया पूरी कर सकें।",
-
-
-
+  "logout": "लॉग आउट",
+  "passwordResetLinkSent": "आपके पंजीकृत ईमेल पते पर पासवर्ड रीसेट ईमेल भेज दिया गया है।",
+  "updatePassword": "पासवर्ड अपडेट करें",
   "emptyNameError": "नाम आवश्यक है।",
+  "changePassword": "पासवर्ड बदलें",
+  "changePasswordsubText": "अपना पासवर्ड बदलें और गीताजीपीटी के साथ ज्ञान की अपनी यात्रा जारी रखें।",
   "nameLengthError": "नाम 32 अक्षरों से अधिक नहीं होना चाहिए।",
   "invalidNameError": "नाम में संख्याएँ या विशेष वर्ण नहीं होने चाहिए।",
+
+  "currentPasswordError": "वर्तमान पासवर्ड आवश्यक है।",
+  "currentShortPasswordError": "वर्तमान पासवर्ड कम से कम 9 अक्षरों का होना चाहिए।",
+  "currentLongPasswordError": "वर्तमान पासवर्ड 32 अक्षरों से अधिक नहीं होना चाहिए।",
+  "currentInvalidPasswordError": "वर्तमान पासवर्ड में कम से कम एक बड़े अक्षर, एक छोटे अक्षर, एक संख्या और एक विशेष वर्ण होना चाहिए।",
+
+  "newPasswordError": "नया पासवर्ड आवश्यक है।",
+  "newShortPasswordError": "नया पासवर्ड कम से कम 9 अक्षरों का होना चाहिए।",
+  "newLongPasswordError": "नया पासवर्ड 32 अक्षरों से अधिक नहीं होना चाहिए।",
+  "newInvalidPasswordError": "नए पासवर्ड में कम से कम एक बड़े अक्षर, एक छोटे अक्षर, एक संख्या और एक विशेष वर्ण होना चाहिए।",
+
 
   "emptyEmailError": "ईमेल पता आवश्यक है।",
   "invalidEmailError": "कृपया एक मान्य ईमेल पता दर्ज करें।",

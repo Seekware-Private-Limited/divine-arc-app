@@ -1,15 +1,4 @@
-import 'package:flutter/animation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_sound/flutter_sound.dart';
-import 'package:gita_gpt/Utils/common_utils.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter/services.dart';
 
 class GptScreen extends StatefulWidget {
   final String? searchQueryFromHomeScreen;
@@ -30,7 +19,6 @@ class _GptScreenState extends State<GptScreen> with SingleTickerProviderStateMix
   late Animation<double> _scaleAnimation;
   List<Map<String, String>> chatHistory = [];
   String reactionId = '';
-  List<bool> _isExpandedList = List.generate(4, (index) => false);
   int? _editingIndex;
   int? _currentResponseIndex;
 
@@ -64,17 +52,23 @@ class _GptScreenState extends State<GptScreen> with SingleTickerProviderStateMix
         _currentResponseIndex = chatHistory.length - 1;
         PrefUtils.setChatHistory(chatHistory);
       });
-      BlocProvider.of<HomeFlowBloc>(context).add(
-        InitiateChatEvent(
-          message: widget.searchQueryFromHomeScreen!,
-          isGuest: PrefUtils.getIsGuest(),
-          modelName: 'Atlas',
-          searchEngine: 'Search',
-          edited: false,
-          sender: 'user',
-          chatId: '',
-        ),
-      );
+
+      // Only call InitiateChatEvent if no chatId exists
+      if (PrefUtils.getChatID().isEmpty) {
+        BlocProvider.of<HomeFlowBloc>(context).add(
+          InitiateChatEvent(
+            message: widget.searchQueryFromHomeScreen!,
+            isGuest: PrefUtils.getIsGuest(),
+            modelName: 'Atlas',
+            searchEngine: 'Search',
+            edited: false,
+            sender: 'user',
+            chatId: '',
+          ),
+        );
+      }
+
+      // Always call ChatEvent for the message
       BlocProvider.of<HomeFlowBloc>(context).add(
         ChatEvent(
           message: widget.searchQueryFromHomeScreen!,
@@ -299,24 +293,7 @@ class _GptScreenState extends State<GptScreen> with SingleTickerProviderStateMix
               final response = state.successResponse;
               final String ChatID = response['id'];
               PrefUtils.setChatID(ChatID);
-              if (_currentResponseIndex != null && _currentResponseIndex! < chatHistory.length) {
-                setState(() {
-                  chatHistory[_currentResponseIndex!]['chatId'] = ChatID;
-                  PrefUtils.setChatHistory(chatHistory);
-                });
-                String? latestQuestion = chatHistory[_currentResponseIndex!]['question'];
-                print('Latest Question in InitiateChatSuccess: $latestQuestion');
-                BlocProvider.of<HomeFlowBloc>(context).add(
-                  StoreChatEvent(
-                    message: latestQuestion ?? '',
-                    modelName: 'Atlas',
-                    searchEngine: 'Search',
-                    edited: false,
-                    sender: 'user',
-                    chatId: ChatID,
-                  ),
-                );
-              }
+
             } else if (state is InitiateChatFailure) {
               CommonUtils.showErrorToast(state.failureResponse['message']);
             } else if (state is StoreChatSuccess) {
@@ -327,6 +304,21 @@ class _GptScreenState extends State<GptScreen> with SingleTickerProviderStateMix
                   chatHistory[_currentResponseIndex!]['messageId'] = messageId;
                   PrefUtils.setChatHistory(chatHistory);
                 });
+              }
+              String? latestAnswer;
+              if (_currentResponseIndex != null && chatHistory.isNotEmpty) {
+                latestAnswer = chatHistory[_currentResponseIndex!]['answer'];
+                final currentMessageId = chatHistory[_currentResponseIndex!]['messageId'] ?? '';
+                BlocProvider.of<HomeFlowBloc>(context).add(
+                  SendAPIResponseEvent(
+                    messageId: currentMessageId,
+                    apiName: 'Atlas',
+                    apiType: 'Chat',
+                    apiResponse: latestAnswer!,
+                    apiStatus: 'SUCCESS',
+                    apiError: '',
+                  ),
+                );
               }
             } else if (state is StoreChatError) {
               CommonUtils.showErrorToast(state.failureResponse['message']);
@@ -347,18 +339,22 @@ class _GptScreenState extends State<GptScreen> with SingleTickerProviderStateMix
                   PrefUtils.setChatHistory(chatHistory);
                 }
               });
-              String? latestAnswer;
-              if (_currentResponseIndex != null && chatHistory.isNotEmpty) {
-                latestAnswer = chatHistory[_currentResponseIndex!]['answer'];
-                final currentMessageId = chatHistory[_currentResponseIndex!]['messageId'] ?? '';
+
+              if (_currentResponseIndex != null && _currentResponseIndex! < chatHistory.length) {
+                setState(() {
+                  chatHistory[_currentResponseIndex!]['chatId'] = PrefUtils.getChatID();
+                  PrefUtils.setChatHistory(chatHistory);
+                });
+                String? latestQuestion = chatHistory[_currentResponseIndex!]['question'];
+                print('Latest Question in InitiateChatSuccess: $latestQuestion');
                 BlocProvider.of<HomeFlowBloc>(context).add(
-                  SendAPIResponseEvent(
-                    messageId: currentMessageId,
-                    apiName: 'Atlas',
-                    apiType: 'Chat',
-                    apiResponse: latestAnswer!,
-                    apiStatus: 'SUCCESS',
-                    apiError: '',
+                  StoreChatEvent(
+                    message: latestQuestion ?? '',
+                    modelName: 'Atlas',
+                    searchEngine: 'Search',
+                    edited: false,
+                    sender: 'user',
+                    chatId: PrefUtils.getChatID(),
                   ),
                 );
               }
@@ -381,7 +377,7 @@ class _GptScreenState extends State<GptScreen> with SingleTickerProviderStateMix
               CommonUtils.showErrorToast(response['message']);
             } else if (state is ShareChatSuccess) {
               final shareUrl = state.successResponse;
-              if (shareUrl != null && shareUrl.isNotEmpty) {
+              if (shareUrl.isNotEmpty) {
                 SharePlus.instance.share(ShareParams(text: shareUrl));
               } else {
                 CommonUtils.showErrorToast('Failed to share: Invalid URL');
@@ -389,350 +385,375 @@ class _GptScreenState extends State<GptScreen> with SingleTickerProviderStateMix
             } else if (state is ShareChatFailure) {
               final response = state.failureResponse;
               CommonUtils.showErrorToast(response['message']);
+            } else if (state is CheckNetworkConnection) {
+              CommonUtils.showErrorToast('No Internet Connection!');
             }
           },
           child: Stack(
             children: [
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/bgGitaGPT.png',
-                  fit: BoxFit.cover,
+          Positioned.fill(
+          child: Image.asset(
+            'assets/images/bgGitaGPT.png',
+            fit: BoxFit.cover,
+          ),
+        ),
+        Padding(
+         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  AppLocalizations.of(context)!.translate('home'),
+                  style: FTextStyle.homeText,
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                const LanguageDropdown(),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: Visibility(
+                visible: chatHistory.isNotEmpty,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.gradientStart),
+                    color: Colors.white,
+                  ),
+                  child: SingleChildScrollView(
+                    controller: _scrollController,
+                    child: Column(
                       children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('home'),
-                          style: FTextStyle.homeText,
-                        ),
-                        const LanguageDropdown(),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Expanded(
-                      child: Visibility(
-                        visible: chatHistory.isNotEmpty,
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.gradientStart),
-                            color: Colors.white,
-                          ),
-                          child: SingleChildScrollView(
-                            controller: _scrollController,
-                            child: Column(
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: chatHistory.length,
+                          itemBuilder: (context, index) {
+                            final question = chatHistory[index]['question'] ?? '';
+                            final answer = chatHistory[index]['answer'] ?? '';
+                            final messageId = chatHistory[index]['messageId'] ?? '';
+                            final chatId = chatHistory[index]['chatId'] ?? '';
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: NeverScrollableScrollPhysics(),
-                                  itemCount: chatHistory.length,
-                                  itemBuilder: (context, index) {
-                                    final question = chatHistory[index]['question'] ?? '';
-                                    final answer = chatHistory[index]['answer'] ?? '';
-                                    final messageId = chatHistory[index]['messageId'] ?? '';
-                                    final chatId = chatHistory[index]['chatId'] ?? '';
-                                    return Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Container(
-                                          width: double.infinity,
-                                          padding: EdgeInsets.all(12),
-                                          margin: EdgeInsets.only(bottom: 20),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            border: Border.all(color: AppColors.gradientStart),
-                                            borderRadius: BorderRadius.circular(10),
+                                Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(12),
+                                  margin: EdgeInsets.only(bottom: 20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    border: Border.all(color: AppColors.gradientStart),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              question,
+                                              style: FTextStyle.defaultTextBold,
+                                            ),
                                           ),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                          const SizedBox(width: 16),
+                                          GestureDetector(
+                                            onTap: () {
+                                              setState(() {
+                                                inputController.text = question;
+                                                _editingIndex = index;
+                                              });
+                                            },
+                                            child: Image.asset(
+                                              'assets/images/edit.png',
+                                              height: 16,
+                                              width: 16,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 16),
+                                      answer.toString().trim().isEmpty
+                                          ? Row(
+                                        children: [
+                                          SizedBox(
+                                            height: 16,
+                                            width: 16,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2, color: AppColors.gradientStart),
+                                          ),
+                                          SizedBox(width: 10),
+                                          Text(
+                                            'Loading...',
+                                            style: FTextStyle.defaultText.copyWith(
+                                                fontStyle: FontStyle.italic, color: Colors.grey),
+                                          ),
+                                        ],
+                                      )
+                                          : Text(
+                                        answer,
+                                        style: FTextStyle.defaultText,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
                                             children: [
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      question,
-                                                      style: FTextStyle.defaultTextBold,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 16),
-                                                  GestureDetector(
-                                                    onTap: () {
-                                                      setState(() {
-                                                        inputController.text = question;
-                                                        _editingIndex = index;
-                                                      });
-                                                    },
-                                                    child: Image.asset(
-                                                      'assets/images/edit.png',
-                                                      height: 16,
-                                                      width: 16,
-                                                    ),
-                                                  ),
-                                                ],
+                                              Image.asset(
+                                                'assets/images/refresh.png',
+                                                height: 16,
+                                                width: 16,
                                               ),
-                                              const SizedBox(height: 16),
+                                              SizedBox(width: 10),
                                               Text(
-                                                answer,
-                                                style: FTextStyle.defaultText,
-                                              ),
-                                              const SizedBox(height: 16),
-                                              Row(
-                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      Image.asset(
-                                                        'assets/images/refresh.png',
-                                                        height: 16,
-                                                        width: 16,
-                                                      ),
-                                                      SizedBox(width: 10),
-                                                      Text(
-                                                        AppLocalizations.of(context)!.translate('regenerate'),
-                                                        style: FTextStyle.selectedRadioColorText,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  Row(
-                                                    children: [
-                                                      GestureDetector(
-                                                        onTap: () {
-                                                          BlocProvider.of<HomeFlowBloc>(context).add(ReactOnChatEvent(
-                                                            message_id: messageId,
-                                                            is_guest: PrefUtils.getIsGuest(),
-                                                            is_like: true,
-                                                            type: 'MESSAGE',
-                                                          ));
-                                                        },
-                                                        child: Image.asset(
-                                                          'assets/images/thumbsupunlike.png',
-                                                          height: 16,
-                                                          width: 16,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 10),
-                                                      GestureDetector(
-                                                        onTap: () {
-                                                          BlocProvider.of<HomeFlowBloc>(context).add(ReactOnChatEvent(
-                                                            message_id: messageId,
-                                                            is_guest: PrefUtils.getIsGuest(),
-                                                            is_like: false,
-                                                            type: 'MESSAGE',
-                                                          ));
-                                                        },
-                                                        child: Image.asset(
-                                                          'assets/images/thumbsdownunlike.png',
-                                                          height: 16,
-                                                          width: 16,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 10),
-                                                      GestureDetector(
-                                                        onTap: () {
-                                                          Clipboard.setData(ClipboardData(text: answer));
-                                                          CommonUtils.showSuccessToast('Response copied to clipboard!');
-                                                        },
-                                                        child: Image.asset(
-                                                          'assets/images/unsave.png',
-                                                          height: 16,
-                                                          width: 16,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 10),
-                                                      Image.asset(
-                                                        'assets/images/unbookmark.png',
-                                                        height: 16,
-                                                        width: 16,
-                                                      ),
-                                                      const SizedBox(width: 10),
-                                                      GestureDetector(
-                                                        onTap: () {
-                                                          if (chatId.isNotEmpty) {
-                                                            BlocProvider.of<HomeFlowBloc>(context).add(ShareChatEvent(chatId: chatId));
-                                                          } else {
-                                                            CommonUtils.showErrorToast('Cannot share: Chat ID is missing');
-                                                          }
-                                                        },
-                                                        child: Image.asset(
-                                                          'assets/images/unshare.png',
-                                                          height: 16,
-                                                          width: 16,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ],
+                                                AppLocalizations.of(context)!.translate('regenerate'),
+                                                style: FTextStyle.selectedRadioColorText,
                                               ),
                                             ],
                                           ),
-                                        ),
-                                      ],
-                                    );
-                                  },
+                                          Row(
+                                            children: [
+                                              GestureDetector(
+                                                onTap: () {
+                                                  BlocProvider.of<HomeFlowBloc>(context).add(ReactOnChatEvent(
+                                                    message_id: messageId,
+                                                    is_guest: PrefUtils.getIsGuest(),
+                                                    is_like: true,
+                                                    type: 'MESSAGE',
+                                                  ));
+                                                },
+                                                child: Image.asset(
+                                                  'assets/images/thumbsupunlike.png',
+                                                  height: 16,
+                                                  width: 16,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              GestureDetector(
+                                                onTap: () {
+                                                  BlocProvider.of<HomeFlowBloc>(context).add(ReactOnChatEvent(
+                                                    message_id: messageId,
+                                                    is_guest: PrefUtils.getIsGuest(),
+                                                    is_like: false,
+                                                    type: 'MESSAGE',
+                                                  ));
+                                                },
+                                                child: Image.asset(
+                                                  'assets/images/thumbsdownunlike.png',
+                                                  height: 16,
+                                                  width: 16,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              GestureDetector(
+                                                onTap: () {
+                                                  Clipboard.setData(ClipboardData(text: answer));
+                                                  CommonUtils.showSuccessToast('Response copied to clipboard!');
+                                                },
+                                                child: Image.asset(
+                                                  'assets/images/unsave.png',
+                                                  height: 16,
+                                                  width: 16,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Image.asset(
+                                                'assets/images/unbookmark.png',
+                                                height: 16,
+                                                width: 16,
+                                              ),
+                                              const SizedBox(width: 10),
+                                              GestureDetector(
+                                                onTap: () {
+                                                  if (chatId.isNotEmpty) {
+                                                    BlocProvider.of<HomeFlowBloc>(context).add(ShareChatEvent(chatId: chatId));
+                                                  } else {
+                                                    CommonUtils.showErrorToast('Cannot share: Chat ID is missing');
+                                                  }
+                                                },
+                                                child: Image.asset(
+                                                  'assets/images/unshare.png',
+                                                  height: 16,
+                                                  width: 16,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: AppColors.gradientStart),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: inputController,
+                      decoration: InputDecoration(
+                        hintText: AppLocalizations.of(context)!.translate('askAnything'),
+                        border: InputBorder.none,
+                      ),
+                      style: FTextStyle.defaultText,
+                      minLines: 1,
+                      maxLines: 4,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (isRecording)
+                        AnimatedBuilder(
+                          animation: _animationController,
+                          builder: (context, child) {
+                            return Container(
+                              height: 35 + (_animationController.value * 5),
+                              width: 35 + (_animationController.value * 5),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.green.withOpacity(0.3 * (1 - _animationController.value)),
+                              ),
+                            );
+                          },
+                        ),
+                      ScaleTransition(
+                        scale: isRecording ? _scaleAnimation : AlwaysStoppedAnimation(1.0),
+                        child: Container(
+                          height: 30,
+                          width: 30,
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: isRecording ? Colors.white : AppColors.gradientStart,
                             ),
+                            borderRadius: BorderRadius.circular(40),
+                            color: isRecording ? Colors.green : Colors.white,
+                          ),
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            icon: Icon(
+                              Icons.mic,
+                              size: 20,
+                              color: isRecording ? Colors.white : AppColors.gradientStart,
+                            ),
+                            onPressed: () async {
+                              if (isRecording) {
+                                await stopRecording();
+                              } else {
+                                await startRecording();
+                              }
+                            },
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () {
+                      final message = inputController.text.trim();
+                      if (message.isNotEmpty) {
+                        String chatId = '';
+                        bool isEdited = false;
+                        setState(() {
+                          if (_editingIndex != null) {
+                            chatHistory[_editingIndex!]['question'] = message;
+                            chatHistory[_editingIndex!]['answer'] = '';
+                            _currentResponseIndex = _editingIndex;
+                            chatId = chatHistory[_editingIndex!]['chatId'] ?? '';
+                            isEdited = true;
+                          } else {
+                            chatHistory.add({
+                              'question': message,
+                              'answer': '',
+                              'chatId': '',
+                              'messageId': '',
+                            });
+                            _currentResponseIndex = chatHistory.length - 1;
+                            chatId = PrefUtils.getChatID();
+                            isEdited = false;
+                          }
+                          PrefUtils.setChatHistory(chatHistory);
+                        });
+
+                        // Only call InitiateChatEvent if no chatId exists
+                        if (PrefUtils.getChatID().isEmpty) {
+                          BlocProvider.of<HomeFlowBloc>(context).add(
+                            InitiateChatEvent(
+                              message: message,
+                              isGuest: PrefUtils.getIsGuest(),
+                              modelName: 'Atlas',
+                              searchEngine: 'Search',
+                              edited: isEdited,
+                              sender: 'user',
+                              chatId: chatId,
+                            ),
+                          );
+                        }
+
+                        // Always call ChatEvent for the message
+                        BlocProvider.of<HomeFlowBloc>(context).add(
+                          ChatEvent(
+                            message: message,
+                            language: PrefUtils.getLanguage(),
+                            sessionId: PrefUtils.getSessionID(),
+                          ),
+                        );
+                        inputController.clear();
+                        _editingIndex = null;
+                        _scrollToBottom();
+                      }
+                    },
+                    child: Container(
+                      height: 35,
+                      width: 35,
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        border: Border.all(color: AppColors.gradientStart),
-                        borderRadius: BorderRadius.circular(10),
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.gradientStart,
+                            AppColors.gradientEnd,
+                          ],
+                        ),
                       ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: inputController,
-                              decoration: InputDecoration(
-                                hintText: AppLocalizations.of(context)!.translate('askAnything'),
-                                border: InputBorder.none,
-                              ),
-                              style: FTextStyle.defaultText,
-                              minLines: 1,
-                              maxLines: 4,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              if (isRecording)
-                                AnimatedBuilder(
-                                  animation: _animationController,
-                                  builder: (context, child) {
-                                    return Container(
-                                      height: 35 + (_animationController.value * 5),
-                                      width: 35 + (_animationController.value * 5),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Colors.green.withOpacity(0.3 * (1 - _animationController.value)),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ScaleTransition(
-                                scale: isRecording ? _scaleAnimation : AlwaysStoppedAnimation(1.0),
-                                child: Container(
-                                  height: 30,
-                                  width: 30,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: isRecording ? Colors.white : AppColors.gradientStart,
-                                    ),
-                                    borderRadius: BorderRadius.circular(40),
-                                    color: isRecording ? Colors.green : Colors.white,
-                                  ),
-                                  child: IconButton(
-                                    padding: EdgeInsets.zero,
-                                    icon: Icon(
-                                      Icons.mic,
-                                      size: 20,
-                                      color: isRecording ? Colors.white : AppColors.gradientStart,
-                                    ),
-                                    onPressed: () async {
-                                      if (isRecording) {
-                                        await stopRecording();
-                                      } else {
-                                        await startRecording();
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () {
-                              final message = inputController.text.trim();
-                              if (message.isNotEmpty) {
-                                String chatId = '';
-                                bool isEdited = false;
-                                setState(() {
-                                  if (_editingIndex != null) {
-                                    chatHistory[_editingIndex!]['question'] = message;
-                                    chatHistory[_editingIndex!]['answer'] = '';
-                                    _currentResponseIndex = _editingIndex;
-                                    chatId = chatHistory[_editingIndex!]['chatId'] ?? '';
-                                    isEdited = true;
-                                  } else {
-                                    chatHistory.add({
-                                      'question': message,
-                                      'answer': '',
-                                      'chatId': '',
-                                      'messageId': '',
-                                    });
-                                    _currentResponseIndex = chatHistory.length - 1;
-                                    chatId = '';
-                                    isEdited = false;
-                                  }
-                                  PrefUtils.setChatHistory(chatHistory);
-                                });
-                                BlocProvider.of<HomeFlowBloc>(context).add(
-                                  InitiateChatEvent(
-                                    message: message,
-                                    isGuest: PrefUtils.getIsGuest(),
-                                    modelName: 'Atlas',
-                                    searchEngine: 'Search',
-                                    edited: isEdited,
-                                    sender: 'user',
-                                    chatId: chatId,
-                                  ),
-                                );
-                                BlocProvider.of<HomeFlowBloc>(context).add(
-                                  ChatEvent(
-                                    message: message,
-                                    language: PrefUtils.getLanguage(),
-                                    sessionId: PrefUtils.getSessionID(),
-                                  ),
-                                );
-                                inputController.clear();
-                                _editingIndex = null;
-                                _scrollToBottom();
-                              }
-                            },
-                            child: Container(
-                              height: 35,
-                              width: 35,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.gradientStart,
-                                    AppColors.gradientEnd,
-                                  ],
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.send,
-                                color: Colors.white,
-                                size: 18,
-                              ),
-                            ),
-                          ),
-                        ],
+                      child: Icon(
+                        Icons.send,
+                        color: Colors.white,
+                        size: 18,
                       ),
                     ),
-                    const SizedBox(height: 10),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 10),
+          ],
         ),
       ),
+      ],
+    ),
+    ),
+    ),
     );
   }
 

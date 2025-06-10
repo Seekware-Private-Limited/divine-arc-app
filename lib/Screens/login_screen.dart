@@ -1,3 +1,4 @@
+import 'package:gita_gpt/Screens/forgot_password.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
 import 'package:gita_gpt/Utils/common_utils.dart';
 
@@ -34,8 +35,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     return MediaQuery(
       data: MediaQuery.of(
         context,
@@ -62,20 +61,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           isLoading = true;
                         });
                       }
-                      if (state is GoogleLoginSuccess) {
-                        final url = state.url;
+                      else if (state is GoogleLoginSuccess) {
+                        setState(() {
+                          isLoading = false;
+                        });
 
-                        // Try launching the URL
-                        if (await canLaunchUrl(Uri.parse(url))) {
-                          await launchUrl(
-                            Uri.parse(url),
-                            mode:
-                                LaunchMode
-                                    .externalApplication, // Opens in browser
-                          );
-                        } else {
-                          CommonUtils.showErrorToast('Could not launch Google login URL');
-                        }
                       } else if (state is GoogleLoginFailure) {
                         setState(() {
                           isLoading = false;
@@ -113,6 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         final email = response['email'];
                         PrefUtils.setName(name);
                         PrefUtils.setEmail(email);
+                        CommonUtils.showSuccessToast('Logged in successfully.');
                       } else if (state is LoginFailure) {
                         setState(() {
                           isLoading = false;
@@ -188,6 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const SizedBox(height: 30),
                                 TextFormField(
                                   controller: emailController,
+                                  keyboardType: TextInputType.emailAddress,
                                   style: FTextStyle.defaultText,
                                   decoration: InputDecoration(
                                     hintText: AppLocalizations.of(
@@ -453,7 +445,24 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 40),
+                                const SizedBox(height: 10),
+                                Align(
+                                  alignment: Alignment.center,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(context, MaterialPageRoute(builder: (context) => ForgotPasswordScreen()));
+                                    },
+                                    child: Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.translate('forgotPassword'),
+                                      style: FTextStyle.defaultText.copyWith(
+                                        decoration: TextDecoration.underline,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
                                 GestureDetector(
                                   onTap: () {
                                     BlocProvider.of<AuthFlowBloc>(

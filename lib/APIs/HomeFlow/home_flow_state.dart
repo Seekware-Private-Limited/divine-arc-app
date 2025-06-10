@@ -171,6 +171,33 @@ class LogoutFailure extends HomeFlowState {
 }
 
 
+// Update Profile States
+class UpdateProfileLoading extends HomeFlowState {}
+
+class UpdateProfileLoaded extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  UpdateProfileLoaded(this.successResponse);
+}
+
+class UpdateProfileError extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  UpdateProfileError(this.failureResponse);
+}
+
+// Get Single Chat History States
+class GetSingleChatHistoryLoading extends HomeFlowState {}
+
+class GetSingleChatHistorySuccess extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  GetSingleChatHistorySuccess(this.successResponse);
+}
+
+class GetSingleChatHistoryFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  GetSingleChatHistoryFailure(this.failureResponse);
+}
+
+
 // Common Server Failure State
 class CommonServerFailure extends HomeFlowState {
   final String error;

@@ -23,3 +23,16 @@ class LoginEventHandler extends AuthFlowEvent {
   final String password;
   LoginEventHandler({required this.email,required this.password});
 }
+
+// Forgot Password Event
+class ForgotPasswordEventHandler extends AuthFlowEvent {
+  final String email;
+  ForgotPasswordEventHandler({required this.email});
+}
+
+// Change Password Event
+class ChangePasswordEventHandler extends AuthFlowEvent {
+  final String currentPassword;
+  final String newPassword;
+  ChangePasswordEventHandler({required this.currentPassword,required this.newPassword});
+}

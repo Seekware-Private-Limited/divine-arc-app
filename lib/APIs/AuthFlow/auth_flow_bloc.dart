@@ -1,51 +1,43 @@
-import 'package:gita_gpt/Utils/api_constant.dart';
-import 'package:gita_gpt/Utils/app_imports.dart';
-import 'package:gita_gpt/Utils/connectivity_service.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
+import 'package:gita_gpt/Utils/app_imports.dart';
 part 'auth_flow_event.dart';
 part 'auth_flow_state.dart';
 
 class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
   AuthFlowBloc() : super(AuthFlowInitial()) {
-
     // Google Login Bloc
     on<GoogleLoginEventHandler>((event, emit) async {
-      if (!await ConnectivityService.isConnected()) {
-        emit(CheckNetworkConnection());
-        developer.log("No internet connection.");
-        return;
-      }
-
       emit(GoogleLoginLoading());
 
-      final requestUrl = Uri.parse(
-        APIEndPoints.googleLogin,
-      ); // Replace with actual URL
-
-      developer.log("Google Login API Request URL: $requestUrl");
-
+      var googleSignIn = GoogleSignIn();
+      GoogleSignInAccount? googleSignInAccount;
       try {
-        final response = await http.get(
-          requestUrl,
-          headers: {"Content-Type": "application/json"},
-        );
+        await googleSignIn.signOut();
+        googleSignInAccount = await googleSignIn.signIn();
 
-        developer.log("Google Login API Response Body: ${response.body}");
-
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-
-        if (response.statusCode == 200) {
-          final url = responseData['url'];
-          emit(GoogleLoginSuccess(url));
+        if (googleSignInAccount != null) {
+          emit(
+            GoogleLoginSuccess(
+              googleSignInAccount.displayName.toString(),
+              googleSignInAccount.email,
+              googleSignInAccount.photoUrl.toString(),
+              googleSignInAccount.id.toString(),
+            ),
+          );
+          developer.log('User Name Is : ${googleSignInAccount.displayName}');
+          developer.log('User Email Is : ${googleSignInAccount.email}');
+          developer.log('User Photo Is : ${googleSignInAccount.photoUrl}');
+          developer.log('User Id Is : ${googleSignInAccount.id}');
         } else {
-          emit(GoogleLoginFailure(responseData['message']));
+          emit(GoogleLoginFailure(""));
         }
       } catch (e) {
-        emit(CommonServerFailure(e.toString()));
-        developer.log("Exception occurred: $e");
+        if (kDebugMode) {
+          emit(GoogleLoginFailure(e.toString()));
+          print(e.toString());
+        }
       }
     });
 
@@ -159,8 +151,10 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         if (setCookieHeader != null) {
           final authCookie = setCookieHeader
               .split(';')
-              .firstWhere((c) => c.contains('Authorization='),
-              orElse: () => '');
+              .firstWhere(
+                (c) => c.contains('Authorization='),
+                orElse: () => '',
+              );
 
           if (authCookie.isNotEmpty) {
             developer.log("Extracted Cookie Token: $authCookie");
@@ -183,6 +177,107 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
       }
     });
 
-  }
+    // Forgot Password Bloc
+    on<ForgotPasswordEventHandler>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(ForgotPasswordLoading());
 
+        final Uri requestUrl = Uri.parse(APIEndPoints.forgotPassword);
+
+        final Map<String, dynamic> requestBody = {"email": event.email};
+        developer.log("🔵 Request URL: $requestUrl");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
+
+        try {
+          final response = await http.post(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+            body: jsonEncode(requestBody),
+          );
+
+          developer.log("🟣 Response Status Code: ${response.statusCode}");
+          developer.log("🟤 Raw Response Body: ${response.body}");
+
+          if (response.statusCode == 200) {
+            final responseData = jsonDecode(response.body);
+            emit(ForgotPasswordSuccess(responseData));
+            developer.log("✅ Parsed Response Data: $responseData");
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(ForgotPasswordFailure(errorData));
+            developer.log("❌ Error Response Data: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("❗ SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("❗ Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("❗ No internet connection.");
+      }
+    });
+
+    // Change Password Bloc
+    on<ChangePasswordEventHandler>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(ChangePasswordLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.updatePassword);
+
+        final Map<String, dynamic> requestBody = {
+          "currentPassword": event.currentPassword,
+          "newPassword": event.newPassword,
+        };
+        developer.log("🔵 Request URL: $requestUrl");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
+
+        try {
+          final response = await http.post(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+            body: jsonEncode(requestBody),
+          );
+
+          developer.log("🟣 Response Status Code: ${response.statusCode}");
+          developer.log("🟤 Raw Response Body: ${response.body}");
+
+          if (response.statusCode == 200) {
+            final responseData = jsonDecode(response.body);
+            emit(ChangePasswordSuccess(responseData));
+            developer.log("✅ Parsed Response Data: $responseData");
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(ChangePasswordFailure(errorData));
+            developer.log("❌ Error Response Data: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("❗ SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("❗ Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("❗ No internet connection.");
+      }
+    });
+  }
 }

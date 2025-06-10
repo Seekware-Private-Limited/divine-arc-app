@@ -128,21 +128,27 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     itemCount: allChatHistory.length,
                                     itemBuilder: (context, index) {
                                       final chat = allChatHistory[index];
+                                      final ChatID = chat['id'];
                                       return Padding(
                                         padding: const EdgeInsets.only(
                                           bottom: 10,
                                         ),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(20),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.GlobalBG,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            Navigator.push(context, MaterialPageRoute(builder: (context) => GetSingleChatConversationHistory(chatId: ChatID)));
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.all(20),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.GlobalBG,
+                                              borderRadius: BorderRadius.circular(
+                                                8,
+                                              ),
                                             ),
-                                          ),
-                                          child: Text(
-                                            chat['question'] ?? 'No question',
-                                            style: FTextStyle.defaultText,
+                                            child: Text(
+                                              chat['question'] ?? 'No question',
+                                              style: FTextStyle.defaultText,
+                                            ),
                                           ),
                                         ),
                                       );

@@ -10,6 +10,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    BlocProvider.of<HomeFlowBloc>(
+      context,
+    ).add(CreateSessionEvent(language: PrefUtils.getLanguage()));
+  }
+
   TextEditingController searchController = TextEditingController();
   bool isLoading = false;
   @override

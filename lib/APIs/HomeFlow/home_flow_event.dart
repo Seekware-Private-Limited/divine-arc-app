@@ -134,3 +134,15 @@ class ChatFeedbackEvent extends HomeFlowEvent {
    required this.feedbackText
   });
 }
+
+// Update Profile Name Event
+class UpdateProfileEvent extends HomeFlowEvent {
+  final String name;
+  UpdateProfileEvent({required this.name});
+}
+
+// Get Single Chat History
+class GetSingleChatHistoryEvent extends HomeFlowEvent {
+  final String chatId;
+  GetSingleChatHistoryEvent({required this.chatId});
+}

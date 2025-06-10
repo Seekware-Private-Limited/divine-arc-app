@@ -6,7 +6,6 @@
   "gitagpt": "Gitagpt",
   "dummyText": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmoda",
   "emailAddress": "Email Address",
-  "emptyEmailError": "Email is required.",
   "emptyNameError": "Name is required.",
   "invalidEmailError": "Please enter a valid email address.",
   "signin": "Sign In",
@@ -50,8 +49,13 @@
   "forgotPasswordsubText": "No worries! We’ll help you get back into your account.",
   "otpVerification": "OTP Verification",
   "otpVerifcationsubText": "Please enter the OTP (One-Time-Password) sent to your registered email address to complete your verification process.",
-
-
+  "currentPassword": "Current Password",
+  "newPassword": "New Password",
+  "logout": "Logout",
+  "passwordResetLinkSent": "A password reset email has been sent to your registered email address.",
+  "updatePassword": "Update Password",
+  "changePassword": "Change Password",
+  "changePasswordsubText": "Change your password and continue your journey of wisdom with GitaGPT.",
 
 
   "emptyNameError": "Name is required.",
@@ -63,6 +67,19 @@
   "emailLengthError": "Email address must not exceed 255 characters.",
 
   "emptyPasswordError": "Password is required.",
+
+  "currentPasswordError": "Current Password is required.",
+  "currentShortPasswordError": "Current Password must be at least 9 characters long.",
+  "currentLongPasswordError": "Current Password must not exceed 32 characters.",
+  "currentInvalidPasswordError": "Current Password must include at least one uppercase letter, one lowercase letter, one number, and one special character.",
+
+  "newPasswordError": "New Password is required.",
+  "newShortPasswordError": "New Password must be at least 9 characters long.",
+  "newLongPasswordError": "New Password must not exceed 32 characters.",
+  "newInvalidPasswordError": "New Password must include at least one uppercase letter, one lowercase letter, one number, and one special character.",
+
+
+
   "shortPasswordError": "Password must be at least 9 characters long.",
   "longPasswordError": "Password must not exceed 32 characters.",
   "invalidPasswordError": "Password must include at least one uppercase letter, one lowercase letter, one number, and one special character."

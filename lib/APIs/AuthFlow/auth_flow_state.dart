@@ -9,8 +9,11 @@ final class AuthFlowInitial extends AuthFlowState {}
 class GoogleLoginLoading extends AuthFlowState {}
 
 class GoogleLoginSuccess extends AuthFlowState {
-  final String url;
-  GoogleLoginSuccess(this.url);
+  final String name;
+  final String email;
+  final String image;
+  final String id;
+  GoogleLoginSuccess(this.name, this.email, this.image, this.id);
 
 }
 class GoogleLoginFailure extends AuthFlowState {
@@ -39,12 +42,12 @@ class FacebookLoginFailure extends AuthFlowState {
 class SignUpLoading extends AuthFlowState {}
 
 class SignUpSuccess extends AuthFlowState {
-  Map<String,dynamic> successResponse;
+  final Map<String,dynamic> successResponse;
   SignUpSuccess(this.successResponse);
 }
 
 class SignUpFailure extends AuthFlowState {
-  Map<String,dynamic> failureResponse;
+  final Map<String,dynamic> failureResponse;
   SignUpFailure(this.failureResponse);
 }
 
@@ -52,7 +55,7 @@ class SignUpFailure extends AuthFlowState {
 class LoginLoading extends AuthFlowState {}
 
 class LoginSuccess extends AuthFlowState {
-  Map<String,dynamic> successResponse;
+  final Map<String,dynamic> successResponse;
   LoginSuccess(this.successResponse);
 }
 
@@ -61,6 +64,32 @@ class LoginFailure extends AuthFlowState {
   LoginFailure(this.failureMessage);
 }
 
+// Forgot Password States
+class ForgotPasswordLoading extends AuthFlowState {}
+
+class ForgotPasswordSuccess extends AuthFlowState {
+  final Map<String,dynamic> successResponse;
+  ForgotPasswordSuccess(this.successResponse);
+}
+
+class ForgotPasswordFailure extends AuthFlowState {
+  final Map<String,dynamic> failureResponse;
+  ForgotPasswordFailure(this.failureResponse);
+}
+
+
+// Change Password StateStreamable
+class ChangePasswordLoading extends AuthFlowState {}
+
+class ChangePasswordSuccess extends AuthFlowState {
+  final Map<String,dynamic> successResponse;
+  ChangePasswordSuccess(this.successResponse);
+}
+
+class ChangePasswordFailure extends AuthFlowState {
+  final Map<String,dynamic> failureResponse;
+  ChangePasswordFailure(this.failureResponse);
+}
 
 
 // Common Server Failure State

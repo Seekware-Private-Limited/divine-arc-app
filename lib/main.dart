@@ -1,10 +1,6 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:gita_gpt/APIs/AuthFlow/auth_flow_bloc.dart';
-import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
 import 'package:gita_gpt/Screens/splash_screen.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:gita_gpt/Utils/shared_preference.dart';
+
 
 Future<void> main() async {
   ErrorWidget.builder = (FlutterErrorDetails details) {
@@ -20,6 +16,7 @@ Future<void> main() async {
       child: const MyApp(),
     ),
   );
+
 }
 
 class MyApp extends StatelessWidget {
@@ -40,7 +37,7 @@ class MyApp extends StatelessWidget {
               Locale('hi'), // Hindi
               Locale('en'), // English
             ],
-            locale: languageProvider.locale, // Dynamically set locale
+            locale: languageProvider.locale,
             localizationsDelegates: const [
               AppLocalizationsDelegate(),
               GlobalMaterialLocalizations.delegate,

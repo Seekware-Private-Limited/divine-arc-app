@@ -19,7 +19,6 @@ class _OtpVerificationPasswordScreenState extends State<OtpVerificationPasswordS
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     return MediaQuery(
       data: MediaQuery.of(

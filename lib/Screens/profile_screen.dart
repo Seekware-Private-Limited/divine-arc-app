@@ -1,4 +1,5 @@
 import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
+import 'package:gita_gpt/Screens/change_password_screen.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
 import 'package:gita_gpt/Utils/common_utils.dart';
 
@@ -17,6 +18,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? emailErrorText;
   String? passwordErrorText;
   bool isLoading = false;
+  bool isEdit = false;
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -32,7 +34,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     nameController.text = PrefUtils.getName();
     emailController.text = PrefUtils.getEmail();
-
   }
 
   final ImagePicker _picker = ImagePicker();
@@ -144,6 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           BlocProvider.of<HomeFlowBloc>(
                             context,
                           ).add(LogoutEvent());
+                          Navigator.pop(context);
                         },
                         child: Text(
                           "Logout",
@@ -164,8 +166,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     return MediaQuery(
       data: MediaQuery.of(
         context,
@@ -188,6 +188,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
               );
               CommonUtils.showSuccessToast("Logged out successfully!");
             } else if (state is LogoutFailure) {
+              setState(() {
+                isLoading = false;
+              });
+              CommonUtils.showErrorToast(state.failureResponse['message']);
+            } else if (state is UpdateProfileLoading) {
+              setState(() {
+                isLoading = true;
+              });
+            } else if (state is UpdateProfileLoaded) {
+              setState(() {
+                isLoading = false;
+              });
+              isEdit = false;
+              final response = state.successResponse;
+              final name = response['data']['name'];
+              PrefUtils.setName(name);
+              CommonUtils.showSuccessToast('Profile Updated Successfully!');
+            } else if (state is UpdateProfileError) {
               setState(() {
                 isLoading = false;
               });
@@ -243,19 +261,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 alignment: Alignment.centerRight,
                                 child: GestureDetector(
                                   onTap: () {
-                                    _showLogoutConfirmation(context);
+                                    setState(() {
+                                      isEdit = !isEdit;
+                                    });
                                   },
-                                  child:
-                                      isLoading
-                                          ? LoadingAnimationWidget.staggeredDotsWave(
-                                            color: AppColors.gradientStart,
-                                            size: 24,
-                                          )
-                                          : Image.asset(
-                                            'assets/images/logout.png',
-                                            height: 24,
-                                            width: 24,
-                                          ),
+                                  child: isEdit ? Image.asset(
+                                    'assets/images/close.png',
+                                    height: 15,
+                                    width: 15
+                                  ) : Image.asset(
+                                    'assets/images/edit.png',
+                                    height: 24,
+                                    width: 24,
+                                  ),
                                 ),
                               ),
 
@@ -293,13 +311,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             shape: BoxShape.circle,
                                             color: Colors.white,
                                             border: Border.all(
-                                              color: AppColors.gradientStart,
+                                              color: Colors.grey,
                                             ),
                                           ),
                                           child: Image.asset(
-                                            'assets/images/edit.png',
+                                            'assets/images/photo-camera.png',
                                             height: 18,
                                             width: 18,
+                                            color: Colors.grey,
                                           ),
                                         ),
                                       ),
@@ -310,18 +329,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               const SizedBox(height: 10),
                               Center(
                                 child: Text(
-                                  AppLocalizations.of(
-                                    context,
-                                  )!.translate('princeSingh'),
+                                  PrefUtils.getName(),
                                   style: FTextStyle.defaultText,
                                 ),
                               ),
                               const SizedBox(height: 10),
                               Center(
                                 child: Text(
-                                  AppLocalizations.of(
-                                    context,
-                                  )!.translate('princeEmail'),
+                                 PrefUtils.getEmail(),
                                   style: FTextStyle.defaultText,
                                 ),
                               ),
@@ -330,6 +345,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               // Name Field
                               TextFormField(
                                 controller: nameController,
+                                readOnly: isEdit ? false : true,
                                 style: FTextStyle.defaultText,
                                 decoration: InputDecoration(
                                   hintText: AppLocalizations.of(
@@ -379,6 +395,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               // Email Field
                               TextFormField(
                                 controller: emailController,
+                                readOnly: true,
                                 style: FTextStyle.defaultText,
                                 decoration: InputDecoration(
                                   hintText: AppLocalizations.of(
@@ -430,109 +447,175 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                               const SizedBox(height: 10),
 
-                              // Password Field
-                              TextFormField(
-                                controller: passwordController,
-                                obscureText: true,
-                                style: FTextStyle.defaultText,
-                                decoration: InputDecoration(
-                                  hintText: AppLocalizations.of(
-                                    context,
-                                  )!.translate('password'),
-                                  hintStyle: FTextStyle.defaultText,
-                                  filled: true,
-                                  fillColor: AppColors.GlobalBG,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 14,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                ),
-                                onChanged: (value) {
-                                  setState(() {
-                                    if (value.isEmpty) {
-                                      passwordError = true;
-                                      passwordErrorText = AppLocalizations.of(
-                                        context,
-                                      )!.translate('emptyPasswordError');
-                                    } else if (value.length < 6) {
-                                      passwordError = true;
-                                      passwordErrorText = AppLocalizations.of(
-                                        context,
-                                      )!.translate('shortPasswordError');
-                                    } else {
-                                      passwordError = false;
-                                      passwordErrorText = null;
-                                    }
-                                  });
-                                },
-                              ),
-                              Visibility(
-                                visible: passwordError,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 5),
-                                    Text(
-                                      passwordErrorText ?? '',
-                                      style: FTextStyle.errorTextStyle,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 20),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 16),
 
-                              // Save Button
-                              GestureDetector(
-                                onTap: () {
-                                  if (nameController.text.isEmpty) {
-                                    setState(() {
-                                      nameError = true;
-                                      nameErrorText = AppLocalizations.of(
-                                        context,
-                                      )!.translate('emptyNameError');
-                                    });
-                                  }
-                                  if (emailController.text.isEmpty) {
-                                    setState(() {
-                                      emailError = true;
-                                      emailErrorText = AppLocalizations.of(
-                                        context,
-                                      )!.translate('emptyEmailError');
-                                    });
-                                  }
-                                  if (passwordController.text.isEmpty) {
-                                    setState(() {
-                                      passwordError = true;
-                                      passwordErrorText = AppLocalizations.of(
-                                        context,
-                                      )!.translate('emptyPasswordError');
-                                    });
-                                  }
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        AppColors.gradientStart,
-                                        AppColors.gradientEnd,
-                                      ],
+                                  // Update Password Button
+                                  Visibility(
+                                    visible: isEdit,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          isEdit = false;
+                                        });
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder:
+                                                (context) =>
+                                                    ChangePasswordScreen(),
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              AppColors.gradientStart,
+                                              AppColors.gradientEnd,
+                                            ],
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        height: 45,
+                                        width: double.infinity,
+                                        child: Center(
+                                          child: Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.translate('updatePassword'),
+                                            style: FTextStyle.buttonText,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                  height: 45,
-                                  width: double.infinity,
-                                  child: Center(
-                                    child: Text(
-                                      AppLocalizations.of(
-                                        context,
-                                      )!.translate('save'),
-                                      style: FTextStyle.buttonText,
+
+                                  const SizedBox(height: 16),
+                                  // Save Button
+                                  Visibility(
+                                    visible: isEdit,
+                                    child: GestureDetector(
+                                      onTap: () async {
+                                        // Reset errors
+                                        setState(() {
+                                          nameError = false;
+                                          emailError = false;
+                                          passwordError = false;
+                                        });
+
+                                        bool isValid = true;
+
+                                        if (nameController.text.isEmpty) {
+                                          setState(() {
+                                            nameError = true;
+                                            nameErrorText = AppLocalizations.of(
+                                              context,
+                                            )!.translate('emptyNameError');
+                                          });
+                                          isValid = false;
+                                        }
+
+                                        if (emailController.text.isEmpty) {
+                                          setState(() {
+                                            emailError = true;
+                                            emailErrorText =
+                                                AppLocalizations.of(
+                                                  context,
+                                                )!.translate('emptyEmailError');
+                                          });
+                                          isValid = false;
+                                        }
+                                        if (isValid) {
+                                          // Optional: Show loading indicator or disable button
+
+                                          // 🔁 Call your update profile API here
+                                          BlocProvider.of<HomeFlowBloc>(
+                                            context,
+                                          ).add(
+                                            UpdateProfileEvent(
+                                              name: nameController.text,
+                                            ),
+                                          );
+
+                                          // Optional: Navigate or show success message
+                                        }
+                                      },
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              AppColors.gradientStart,
+                                              AppColors.gradientEnd,
+                                            ],
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                        height: 45,
+                                        width: double.infinity,
+                                        child: Center(
+                                          child: Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.translate('save'),
+                                            style: FTextStyle.buttonText,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 16),
+                              Visibility(
+                                visible: !isEdit,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    _showLogoutConfirmation(context);
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          AppColors.gradientStart,
+                                          AppColors.gradientEnd,
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    height: 45,
+                                    width: double.infinity,
+                                    child: Center(
+                                      child:
+                                          isLoading
+                                              ? SizedBox(
+                                                height: 24,
+                                                width: 24,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      color: Colors.white,
+                                                      strokeWidth: 1.5,
+                                                    ),
+                                              )
+                                              : Text(
+                                                AppLocalizations.of(
+                                                  context,
+                                                )!.translate('logout'),
+                                                style: FTextStyle.buttonText,
+                                              ),
                                     ),
                                   ),
                                 ),

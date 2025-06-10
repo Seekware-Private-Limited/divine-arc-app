@@ -68,18 +68,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         setState(() {
                           isLoading = true;
                         });
-                      } else if (state is GoogleLoginSuccess) {
-                        final url = state.url;
-
-                        // Try launching the URL
-                        if (await canLaunchUrl(Uri.parse(url))) {
-                          await launchUrl(
-                            Uri.parse(url),
-                            mode: LaunchMode.externalApplication, // Opens in browser
-                          );
-                        } else {
-                          CommonUtils.showErrorToast('Could not launch Google login URL');
-                        }
+                      }
+                      else if (state is GoogleLoginSuccess) {
+                        setState(() {
+                          isLoading = false;
+                        });
                       }
                       else if (state is GoogleLoginFailure) {
                         setState(() {
@@ -103,21 +96,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         });
                         CommonUtils.showErrorToast(state.error);
                       } else if (state is SignUpSuccess) {
-                        PrefUtils.setIsLogin(true);
                         setState(() {
                           isLoading = false;
                         });
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CustomBottomNavBar(),
-                          ),
-                        );
-                        final response = state.successResponse['data'];
-                        final name = response['name'];
-                        final email = response['email'];
-                        PrefUtils.setName(name);
-                        PrefUtils.setEmail(email);
+                        Navigator.pop(context);
+                        CommonUtils.showSuccessToast('Account Created Successfully!');
                       } else if (state is SignUpFailure) {
                         setState(() {
                           isLoading = false;
@@ -246,6 +229,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 TextFormField(
                                   controller: emailController,
                                   style: FTextStyle.defaultText,
+                                  keyboardType: TextInputType.emailAddress,
                                   decoration: InputDecoration(
                                     hintText: AppLocalizations.of(
                                       context,
