@@ -10,12 +10,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String quoteResponse = '';
   @override
   void initState() {
     super.initState();
-    BlocProvider.of<HomeFlowBloc>(
-      context,
-    ).add(CreateSessionEvent(language: PrefUtils.getLanguage()));
+    BlocProvider.of<HomeFlowBloc>(context).add(GetRandomQuoteEvent());
   }
 
   TextEditingController searchController = TextEditingController();
@@ -41,32 +40,18 @@ class _HomeScreenState extends State<HomeScreen> {
             body: SafeArea(
               child: BlocListener<HomeFlowBloc, HomeFlowState>(
                 listener: (context, state) {
-                  if (state is InitiateChatLoading) {
+
+                  if (state is GetRandomQuoteLoading) {
                     setState(() {
                       isLoading = true;
                     });
-                  } else if (state is InitiateChatSuccess) {
+                  } else if (state is GetRandomQuoteSuccess) {
                     setState(() {
                       isLoading = false;
                     });
-                    final response = state.successResponse;
-                    final ChatID = response['id'];
-                    PrefUtils.setChatID(ChatID);
-                    // Navigate to GPTScreen with the search query
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => BlocProvider(
-                              create: (context) => HomeFlowBloc(),
-                              child: GptScreen(
-                                searchQueryFromHomeScreen:
-                                    searchController.text.trim(),
-                              ),
-                            ),
-                      ),
-                    );
-                  } else if (state is InitiateChatFailure) {
+                    quoteResponse = state.successResponse;
+
+                  } else if (state is GetRandomQuoteFailure) {
                     setState(() {
                       isLoading = false;
                     });
@@ -147,18 +132,25 @@ class _HomeScreenState extends State<HomeScreen> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
+                                        // Text(
+                                        //   AppLocalizations.of(
+                                        //     context,
+                                        //   )!.translate('loremipsumShort'),
+                                        //   style: FTextStyle.defaultTextBold,
+                                        //   textAlign: TextAlign.center,
+                                        // ),
+                                        // const SizedBox(height: 8),
+                                        if (isLoading)
+                                          Center(
+                                            child:
+                                                LoadingAnimationWidget.staggeredDotsWave(
+                                                  color:
+                                                      AppColors.gradientStart,
+                                                  size: 50,
+                                                ),
+                                          ),
                                         Text(
-                                          AppLocalizations.of(
-                                            context,
-                                          )!.translate('loremipsumShort'),
-                                          style: FTextStyle.defaultTextBold,
-                                          textAlign: TextAlign.center,
-                                        ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          AppLocalizations.of(
-                                            context,
-                                          )!.translate('loremipsumLong'),
+                                          quoteResponse,
                                           style:
                                               FTextStyle.socialloginbuttonText,
                                           textAlign: TextAlign.center,
@@ -189,33 +181,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   controller: searchController,
                                                   textInputAction:
                                                       TextInputAction.search,
-                                                  onSubmitted: (query) {
-                                                    if (query
-                                                        .trim()
-                                                        .isNotEmpty) {
-                                                      // Call API with query
-                                                      BlocProvider.of<
-                                                        HomeFlowBloc
-                                                      >(context).add(
-                                                        InitiateChatEvent(
-                                                          message: query.trim(),
-                                                          isGuest:
-                                                              PrefUtils.getIsGuest(),
-                                                          modelName: 'Atlas',
-                                                          searchEngine:
-                                                              'Search',
-                                                          edited: false,
-                                                          sender: 'user',
-                                                          chatId: '',
-                                                        ),
-                                                      );
-                                                    }
+                                                  onTap: () {
+                                                    Navigator.push(context, MaterialPageRoute(builder: (context) => AskAnythingScreen()));
                                                   },
+                                                  readOnly: true,
                                                   decoration: InputDecoration(
                                                     hintText:
                                                         AppLocalizations.of(
                                                           context,
-                                                        )!.translate('search'),
+                                                        )!.translate('askAnything'),
                                                     hintStyle:
                                                         FTextStyle.defaultText,
                                                     border: InputBorder.none,
@@ -243,83 +217,68 @@ class _HomeScreenState extends State<HomeScreen> {
                                 final item = geetaList[index];
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 15),
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (context) => BlocProvider(
-                                                create:
-                                                    (context) => HomeFlowBloc(),
-                                                child: GptScreen(),
-                                              ),
+                                  child: Container(
+                                    height: 100,
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.GlobalBG,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          child: Image.asset(
+                                            item['image']!,
+                                            height: 80,
+                                            width: 80,
+                                            fit: BoxFit.cover,
+                                          ),
                                         ),
-                                      );
-                                    },
-                                    child: Container(
-                                      height: 100,
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.GlobalBG,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            child: Image.asset(
-                                              item['image']!,
-                                              height: 80,
-                                              width: 80,
-                                              fit: BoxFit.cover,
-                                            ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                item['title']!,
+                                                style: FTextStyle.defaultText
+                                                    .copyWith(fontSize: 12),
+                                              ),
+                                              const SizedBox(height: 10),
+                                              Text(
+                                                item['subtitle']!,
+                                                style: FTextStyle.defaultText
+                                                    .copyWith(fontSize: 10),
+                                                maxLines: 2,
+                                                overflow:
+                                                    TextOverflow.ellipsis,
+                                              ),
+                                            ],
                                           ),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                Text(
-                                                  item['title']!,
-                                                  style: FTextStyle.defaultText
-                                                      .copyWith(fontSize: 12),
-                                                ),
-                                                const SizedBox(height: 10),
-                                                Text(
-                                                  item['subtitle']!,
-                                                  style: FTextStyle.defaultText
-                                                      .copyWith(fontSize: 10),
-                                                  maxLines: 2,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ),
-                                              ],
-                                            ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Container(
+                                          height: 30,
+                                          width: 30,
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.gradientStart,
+                                            borderRadius:
+                                                BorderRadius.circular(5),
                                           ),
-                                          const SizedBox(width: 10),
-                                          Container(
-                                            height: 30,
-                                            width: 30,
-                                            padding: const EdgeInsets.all(8),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.gradientStart,
-                                              borderRadius:
-                                                  BorderRadius.circular(5),
-                                            ),
-                                            child: Image.asset(
-                                              'assets/images/whiteArrow.png',
-                                              height: 8,
-                                              width: 8,
-                                            ),
+                                          child: Image.asset(
+                                            'assets/images/whiteArrow.png',
+                                            height: 8,
+                                            width: 8,
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 );

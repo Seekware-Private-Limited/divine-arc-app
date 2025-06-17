@@ -58,6 +58,7 @@ class FTextStyle {
     fontWeight: FontWeight.w600,
     color: Colors.black,
   );
+
   static const socialloginbuttonText = TextStyle(
     fontFamily: 'DM_Sans',
     fontSize: 12,

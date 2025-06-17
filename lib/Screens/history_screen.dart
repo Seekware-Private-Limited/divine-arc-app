@@ -118,7 +118,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         ),
                                         const SizedBox(height: 20),
                                         Text(
-                                          'No Chat history found',
+                                          AppLocalizations.of(context)!.translate('noChatHistory'),
                                           style: FTextStyle.defaultTextBold,
                                         ),
                                       ],

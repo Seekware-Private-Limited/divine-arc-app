@@ -99,6 +99,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         setState(() {
                           isLoading = false;
                         });
+                        PrefUtils.setIsLogin(true);
+                        PrefUtils.setIsGuest(false);
                         Navigator.pop(context);
                         CommonUtils.showSuccessToast('Account Created Successfully!');
                       } else if (state is SignUpFailure) {

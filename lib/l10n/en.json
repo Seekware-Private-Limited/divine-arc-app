@@ -77,9 +77,12 @@
   "newShortPasswordError": "New Password must be at least 9 characters long.",
   "newLongPasswordError": "New Password must not exceed 32 characters.",
   "newInvalidPasswordError": "New Password must include at least one uppercase letter, one lowercase letter, one number, and one special character.",
-
-
-
+  "guest": "Guest",
+  "shortQuestionError": "Hmm... your question feels too short. Try asking with a few more words!",
+  "noMessages": "No messages found",
+  "signInToContinue": "Sign In to Continue",
+  "noChatHistory": "No Chat history found",
+  "guestDescription": "You are using GitaGPT as a guest. Log in to save your chat history, bookmarks, and manage your profile.",
   "shortPasswordError": "Password must be at least 9 characters long.",
   "longPasswordError": "Password must not exceed 32 characters.",
   "invalidPasswordError": "Password must include at least one uppercase letter, one lowercase letter, one number, and one special character."

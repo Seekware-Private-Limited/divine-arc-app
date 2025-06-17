@@ -146,3 +146,4 @@ class GetSingleChatHistoryEvent extends HomeFlowEvent {
   final String chatId;
   GetSingleChatHistoryEvent({required this.chatId});
 }
+

@@ -39,48 +39,50 @@ class _ErrorScreenState extends State<ErrorScreen> {
                       ),
                       color: const Color(0xFFFFF3E5),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Text('404', style: FTextStyle.gita_gpt_text),
-                        Image.asset('assets/images/errorImage.png'),
-                        Text(AppLocalizations.of(context)!.translate('404heading'), style: FTextStyle.defaultTextBold),
-
-                        if (kDebugMode) ...[  // 👈 show error only in debug mode
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Text('404', style: FTextStyle.gita_gpt_text),
+                          Image.asset('assets/images/errorImage.png'),
+                          Text(AppLocalizations.of(context)!.translate('404heading'), style: FTextStyle.defaultTextBold),
+                      
+                          if (kDebugMode) ...[  // 👈 show error only in debug mode
+                            const SizedBox(height: 20),
+                            Text(
+                              errorMessage,
+                              textAlign: TextAlign.center,
+                              style: FTextStyle.errorTextStyle.copyWith(fontSize: 16,fontWeight: FontWeight.w900)
+                            ),
+                          ],
+                      
                           const SizedBox(height: 20),
-                          Text(
-                            errorMessage,
-                            textAlign: TextAlign.center,
-                            style: FTextStyle.errorTextStyle.copyWith(fontSize: 16,fontWeight: FontWeight.w900)
+                      
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(builder: (context) => const HomeScreen()),
+                                    (Route<dynamic> route) => false,
+                              );
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [AppColors.gradientStart, AppColors.gradientEnd],
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              height: 45,
+                              width: double.infinity,
+                              child: Center(child: Text(AppLocalizations.of(context)!.translate('gotoHomePage'), style: FTextStyle.buttonText)),
+                            ),
                           ),
                         ],
-
-                        const SizedBox(height: 20),
-
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.pushAndRemoveUntil(
-                              context,
-                              MaterialPageRoute(builder: (context) => const HomeScreen()),
-                                  (Route<dynamic> route) => false,
-                            );
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [AppColors.gradientStart, AppColors.gradientEnd],
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            height: 45,
-                            width: double.infinity,
-                            child: Center(child: Text(AppLocalizations.of(context)!.translate('gotoHomePage'), style: FTextStyle.buttonText)),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),

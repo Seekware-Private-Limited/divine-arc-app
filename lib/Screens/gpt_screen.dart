@@ -1,8 +1,8 @@
 import 'package:gita_gpt/Utils/app_imports.dart';
 
 class GptScreen extends StatefulWidget {
-  final String? searchQueryFromHomeScreen;
-  const GptScreen({super.key, this.searchQueryFromHomeScreen});
+  final String? searchQueryFromAskAnythingScreen;
+  const GptScreen({super.key, this.searchQueryFromAskAnythingScreen});
 
   @override
   State<GptScreen> createState() => _GptScreenState();
@@ -34,17 +34,17 @@ class _GptScreenState extends State<GptScreen> with SingleTickerProviderStateMix
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    if (widget.searchQueryFromHomeScreen != null &&
-        widget.searchQueryFromHomeScreen!.trim().isNotEmpty) {
+    if (widget.searchQueryFromAskAnythingScreen != null &&
+        widget.searchQueryFromAskAnythingScreen!.trim().isNotEmpty) {
       callAPI();
     }
   }
 
   void callAPI() {
-    if (widget.searchQueryFromHomeScreen!.isNotEmpty) {
+    if (widget.searchQueryFromAskAnythingScreen!.isNotEmpty) {
       setState(() {
         chatHistory.add({
-          'question': widget.searchQueryFromHomeScreen!,
+          'question': widget.searchQueryFromAskAnythingScreen!,
           'answer': '',
           'chatId': '',
           'messageId': '',
@@ -57,7 +57,7 @@ class _GptScreenState extends State<GptScreen> with SingleTickerProviderStateMix
       if (PrefUtils.getChatID().isEmpty) {
         BlocProvider.of<HomeFlowBloc>(context).add(
           InitiateChatEvent(
-            message: widget.searchQueryFromHomeScreen!,
+            message: widget.searchQueryFromAskAnythingScreen!,
             isGuest: PrefUtils.getIsGuest(),
             modelName: 'Atlas',
             searchEngine: 'Search',
@@ -71,7 +71,7 @@ class _GptScreenState extends State<GptScreen> with SingleTickerProviderStateMix
       // Always call ChatEvent for the message
       BlocProvider.of<HomeFlowBloc>(context).add(
         ChatEvent(
-          message: widget.searchQueryFromHomeScreen!,
+          message: widget.searchQueryFromAskAnythingScreen!,
           language: PrefUtils.getLanguage(),
           sessionId: PrefUtils.getSessionID(),
         ),
@@ -322,7 +322,11 @@ class _GptScreenState extends State<GptScreen> with SingleTickerProviderStateMix
               }
             } else if (state is StoreChatError) {
               CommonUtils.showErrorToast(state.failureResponse['message']);
-            } else if (state is ChatStreamingState) {
+            }
+            else if (state is SendAPIResponseFailure){
+              CommonUtils.showErrorToast(state.failureResponse['message']);
+            }
+            else if (state is ChatStreamingState) {
               setState(() {
                 if (_currentResponseIndex != null && _currentResponseIndex! < chatHistory.length) {
                   String currentAnswer = chatHistory[_currentResponseIndex!]['answer'] ?? '';

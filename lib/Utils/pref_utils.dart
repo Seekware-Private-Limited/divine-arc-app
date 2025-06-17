@@ -21,6 +21,15 @@ class PrefUtils {
     return value ?? '';
   }
 
+  static setProfilePicture(String value) {
+    Prefs.prefs?.setString(SharedPrefsKeys.profilePicture, value);
+  }
+
+  static String getProfilePicture() {
+    final String? value = Prefs.prefs?.getString(SharedPrefsKeys.profilePicture);
+    return value ?? '';
+  }
+
   static setEmail(String value) {
     Prefs.prefs?.setString(SharedPrefsKeys.email, value);
   }
@@ -109,11 +118,17 @@ class PrefUtils {
     }
     return [];
   }
+
+  static void clearAll() {
+    Prefs.prefs?.clear();
+  }
+
 }
 
 class SharedPrefsKeys {
   static const token = 'token';
   static const name = 'name';
+  static const profilePicture = 'profilePicture';
   static const email = 'email';
   static const lang = 'lang';
   static const sessionID = 'sessionID';

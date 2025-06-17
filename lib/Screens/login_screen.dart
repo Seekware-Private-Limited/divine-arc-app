@@ -89,6 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         CommonUtils.showErrorToast(state.error);
                       } else if (state is LoginSuccess) {
                         PrefUtils.setIsLogin(true);
+                        PrefUtils.setIsGuest(false);
                         setState(() {
                           isLoading = false;
                         });

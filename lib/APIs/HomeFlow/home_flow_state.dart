@@ -197,6 +197,19 @@ class GetSingleChatHistoryFailure extends HomeFlowState {
   GetSingleChatHistoryFailure(this.failureResponse);
 }
 
+// Get Random Quote States
+class GetRandomQuoteLoading extends HomeFlowState {}
+
+class GetRandomQuoteSuccess extends HomeFlowState {
+  final String successResponse;
+  GetRandomQuoteSuccess(this.successResponse);
+}
+
+class GetRandomQuoteFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  GetRandomQuoteFailure(this.failureResponse);
+}
+
 
 // Common Server Failure State
 class CommonServerFailure extends HomeFlowState {
