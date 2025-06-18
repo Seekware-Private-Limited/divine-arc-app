@@ -118,7 +118,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         ),
                                         const SizedBox(height: 20),
                                         Text(
-                                          AppLocalizations.of(context)!.translate('noChatHistory'),
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.translate('noChatHistory'),
                                           style: FTextStyle.defaultTextBold,
                                         ),
                                       ],
@@ -135,15 +137,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         ),
                                         child: GestureDetector(
                                           onTap: () {
-                                            Navigator.push(context, MaterialPageRoute(builder: (context) => GetSingleChatConversationHistory(chatId: ChatID)));
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (context) =>
+                                                        GptScreen(
+                                                          chatId: ChatID,
+                                                        ),
+                                              ),
+                                            );
                                           },
                                           child: Container(
                                             padding: const EdgeInsets.all(20),
                                             decoration: BoxDecoration(
                                               color: AppColors.GlobalBG,
-                                              borderRadius: BorderRadius.circular(
-                                                8,
-                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
                                             child: Text(
                                               chat['question'] ?? 'No question',

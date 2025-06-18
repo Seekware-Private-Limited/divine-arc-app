@@ -5,7 +5,6 @@ sealed class HomeFlowState {}
 
 final class HomeFlowInitial extends HomeFlowState {}
 
-
 // Create Session States
 class CreateSessionLoading extends HomeFlowState {}
 
@@ -18,7 +17,6 @@ class CreateSessionFailure extends HomeFlowState {
   final String error;
   CreateSessionFailure(this.error);
 }
-
 
 // Chat States
 class ChatLoadingState extends HomeFlowState {}
@@ -34,7 +32,7 @@ class ChatStreamingState extends HomeFlowState {
 }
 
 class ChatErrorState extends HomeFlowState {
-  final Map<String,dynamic> error;
+  final Map<String, dynamic> error;
   ChatErrorState(this.error);
 }
 
@@ -51,14 +49,12 @@ class VoiceConversationSuccess extends HomeFlowState {
     required this.sessionId,
     required this.audioBytes,
   });
-
 }
 
 class VoiceConversationFailure extends HomeFlowState {
   final String error;
   VoiceConversationFailure(this.error);
 }
-
 
 // Initiate Chat States
 class InitiateChatLoading extends HomeFlowState {}
@@ -73,7 +69,6 @@ class InitiateChatFailure extends HomeFlowState {
   InitiateChatFailure(this.failureResponse);
 }
 
-
 // Store Chat States
 class StoreChatLoading extends HomeFlowState {}
 
@@ -86,7 +81,6 @@ class StoreChatError extends HomeFlowState {
   final Map<String, dynamic> failureResponse;
   StoreChatError(this.failureResponse);
 }
-
 
 // Send API Response States
 class SendAPIResponseLoading extends HomeFlowState {}
@@ -101,12 +95,11 @@ class SendAPIResponseFailure extends HomeFlowState {
   SendAPIResponseFailure(this.failureResponse);
 }
 
-
 // Get Chat History States
 class GetChatHistoryLoading extends HomeFlowState {}
 
 class GetChatHistorySuccess extends HomeFlowState {
-  final Map<String,dynamic> successResponse;
+  final Map<String, dynamic> successResponse;
   GetChatHistorySuccess(this.successResponse);
 }
 
@@ -115,20 +108,18 @@ class GetChatHistoryFailure extends HomeFlowState {
   GetChatHistoryFailure(this.failureResponse);
 }
 
-
 // React On Chat states
 class ReactOnChatLoading extends HomeFlowState {}
 
 class ReactOnChatSuccess extends HomeFlowState {
-  final Map<String,dynamic> successResponse;
+  final Map<String, dynamic> successResponse;
   ReactOnChatSuccess(this.successResponse);
 }
 
 class ReactOnChatFailure extends HomeFlowState {
-  final Map<String,dynamic> failureResponse;
+  final Map<String, dynamic> failureResponse;
   ReactOnChatFailure(this.failureResponse);
 }
-
 
 // Chat Feedback States
 class ChatFeedbackLoading extends HomeFlowState {}
@@ -156,20 +147,18 @@ class ShareChatFailure extends HomeFlowState {
   ShareChatFailure(this.failureResponse);
 }
 
-
 // Logout States
 class LogoutLoading extends HomeFlowState {}
 
 class LogoutSuccess extends HomeFlowState {
-final String successRespose;
-LogoutSuccess({required this.successRespose});
+  final String successRespose;
+  LogoutSuccess({required this.successRespose});
 }
 
 class LogoutFailure extends HomeFlowState {
   final Map<String, dynamic> failureResponse;
   LogoutFailure(this.failureResponse);
 }
-
 
 // Update Profile States
 class UpdateProfileLoading extends HomeFlowState {}
@@ -210,12 +199,23 @@ class GetRandomQuoteFailure extends HomeFlowState {
   GetRandomQuoteFailure(this.failureResponse);
 }
 
+// Get All Prayers States
+class GetAllPrayersLoading extends HomeFlowState {}
+
+class GetAllPrayersLoaded extends HomeFlowState {
+  final List<dynamic> successResponse;
+  GetAllPrayersLoaded(this.successResponse);
+}
+
+class GetAllPrayersFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  GetAllPrayersFailure(this.failureResponse);
+}
 
 // Common Server Failure State
 class CommonServerFailure extends HomeFlowState {
   final String error;
   CommonServerFailure(this.error);
-
 }
 
 // Check Network Connection State

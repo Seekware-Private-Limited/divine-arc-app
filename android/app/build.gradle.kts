@@ -46,7 +46,7 @@ android {
         create("release") {
             keyAlias = "Seekware"
             keyPassword = "Seekware@GitaGPT"
-            storeFile = file("/home/seekware/Documents/Gita_GPT_Flutter/android/app/Keystore.jks")
+            storeFile = file("/home/seekware/Documents/Prince-GitaGPT-Flutter/Prince-Geeta-GPT/android/app/Keystore.jks")
             storePassword = "Seekware@GitaGPT"
         }
     }

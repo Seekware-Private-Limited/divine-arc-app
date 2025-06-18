@@ -106,7 +106,6 @@ class ReactOnChatEvent extends HomeFlowEvent {
   final bool is_like;
   final String type;
 
-
   ReactOnChatEvent({
     required this.message_id,
     required this.is_guest,
@@ -121,18 +120,14 @@ class ShareChatEvent extends HomeFlowEvent {
   ShareChatEvent({required this.chatId});
 }
 
-
 // Logout Event
 class LogoutEvent extends HomeFlowEvent {}
 
 class ChatFeedbackEvent extends HomeFlowEvent {
- final String reactionId;
- final String feedbackText;
+  final String reactionId;
+  final String feedbackText;
 
- ChatFeedbackEvent({
-   required this.reactionId,
-   required this.feedbackText
-  });
+  ChatFeedbackEvent({required this.reactionId, required this.feedbackText});
 }
 
 // Update Profile Name Event
@@ -147,3 +142,5 @@ class GetSingleChatHistoryEvent extends HomeFlowEvent {
   GetSingleChatHistoryEvent({required this.chatId});
 }
 
+// Get All Prayers
+class GetAllPrayersEvent extends HomeFlowEvent {}

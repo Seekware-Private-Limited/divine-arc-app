@@ -12,7 +12,7 @@ class ErrorScreen extends StatefulWidget {
 class _ErrorScreenState extends State<ErrorScreen> {
   @override
   Widget build(BuildContext context) {
-    final String errorMessage = widget.errorDetails.exceptionAsString(); // get the error
+    final String errorMessage = widget.errorDetails.exceptionAsString();
 
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)),

@@ -44,4 +44,3 @@ export 'package:gita_gpt/Utils/connectivity_service.dart';
 export 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 export 'package:firebase_core/firebase_core.dart';
 export 'package:gita_gpt/Utils/shared_preference.dart';
-export 'package:gita_gpt/Screens/single_chat_conversation_history.dart';

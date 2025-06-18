@@ -771,5 +771,53 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         developer.log("❗ No internet connection.");
       }
     });
+
+    // Get All Prayers GET API
+    on<GetAllPrayersEvent>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(GetAllPrayersLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.allPrayers);
+
+        developer.log("🔵 Request URL: $requestUrl");
+        developer.log("🟡 Request Headers: ${{
+          'accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Cookie': PrefUtils.getToken(),
+        }}");
+
+        try {
+          final response = await http.get(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+          );
+
+          developer.log("🟣 Response Status Code: ${response.statusCode}");
+          developer.log("🟤 Raw Response Body: ${response.body}");
+
+          if (response.statusCode == 200) {
+            final responseData = jsonDecode(response.body);
+            emit(GetAllPrayersLoaded(responseData));
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(GetAllPrayersFailure(errorData));
+            developer.log("❌ Error Response Data: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("❗ SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("❗ Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("❗ No internet connection.");
+      }
+    });
   }
 }

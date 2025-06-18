@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:developer' as developer;
+
 import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
 import 'package:gita_gpt/Utils/common_utils.dart';
@@ -11,25 +14,19 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String quoteResponse = '';
+  bool isPrayersLoading = false;
+  List<dynamic> allPrayers = [];
   @override
   void initState() {
     super.initState();
     BlocProvider.of<HomeFlowBloc>(context).add(GetRandomQuoteEvent());
+    BlocProvider.of<HomeFlowBloc>(context).add(GetAllPrayersEvent());
   }
 
   TextEditingController searchController = TextEditingController();
   bool isLoading = false;
   @override
   Widget build(BuildContext context) {
-    List<Map<String, String>> geetaList = List.generate(
-      10,
-      (index) => {
-        'title': AppLocalizations.of(context)!.translate('bhagwatGeeta'),
-        'subtitle': AppLocalizations.of(context)!.translate('loremipsumLong'),
-        'image': 'assets/images/bhagwatGeeta.png',
-      },
-    );
-
     return Consumer<LanguageProvider>(
       builder: (context, languageProvider, child) {
         return MediaQuery(
@@ -40,7 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
             body: SafeArea(
               child: BlocListener<HomeFlowBloc, HomeFlowState>(
                 listener: (context, state) {
-
                   if (state is GetRandomQuoteLoading) {
                     setState(() {
                       isLoading = true;
@@ -50,7 +46,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       isLoading = false;
                     });
                     quoteResponse = state.successResponse;
-
                   } else if (state is GetRandomQuoteFailure) {
                     setState(() {
                       isLoading = false;
@@ -58,6 +53,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     CommonUtils.showErrorToast(
                       state.failureResponse['message'],
                     );
+                  } else if (state is GetAllPrayersLoading) {
+                    setState(() {
+                      isPrayersLoading = true;
+                    });
+                  } else if (state is GetAllPrayersLoaded) {
+                    setState(() {
+                      isPrayersLoading = false;
+                    });
+                    final response = state.successResponse;
+                    allPrayers.addAll(response);
+                  } else if (state is GetAllPrayersFailure) {
+                    setState(() {
+                      isPrayersLoading = false;
+                    });
                   }
                 },
                 child: Stack(
@@ -182,14 +191,23 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   textInputAction:
                                                       TextInputAction.search,
                                                   onTap: () {
-                                                    Navigator.push(context, MaterialPageRoute(builder: (context) => AskAnythingScreen()));
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder:
+                                                            (context) =>
+                                                                AskAnythingScreen(),
+                                                      ),
+                                                    );
                                                   },
                                                   readOnly: true,
                                                   decoration: InputDecoration(
                                                     hintText:
                                                         AppLocalizations.of(
                                                           context,
-                                                        )!.translate('askAnything'),
+                                                        )!.translate(
+                                                          'askAnything',
+                                                        ),
                                                     hintStyle:
                                                         FTextStyle.defaultText,
                                                     border: InputBorder.none,
@@ -212,9 +230,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           // Scrollable list
                           Expanded(
                             child: ListView.builder(
-                              itemCount: geetaList.length,
+                              itemCount: allPrayers.length,
                               itemBuilder: (context, index) {
-                                final item = geetaList[index];
+                                final item = allPrayers[index];
+
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 15),
                                   child: Container(
@@ -226,18 +245,28 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     child: Row(
                                       children: [
+                                        // Show network image from `image_url`
                                         ClipRRect(
                                           borderRadius: BorderRadius.circular(
                                             8,
                                           ),
-                                          child: Image.asset(
-                                            item['image']!,
+                                          child: Image.network(
+                                            item['image_url'] ??
+                                                '', // Use image_url from API
                                             height: 80,
                                             width: 80,
                                             fit: BoxFit.cover,
+                                            errorBuilder:
+                                                (context, error, stackTrace) =>
+                                                    Icon(
+                                                      Icons.image_not_supported,
+                                                      size: 40,
+                                                      color: Colors.grey,
+                                                    ),
                                           ),
                                         ),
                                         const SizedBox(width: 10),
+                                        // Title and Prayer (subtitle)
                                         Expanded(
                                           child: Column(
                                             crossAxisAlignment:
@@ -246,31 +275,32 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 MainAxisAlignment.center,
                                             children: [
                                               Text(
-                                                item['title']!,
+                                                item['title'] ?? 'No Title',
                                                 style: FTextStyle.defaultText
                                                     .copyWith(fontSize: 12),
                                               ),
                                               const SizedBox(height: 10),
                                               Text(
-                                                item['subtitle']!,
+                                                item['prayer'] ?? 'No Prayer',
                                                 style: FTextStyle.defaultText
                                                     .copyWith(fontSize: 10),
                                                 maxLines: 2,
-                                                overflow:
-                                                    TextOverflow.ellipsis,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ],
                                           ),
                                         ),
                                         const SizedBox(width: 10),
+                                        // Right Arrow Icon
                                         Container(
                                           height: 30,
                                           width: 30,
                                           padding: const EdgeInsets.all(8),
                                           decoration: BoxDecoration(
                                             color: AppColors.gradientStart,
-                                            borderRadius:
-                                                BorderRadius.circular(5),
+                                            borderRadius: BorderRadius.circular(
+                                              5,
+                                            ),
                                           ),
                                           child: Image.asset(
                                             'assets/images/whiteArrow.png',

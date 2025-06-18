@@ -1,5 +1,4 @@
 import 'dart:developer' as developer;
-
 import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
 import 'package:gita_gpt/Screens/change_password_screen.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
@@ -194,7 +193,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 (Route<dynamic> route) => false,
               );
               CommonUtils.showSuccessToast("Logged out successfully!");
-
             } else if (state is LogoutFailure) {
               setState(() {
                 isLoading = false;
@@ -234,7 +232,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
-                    vertical: 32
+                    vertical: 32,
                   ),
                   child: SingleChildScrollView(
                     child: Column(
@@ -266,7 +264,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           child: SingleChildScrollView(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: PrefUtils.getIsGuest() ? MainAxisAlignment.spaceEvenly : MainAxisAlignment.center,
+                              mainAxisAlignment:
+                                  PrefUtils.getIsGuest()
+                                      ? MainAxisAlignment.spaceEvenly
+                                      : MainAxisAlignment.center,
                               children: [
                                 if (!PrefUtils.getIsGuest())
                                   Align(
@@ -277,17 +278,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           isEdit = !isEdit;
                                         });
                                       },
-                                      child: isEdit
-                                          ? Image.asset(
-                                        'assets/images/close.png',
-                                        height: 15,
-                                        width: 15,
-                                      )
-                                          : Image.asset(
-                                        'assets/images/edit.png',
-                                        height: 24,
-                                        width: 24,
-                                      ),
+                                      child:
+                                          isEdit
+                                              ? Image.asset(
+                                                'assets/images/close.png',
+                                                height: 15,
+                                                width: 15,
+                                              )
+                                              : Image.asset(
+                                                'assets/images/edit.png',
+                                                height: 24,
+                                                width: 24,
+                                              ),
                                     ),
                                   ),
                                 Center(
@@ -298,34 +300,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         child: SizedBox(
                                           height: 120,
                                           width: 120,
-                                          child: _image != null
-                                              ? Image.file(
-                                            File(_image!.path),
-                                            fit: BoxFit.cover,
-                                          )
-                                              : (PrefUtils.getProfilePicture().isNotEmpty &&
-                                              File(PrefUtils.getProfilePicture()).existsSync())
-                                              ? Image.file(
-                                            File(PrefUtils.getProfilePicture()),
-                                            fit: BoxFit.cover,
-                                          )
-                                              : Image.asset(
-                                            'assets/images/defaultProfile.jpg',
-                                            fit: BoxFit.cover,
-                                          ),
+                                          child:
+                                              _image != null
+                                                  ? Image.file(
+                                                    File(_image!.path),
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                  : (PrefUtils.getProfilePicture()
+                                                          .isNotEmpty &&
+                                                      File(
+                                                        PrefUtils.getProfilePicture(),
+                                                      ).existsSync())
+                                                  ? Image.file(
+                                                    File(
+                                                      PrefUtils.getProfilePicture(),
+                                                    ),
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                  : Image.asset(
+                                                    'assets/images/defaultProfile.jpg',
+                                                    fit: BoxFit.cover,
+                                                  ),
                                         ),
                                       ),
                                       Positioned(
                                         bottom: 0,
                                         right: 0,
                                         child: GestureDetector(
-                                          onTap: () => _showImageSourceActionSheet(context),
+                                          onTap:
+                                              () => _showImageSourceActionSheet(
+                                                context,
+                                              ),
                                           child: Container(
                                             padding: EdgeInsets.all(6),
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               color: Colors.white,
-                                              border: Border.all(color: Colors.grey),
+                                              border: Border.all(
+                                                color: Colors.grey,
+                                              ),
                                             ),
                                             child: Image.asset(
                                               'assets/images/photo-camera.png',
@@ -339,38 +352,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     ],
                                   ),
                                 ),
-                            
+
                                 PrefUtils.getIsGuest()
                                     ? Column(
                                       children: [
                                         const SizedBox(height: 20),
-                                        Center(child: Text(AppLocalizations.of(
-                                          context,
-                                        )!.translate('guestDescription'),style: FTextStyle.socialloginbuttonText,textAlign: TextAlign.center)),
+                                        Center(
+                                          child: Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.translate('guestDescription'),
+                                            style:
+                                                FTextStyle
+                                                    .socialloginbuttonText,
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
                                       ],
                                     )
                                     : Column(
-                                  children: [
-                                    const SizedBox(height: 10),
-                                    Center(
-                                      child: Text(
-                                        PrefUtils.getName(),
-                                        style: FTextStyle.defaultText,
-                                      ),
+                                      children: [
+                                        const SizedBox(height: 10),
+                                        Center(
+                                          child: Text(
+                                            PrefUtils.getName(),
+                                            style: FTextStyle.defaultText,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                        Center(
+                                          child: Text(
+                                            PrefUtils.getEmail(),
+                                            style: FTextStyle.defaultText,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(height: 10),
-                                    Center(
-                                      child: Text(
-                                        PrefUtils.getEmail(),
-                                        style: FTextStyle.defaultText,
-                                      ),
-                                    ),
-                            
-                                  ],
-                                ),
-                            
+
                                 const SizedBox(height: 30),
-                            
+
                                 // Name Field
                                 Visibility(
                                   visible: !PrefUtils.getIsGuest(),
@@ -412,7 +432,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Visibility(
                                   visible: nameError,
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const SizedBox(height: 5),
                                       Text(
@@ -423,7 +444,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                            
+
                                 // Email Field
                                 Visibility(
                                   visible: !PrefUtils.getIsGuest(),
@@ -470,7 +491,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Visibility(
                                   visible: emailError,
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       const SizedBox(height: 5),
                                       Text(
@@ -481,12 +503,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                            
+
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const SizedBox(height: 16),
-                            
+
                                     // Update Password Button
                                     Visibility(
                                       visible: isEdit,
@@ -531,7 +553,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         ),
                                       ),
                                     ),
-                            
+
                                     const SizedBox(height: 16),
                                     // Save Button
                                     Visibility(
@@ -544,32 +566,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             emailError = false;
                                             passwordError = false;
                                           });
-                            
+
                                           bool isValid = true;
-                            
+
                                           if (nameController.text.isEmpty) {
                                             setState(() {
                                               nameError = true;
-                                              nameErrorText = AppLocalizations.of(
-                                                context,
-                                              )!.translate('emptyNameError');
+                                              nameErrorText =
+                                                  AppLocalizations.of(
+                                                    context,
+                                                  )!.translate(
+                                                    'emptyNameError',
+                                                  );
                                             });
                                             isValid = false;
                                           }
-                            
+
                                           if (emailController.text.isEmpty) {
                                             setState(() {
                                               emailError = true;
                                               emailErrorText =
                                                   AppLocalizations.of(
                                                     context,
-                                                  )!.translate('emptyEmailError');
+                                                  )!.translate(
+                                                    'emptyEmailError',
+                                                  );
                                             });
                                             isValid = false;
                                           }
                                           if (isValid) {
                                             // Optional: Show loading indicator or disable button
-                            
+
                                             // 🔁 Call your update profile API here
                                             BlocProvider.of<HomeFlowBloc>(
                                               context,
@@ -578,7 +605,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                 name: nameController.text,
                                               ),
                                             );
-                            
+
                                             // Optional: Navigate or show success message
                                           }
                                         },
@@ -615,47 +642,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Visibility(
                                   visible: !isEdit && !PrefUtils.getIsGuest(),
                                   child: GestureDetector(
-                                    onTap: () {
-                                      _showLogoutConfirmation(context);
-                                    },
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                          colors: [
-                                            AppColors.gradientStart,
-                                            AppColors.gradientEnd,
-                                          ],
+                                    onTap:
+                                        isLoading
+                                            ? null // 🔒 Disable tap while loading
+                                            : () {
+                                              _showLogoutConfirmation(context);
+                                            },
+                                    child: Opacity(
+                                      opacity:
+                                          isLoading
+                                              ? 0.6
+                                              : 1.0, // Optional: dim button when disabled
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              AppColors.gradientStart,
+                                              AppColors.gradientEnd,
+                                            ],
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      height: 45,
-                                      width: double.infinity,
-                                      child: Center(
-                                        child:
-                                            isLoading
-                                                ? SizedBox(
-                                                  height: 24,
-                                                  width: 24,
-                                                  child:
-                                                 LoadingAnimationWidget.staggeredDotsWave(color: Colors.white, size: 24)
-                                                )
-                                                : Text(
-                                                  AppLocalizations.of(
-                                                    context,
-                                                  )!.translate('logout'),
-                                                  style: FTextStyle.buttonText,
-                                                ),
+                                        height: 45,
+                                        width: double.infinity,
+                                        child: Center(
+                                          child:
+                                              isLoading
+                                                  ? SizedBox(
+                                                    height: 24,
+                                                    width: 24,
+                                                    child:
+                                                        LoadingAnimationWidget.staggeredDotsWave(
+                                                          color: Colors.white,
+                                                          size: 24,
+                                                        ),
+                                                  )
+                                                  : Text(
+                                                    AppLocalizations.of(
+                                                      context,
+                                                    )!.translate('logout'),
+                                                    style:
+                                                        FTextStyle.buttonText,
+                                                  ),
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
+
                                 Visibility(
                                   visible: PrefUtils.getIsGuest(),
                                   child: GestureDetector(
                                     onTap: () {
-                                      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => LoginScreen()) , (route) => false);
+                                      Navigator.pushAndRemoveUntil(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => LoginScreen(),
+                                        ),
+                                        (route) => false,
+                                      );
                                     },
                                     child: Container(
                                       decoration: BoxDecoration(
@@ -672,8 +721,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       height: 45,
                                       width: double.infinity,
                                       child: Center(
-                                        child:
-                                        Text(
+                                        child: Text(
                                           AppLocalizations.of(
                                             context,
                                           )!.translate('signInToContinue'),
