@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
+import 'package:gita_gpt/Screens/chalisa_screen.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
 import 'package:gita_gpt/Utils/common_utils.dart';
 
@@ -236,79 +237,123 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 15),
-                                  child: Container(
-                                    height: 100,
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.GlobalBG,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        // Show network image from `image_url`
-                                        ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          child: Image.network(
-                                            item['image_url'] ??
-                                                '', // Use image_url from API
-                                            height: 80,
-                                            width: 80,
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) =>
-                                                    Icon(
-                                                      Icons.image_not_supported,
-                                                      size: 40,
-                                                      color: Colors.grey,
-                                                    ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 10),
-                                        // Title and Prayer (subtitle)
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                item['title'] ?? 'No Title',
-                                                style: FTextStyle.defaultText
-                                                    .copyWith(fontSize: 12),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) => ChalisaScreen(
+                                                image: item['image_url'],
+                                                title:
+                                                    item['title'] ?? 'No Title',
+                                                prayer:
+                                                    item['prayer'] ??
+                                                    'No Prayer Found',
                                               ),
-                                              const SizedBox(height: 10),
-                                              Text(
-                                                item['prayer'] ?? 'No Prayer',
-                                                style: FTextStyle.defaultText
-                                                    .copyWith(fontSize: 10),
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
-                                          ),
                                         ),
-                                        const SizedBox(width: 10),
-                                        // Right Arrow Icon
-                                        Container(
-                                          height: 30,
-                                          width: 30,
-                                          padding: const EdgeInsets.all(8),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.gradientStart,
+                                      );
+                                    },
+                                    child: Container(
+                                      height: 100,
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.GlobalBG,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          // Show network image from `image_url`
+                                          ClipRRect(
                                             borderRadius: BorderRadius.circular(
-                                              5,
+                                              8,
+                                            ),
+                                            child: Image.network(
+                                              item['image_url'] ??
+                                                  '', // Use image_url from API
+                                              height: 80,
+                                              width: 80,
+                                              fit: BoxFit.cover,
+                                              errorBuilder:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => Icon(
+                                                    Icons.image_not_supported,
+                                                    size: 40,
+                                                    color: Colors.grey,
+                                                  ),
                                             ),
                                           ),
-                                          child: Image.asset(
-                                            'assets/images/whiteArrow.png',
-                                            height: 8,
-                                            width: 8,
+                                          const SizedBox(width: 10),
+                                          // Title and Prayer (subtitle)
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                Text(
+                                                  item['title'] ?? 'No Title',
+                                                  style: FTextStyle.defaultText
+                                                      .copyWith(fontSize: 12),
+                                                ),
+                                                const SizedBox(height: 10),
+                                                Text(
+                                                  item['description'] ??
+                                                      'No Description',
+                                                  style: FTextStyle.defaultText
+                                                      .copyWith(fontSize: 10),
+                                                  maxLines: 2,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                          const SizedBox(width: 10),
+                                          // Right Arrow Icon
+                                          GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder:
+                                                      (
+                                                        context,
+                                                      ) => ChalisaScreen(
+                                                        image:
+                                                            item['image_url'],
+                                                        title:
+                                                            item['title'] ??
+                                                            'No Title',
+                                                        prayer:
+                                                            item['prayer'] ??
+                                                            'No Prayer Found',
+                                                      ),
+                                                ),
+                                              );
+                                            },
+                                            child: Container(
+                                              height: 30,
+                                              width: 30,
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.gradientStart,
+                                                borderRadius:
+                                                    BorderRadius.circular(5),
+                                              ),
+                                              child: Image.asset(
+                                                'assets/images/whiteArrow.png',
+                                                height: 8,
+                                                width: 8,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 );

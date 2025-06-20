@@ -19,9 +19,10 @@ class LanguageDropdown extends StatefulWidget {
 class _LanguageDropdownState extends State<LanguageDropdown> {
   final GlobalKey _dropdownKey = GlobalKey();
 
-  final List<String> _languages = ['English', 'Hindi'];
-  final Map<String, String> _languageToCode = {'English': 'en', 'Hindi': 'hi'};
-  final Map<String, String> _codeToLanguage = {'en': 'English', 'hi': 'Hindi'};
+  final List<String> _languages = ['English', 'हिन्दी'];
+  final Map<String, String> _languageToCode = {'English': 'en', 'हिन्दी': 'hi'};
+
+  final Map<String, String> _codeToLanguage = {'en': 'English', 'hi': 'हिन्दी'};
 
   String _getDisplayLanguage(String? code) =>
       _codeToLanguage[code] ?? 'English';
@@ -111,14 +112,14 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
           provider.locale.languageCode,
         );
 
-        return BlocListener<HomeFlowBloc,HomeFlowState>(
+        return BlocListener<HomeFlowBloc, HomeFlowState>(
           listener: (context, state) {
             if (state is CreateSessionSuccess) {
               final response = state.successResponse;
               final sessionID = response['session_id'];
               PrefUtils.setSessionID(sessionID);
             } else if (state is CreateSessionFailure) {
-              CommonUtils.showErrorToast(state.error,);
+              CommonUtils.showErrorToast(state.error);
             } else if (state is CheckNetworkConnection) {
               CommonUtils.showErrorToast('No Internet Connection!');
             } else if (state is CommonServerFailure) {

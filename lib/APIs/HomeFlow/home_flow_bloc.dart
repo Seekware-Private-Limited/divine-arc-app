@@ -13,7 +13,6 @@ part 'home_flow_state.dart';
 
 class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
   HomeFlowBloc() : super(HomeFlowInitial()) {
-
     // Create Session Bloc
     on<CreateSessionEvent>((event, emit) async {
       if (await ConnectivityService.isConnected()) {
@@ -149,28 +148,32 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         );
 
         try {
-          final request = http.MultipartRequest('POST', requestUrl)
-            ..fields['language'] = event.language
-            ..fields['session_id'] = event.sessionId
-            ..files.add(
-              await http.MultipartFile.fromPath(
-                'audio',
-                event.audioFile.path,
-                contentType: MediaType('audio', 'wav'),
-              ),
-            );
+          final request =
+              http.MultipartRequest('POST', requestUrl)
+                ..fields['language'] = event.language
+                ..fields['session_id'] = event.sessionId
+                ..files.add(
+                  await http.MultipartFile.fromPath(
+                    'audio',
+                    event.audioFile.path,
+                    contentType: MediaType('audio', 'wav'),
+                  ),
+                );
 
           final streamedResponse = await request.send();
           final response = await http.Response.fromStream(streamedResponse);
 
           developer.log("Response status: ${response.statusCode}");
           developer.log("Response headers: ${response.headers}");
-          developer.log("Response body (bytes): ${response.bodyBytes.length} bytes");
+          developer.log(
+            "Response body (bytes): ${response.bodyBytes.length} bytes",
+          );
 
           if (response.statusCode == 200) {
             final contentType = response.headers['content-type'];
 
-            if (contentType != null && contentType.contains("application/json")) {
+            if (contentType != null &&
+                contentType.contains("application/json")) {
               final json = jsonDecode(response.body);
               emit(
                 VoiceConversationFailure(
@@ -197,7 +200,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             );
           }
         } catch (e, stackTrace) {
-          developer.log("Voice conversation error", error: e, stackTrace: stackTrace);
+          developer.log(
+            "Voice conversation error",
+            error: e,
+            stackTrace: stackTrace,
+          );
           emit(VoiceConversationFailure("Exception: $e"));
         }
       } else {
@@ -236,7 +243,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           if (response.statusCode == 201) {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(InitiateChatSuccess(responseData['data']));
-            developer.log("Initiate Chat Response Data: ${responseData['data']}");
+            developer.log(
+              "Initiate Chat Response Data: ${responseData['data']}",
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(InitiateChatFailure(errorData));
@@ -321,11 +330,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         });
 
         developer.log("🔵 Request URL: $requestUrl");
-        developer.log("🟡 Request Headers: ${{
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Cookie': PrefUtils.getToken(),
-        }}");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
         developer.log("🟠 Request Body: $requestBody");
 
         try {
@@ -345,7 +352,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           if (response.statusCode == 201) {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(SendAPIResponseSuccess(responseData['data']));
-            developer.log("✅ SEND API RESPONSE API - Response Data: ${responseData['data']}");
+            developer.log(
+              "✅ SEND API RESPONSE API - Response Data: ${responseData['data']}",
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(SendAPIResponseFailure(errorData));
@@ -416,16 +425,13 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           'message_id': event.message_id,
           'is_like': event.is_like,
           'type': event.type,
-          'is_guest':event.is_guest
-
+          'is_guest': event.is_guest,
         });
 
         developer.log("🔵 Request URL: $requestUrl");
-        developer.log("🟡 Request Headers: ${{
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Cookie': PrefUtils.getToken(),
-        }}");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
         developer.log("🟠 Request Body: $requestBody");
 
         try {
@@ -477,11 +483,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         });
 
         developer.log("🔵 Request URL: $requestUrl");
-        developer.log("🟡 Request Headers: ${{
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Cookie': PrefUtils.getToken(),
-        }}");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
         developer.log("🟠 Request Body: $requestBody");
 
         try {
@@ -526,14 +530,14 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
       if (await ConnectivityService.isConnected()) {
         emit(ShareChatLoading());
 
-        final Uri requestUrl = Uri.parse(APIEndPoints.shareChatUrl(event.chatId));
+        final Uri requestUrl = Uri.parse(
+          APIEndPoints.shareChatUrl(event.chatId),
+        );
 
         developer.log("🔵 Request URL: $requestUrl");
-        developer.log("🟡 Request Headers: ${{
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Cookie': PrefUtils.getToken(),
-        }}");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
 
         try {
           final response = await http.get(
@@ -551,7 +555,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           if (response.statusCode == 200) {
             final responseData = jsonDecode(response.body);
             emit(ShareChatSuccess(responseData['shareUrl']));
-            developer.log("✅ Parsed Response Data: ${responseData['shareUrl']}");
+            developer.log(
+              "✅ Parsed Response Data: ${responseData['shareUrl']}",
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(ShareChatFailure(errorData));
@@ -578,13 +584,10 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
 
         final Uri requestUrl = Uri.parse(APIEndPoints.logout);
 
-
         developer.log("🔵 Request URL: $requestUrl");
-        developer.log("🟡 Request Headers: ${{
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Cookie': PrefUtils.getToken(),
-        }}");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
 
         try {
           final response = await http.post(
@@ -628,15 +631,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         emit(UpdateProfileLoading());
 
         final Uri requestUrl = Uri.parse(APIEndPoints.updateProfile);
-        final requestBody = jsonEncode({
-          'name': event.name,
-        });
+        final requestBody = jsonEncode({'name': event.name});
         developer.log("🔵 Request URL: $requestUrl");
-        developer.log("🟡 Request Headers: ${{
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Cookie': PrefUtils.getToken(),
-        }}");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
 
         try {
           final response = await http.post(
@@ -680,14 +679,14 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
       if (await ConnectivityService.isConnected()) {
         emit(GetSingleChatHistoryLoading());
 
-        final Uri requestUrl = Uri.parse(APIEndPoints.singleChatHistory(event.chatId));
+        final Uri requestUrl = Uri.parse(
+          APIEndPoints.singleChatHistory(event.chatId),
+        );
 
         developer.log("🔵 Request URL: $requestUrl");
-        developer.log("🟡 Request Headers: ${{
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Cookie': PrefUtils.getToken(),
-        }}");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
 
         try {
           final response = await http.get(
@@ -733,11 +732,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         final Uri requestUrl = Uri.parse(APIEndPoints.getRandomQuote);
 
         developer.log("🔵 Request URL: $requestUrl");
-        developer.log("🟡 Request Headers: ${{
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Cookie': PrefUtils.getToken(),
-        }}");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
 
         try {
           final response = await http.get(
@@ -778,14 +775,14 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
       if (await ConnectivityService.isConnected()) {
         emit(GetAllPrayersLoading());
 
-        final Uri requestUrl = Uri.parse(APIEndPoints.allPrayers);
+        final Uri requestUrl = Uri.parse(
+          APIEndPoints.allPrayers(PrefUtils.getLanguage()),
+        );
 
         developer.log("🔵 Request URL: $requestUrl");
-        developer.log("🟡 Request Headers: ${{
-          'accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Cookie': PrefUtils.getToken(),
-        }}");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
 
         try {
           final response = await http.get(
@@ -805,6 +802,155 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           } else {
             final errorData = jsonDecode(response.body);
             emit(GetAllPrayersFailure(errorData));
+            developer.log("❌ Error Response Data: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("❗ SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("❗ Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("❗ No internet connection.");
+      }
+    });
+
+    // Bookmark Chat Bloc
+    on<BookmarkChat>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(BookmarkChatLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.bookmarkChat);
+        final requestBody = jsonEncode({'message_id': event.messageId});
+
+        developer.log("🔵 Request URL: $requestUrl");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
+        developer.log("🟠 Request Body: $requestBody");
+
+        try {
+          final response = await http.post(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+            body: requestBody,
+          );
+
+          developer.log("🟣 Response Status Code: ${response.statusCode}");
+          developer.log("🟤 Raw Response Body: ${response.body}");
+
+          if (response.statusCode == 201) {
+            final Map<String, dynamic> responseData = jsonDecode(response.body);
+            emit(BookmarkChatSuccess(responseData));
+            developer.log("✅ Parsed Response Data: $responseData");
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(BookmarkChatFailure(errorData));
+            developer.log("❌ Error Response Data: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("❗ SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("❗ Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("❗ No internet connection.");
+      }
+    });
+
+    // Unbookmark Chat Bloc
+    on<UnbookmarkChat>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(UnbookmarkChatLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.bookmarkChat);
+        final requestBody = jsonEncode({'message_id': event.messageId});
+
+        developer.log("🔵 Request URL: $requestUrl");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
+        developer.log("🟠 Request Body: $requestBody");
+
+        try {
+          final response = await http.delete(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+            body: requestBody,
+          );
+
+          developer.log("🟣 Response Status Code: ${response.statusCode}");
+          developer.log("🟤 Raw Response Body: ${response.body}");
+
+          if (response.statusCode == 201) {
+            final Map<String, dynamic> responseData = jsonDecode(response.body);
+            emit(UnbookmarkChatSuccess(responseData));
+            developer.log("✅ Parsed Response Data: $responseData");
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(UnbookmarkChatFailure(errorData));
+            developer.log("❌ Error Response Data: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnection());
+          developer.log("❗ SocketException: No internet connection.");
+        } catch (e) {
+          emit(CommonServerFailure('An error occurred: $e'));
+          developer.log("❗ Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnection());
+        developer.log("❗ No internet connection.");
+      }
+    });
+
+    // Get All Prayers GET API
+    on<GetAllBookmarksChat>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(GetAllBookmarksChatLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.bookmarkChatList);
+
+        developer.log("🔵 Request URL: $requestUrl");
+        developer.log(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
+
+        try {
+          final response = await http.get(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+          );
+
+          developer.log("🟣 Response Status Code: ${response.statusCode}");
+          developer.log("🟤 Raw Response Body: ${response.body}");
+
+          if (response.statusCode == 200) {
+            final responseData = jsonDecode(response.body);
+            emit(GetAllBookmarksChatSuccess(responseData));
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(GetAllBookmarksChatFailure(errorData));
             developer.log("❌ Error Response Data: $errorData");
           }
         } on SocketException {

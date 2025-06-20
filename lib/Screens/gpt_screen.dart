@@ -24,7 +24,7 @@ class _GptScreenState extends State<GptScreen>
   String? audioPath;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  List<Map<String, String>> chatHistory = [];
+  List<Map<String, dynamic>> chatHistory = [];
   String reactionId = '';
   int? _editingIndex;
   int? _currentResponseIndex;
@@ -32,13 +32,14 @@ class _GptScreenState extends State<GptScreen>
   @override
   void initState() {
     super.initState();
+    chatHistory = PrefUtils.getChatHistory();
+    developer.log('Initial chatHistory: $chatHistory', name: 'CHAT_HISTORY');
     if (widget.chatId != null && widget.chatId!.isNotEmpty) {
       developer.log(widget.chatId!, name: 'CHATID');
       BlocProvider.of<HomeFlowBloc>(
         context,
       ).add(GetSingleChatHistoryEvent(chatId: widget.chatId!));
     }
-    chatHistory = PrefUtils.getChatHistory();
     _initializeRecorder();
     _animationController = AnimationController(
       vsync: this,
@@ -61,9 +62,16 @@ class _GptScreenState extends State<GptScreen>
           'answer': '',
           'chatId': '',
           'messageId': '',
+          'isBookmarked': false,
+          'isLiked': false,
+          'isDisliked': false,
         });
         _currentResponseIndex = chatHistory.length - 1;
         PrefUtils.setChatHistory(chatHistory);
+        developer.log(
+          'Added new chat entry: ${chatHistory.last}',
+          name: 'CHAT_ADD',
+        );
       });
 
       if (PrefUtils.getChatID().isEmpty) {
@@ -311,8 +319,8 @@ class _GptScreenState extends State<GptScreen>
           listener: (context, state) {
             if (state is InitiateChatSuccess) {
               final response = state.successResponse;
-              final String ChatID = response['id'];
-              PrefUtils.setChatID(ChatID);
+              final String chatID = response['id'];
+              PrefUtils.setChatID(chatID);
             } else if (state is InitiateChatFailure) {
               CommonUtils.showErrorToast(state.failureResponse['message']);
             } else if (state is StoreChatSuccess) {
@@ -399,9 +407,14 @@ class _GptScreenState extends State<GptScreen>
               final List<dynamic> messages =
                   response['messages'] as List<dynamic>;
               setState(() {
-                chatHistory.clear(); // Clear existing chat history
+                // Create a map of existing chatHistory entries by messageId
+                final Map<String, Map<String, dynamic>> localChatMap = {
+                  for (var chat in chatHistory) chat['messageId']: chat,
+                };
+                // Merge server response with local state
                 chatHistory =
-                    messages.map<Map<String, String>>((message) {
+                    messages.map<Map<String, dynamic>>((message) {
+                      final String messageId = message['id']?.toString() ?? '';
                       final String question =
                           message['message']?.toString() ?? '';
                       final String answer =
@@ -410,15 +423,29 @@ class _GptScreenState extends State<GptScreen>
                                       ?.toString() ??
                                   ''
                               : '';
-                      final String messageId = message['id']?.toString() ?? '';
+                      final bool isBookmarked =
+                          message['isBookmarked'] ?? false;
+                      final bool isLiked = message['isLiked'] ?? false;
+                      final bool isDisliked = message['isDisliked'] ?? false;
+                      // Get existing local entry, if any
+                      final localChat = localChatMap[messageId] ?? {};
                       return {
                         'question': question,
                         'answer': answer,
                         'chatId': chatId,
                         'messageId': messageId,
+                        'isBookmarked':
+                            isBookmarked || localChat['isBookmarked'] == true,
+                        'isLiked': isLiked || localChat['isLiked'] == true,
+                        'isDisliked':
+                            isDisliked || localChat['isDisliked'] == true,
                       };
                     }).toList();
                 PrefUtils.setChatHistory(chatHistory);
+                developer.log(
+                  'Updated chatHistory from server: $chatHistory',
+                  name: 'CHAT_UPDATE',
+                );
               });
               _scrollToBottom();
             } else if (state is GetSingleChatHistoryFailure) {
@@ -426,9 +453,44 @@ class _GptScreenState extends State<GptScreen>
             } else if (state is ReactOnChatSuccess) {
               final response = state.successResponse;
               reactionId = response['data']['id'];
+              final messageId = response['data']['message_id'] ?? '';
+              final bool isLike = response['data']['is_like'] ?? false;
+              setState(() {
+                final index = chatHistory.indexWhere(
+                  (chat) => chat['messageId'] == messageId,
+                );
+                if (index != -1) {
+                  chatHistory[index]['isLiked'] = isLike;
+                  chatHistory[index]['isDisliked'] = !isLike;
+                  PrefUtils.setChatHistory(chatHistory);
+                }
+                developer.log(
+                  'ReactOnChatSuccess: $chatHistory',
+                  name: 'CHAT_REACT',
+                );
+              });
               _showFeedbackPopup(context);
               CommonUtils.showSuccessToast(response['message']);
             } else if (state is ReactOnChatFailure) {
+              final messageId = state.failureResponse['message_id'] ?? '';
+              final bool wasLike = state.failureResponse['is_like'] ?? false;
+              setState(() {
+                final index = chatHistory.indexWhere(
+                  (chat) => chat['messageId'] == messageId,
+                );
+                if (index != -1) {
+                  // Revert the state on failure
+                  chatHistory[index]['isLiked'] =
+                      wasLike ? false : chatHistory[index]['isLiked'];
+                  chatHistory[index]['isDisliked'] =
+                      !wasLike ? false : chatHistory[index]['isDisliked'];
+                  PrefUtils.setChatHistory(chatHistory);
+                }
+                developer.log(
+                  'ReactOnChatFailure: $chatHistory',
+                  name: 'CHAT_REACT_FAIL',
+                );
+              });
               CommonUtils.showErrorToast(state.failureResponse['message']);
             } else if (state is ChatFeedbackSuccess) {
               CommonUtils.showSuccessToast(state.successResponse['message']);
@@ -446,6 +508,62 @@ class _GptScreenState extends State<GptScreen>
               CommonUtils.showErrorToast(state.failureResponse['message']);
             } else if (state is CheckNetworkConnection) {
               CommonUtils.showErrorToast('No Internet Connection!');
+            } else if (state is BookmarkChatSuccess) {
+              final messageId = state.successResponse['messageId'];
+              setState(() {
+                final index = chatHistory.indexWhere(
+                  (chat) => chat['messageId'] == messageId,
+                );
+                if (index != -1) {
+                  chatHistory[index]['isBookmarked'] = true;
+                  PrefUtils.setChatHistory(chatHistory);
+                }
+                developer.log(
+                  'BookmarkChatSuccess: $chatHistory',
+                  name: 'CHAT_BOOKMARK',
+                );
+              });
+              CommonUtils.showSuccessToast('Chat bookmarked successfully!');
+            } else if (state is BookmarkChatFailure) {
+              final messageId = state.failureResponse['messageId'] ?? '';
+              setState(() {
+                final index = chatHistory.indexWhere(
+                  (chat) => chat['messageId'] == messageId,
+                );
+                if (index != -1) {
+                  chatHistory[index]['isBookmarked'] = false;
+                  PrefUtils.setChatHistory(chatHistory);
+                }
+              });
+              CommonUtils.showErrorToast(state.failureResponse['message']);
+            } else if (state is UnbookmarkChatSuccess) {
+              final messageId = state.successResponse['messageId'];
+              setState(() {
+                final index = chatHistory.indexWhere(
+                  (chat) => chat['messageId'] == messageId,
+                );
+                if (index != -1) {
+                  chatHistory[index]['isBookmarked'] = false;
+                  PrefUtils.setChatHistory(chatHistory);
+                }
+                developer.log(
+                  'UnbookmarkChatSuccess: $chatHistory',
+                  name: 'CHAT_UNBOOKMARK',
+                );
+              });
+              CommonUtils.showSuccessToast('Chat unbookmarked successfully!');
+            } else if (state is UnbookmarkChatFailure) {
+              final messageId = state.failureResponse['messageId'] ?? '';
+              setState(() {
+                final index = chatHistory.indexWhere(
+                  (chat) => chat['messageId'] == messageId,
+                );
+                if (index != -1) {
+                  chatHistory[index]['isBookmarked'] = true;
+                  PrefUtils.setChatHistory(chatHistory);
+                }
+              });
+              CommonUtils.showErrorToast(state.failureResponse['message']);
             }
           },
           child: Stack(
@@ -501,6 +619,14 @@ class _GptScreenState extends State<GptScreen>
                                         chatHistory[index]['messageId'] ?? '';
                                     final chatId =
                                         chatHistory[index]['chatId'] ?? '';
+                                    final bool isBookmarked =
+                                        chatHistory[index]['isBookmarked'] ??
+                                        false;
+                                    final bool isLiked =
+                                        chatHistory[index]['isLiked'] ?? false;
+                                    final bool isDisliked =
+                                        chatHistory[index]['isDisliked'] ??
+                                        false;
                                     return Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -615,6 +741,23 @@ class _GptScreenState extends State<GptScreen>
                                                         onTap: () {
                                                           if (messageId
                                                               .isNotEmpty) {
+                                                            setState(() {
+                                                              chatHistory[index]['isLiked'] =
+                                                                  !isLiked;
+                                                              if (chatHistory[index]['isLiked'] ==
+                                                                  true) {
+                                                                chatHistory[index]['isDisliked'] =
+                                                                    false;
+                                                              }
+                                                              PrefUtils.setChatHistory(
+                                                                chatHistory,
+                                                              );
+                                                              developer.log(
+                                                                'Like toggled: ${chatHistory[index]}',
+                                                                name:
+                                                                    'CHAT_LIKE',
+                                                              );
+                                                            });
                                                             BlocProvider.of<
                                                               HomeFlowBloc
                                                             >(context).add(
@@ -623,7 +766,8 @@ class _GptScreenState extends State<GptScreen>
                                                                     messageId,
                                                                 is_guest:
                                                                     PrefUtils.getIsGuest(),
-                                                                is_like: true,
+                                                                is_like:
+                                                                    !isLiked,
                                                                 type: 'MESSAGE',
                                                               ),
                                                             );
@@ -634,7 +778,9 @@ class _GptScreenState extends State<GptScreen>
                                                           }
                                                         },
                                                         child: Image.asset(
-                                                          'assets/images/thumbsupunlike.png',
+                                                          isLiked
+                                                              ? 'assets/images/thumbsuplike.png'
+                                                              : 'assets/images/thumbsupunlike.png',
                                                           height: 16,
                                                           width: 16,
                                                         ),
@@ -644,6 +790,23 @@ class _GptScreenState extends State<GptScreen>
                                                         onTap: () {
                                                           if (messageId
                                                               .isNotEmpty) {
+                                                            setState(() {
+                                                              chatHistory[index]['isDisliked'] =
+                                                                  !isDisliked;
+                                                              if (chatHistory[index]['isDisliked'] ==
+                                                                  true) {
+                                                                chatHistory[index]['isLiked'] =
+                                                                    false;
+                                                              }
+                                                              PrefUtils.setChatHistory(
+                                                                chatHistory,
+                                                              );
+                                                              developer.log(
+                                                                'Dislike toggled: ${chatHistory[index]}',
+                                                                name:
+                                                                    'CHAT_DISLIKE',
+                                                              );
+                                                            });
                                                             BlocProvider.of<
                                                               HomeFlowBloc
                                                             >(context).add(
@@ -652,7 +815,8 @@ class _GptScreenState extends State<GptScreen>
                                                                     messageId,
                                                                 is_guest:
                                                                     PrefUtils.getIsGuest(),
-                                                                is_like: false,
+                                                                is_like:
+                                                                    isDisliked,
                                                                 type: 'MESSAGE',
                                                               ),
                                                             );
@@ -663,7 +827,9 @@ class _GptScreenState extends State<GptScreen>
                                                           }
                                                         },
                                                         child: Image.asset(
-                                                          'assets/images/thumbsdownunlike.png',
+                                                          isDisliked
+                                                              ? 'assets/images/thumbsdownlike.png'
+                                                              : 'assets/images/thumbsdownunlike.png',
                                                           height: 16,
                                                           width: 16,
                                                         ),
@@ -687,10 +853,48 @@ class _GptScreenState extends State<GptScreen>
                                                         ),
                                                       ),
                                                       const SizedBox(width: 10),
-                                                      Image.asset(
-                                                        'assets/images/unbookmark.png',
-                                                        height: 16,
-                                                        width: 16,
+                                                      GestureDetector(
+                                                        onTap: () {
+                                                          if (messageId
+                                                              .isNotEmpty) {
+                                                            setState(() {
+                                                              chatHistory[index]['isBookmarked'] =
+                                                                  !isBookmarked;
+                                                              PrefUtils.setChatHistory(
+                                                                chatHistory,
+                                                              );
+                                                              developer.log(
+                                                                'Bookmark toggled: ${chatHistory[index]}',
+                                                                name:
+                                                                    'CHAT_BOOKMARK',
+                                                              );
+                                                            });
+                                                            BlocProvider.of<
+                                                              HomeFlowBloc
+                                                            >(context).add(
+                                                              isBookmarked
+                                                                  ? UnbookmarkChat(
+                                                                    messageId:
+                                                                        messageId,
+                                                                  )
+                                                                  : BookmarkChat(
+                                                                    messageId:
+                                                                        messageId,
+                                                                  ),
+                                                            );
+                                                          } else {
+                                                            CommonUtils.showErrorToast(
+                                                              'Cannot bookmark: Message ID is missing',
+                                                            );
+                                                          }
+                                                        },
+                                                        child: Image.asset(
+                                                          isBookmarked
+                                                              ? 'assets/images/bookmark.png'
+                                                              : 'assets/images/unbookmark.png',
+                                                          height: 16,
+                                                          width: 16,
+                                                        ),
                                                       ),
                                                       const SizedBox(width: 10),
                                                       GestureDetector(
@@ -849,6 +1053,9 @@ class _GptScreenState extends State<GptScreen>
                                       'answer': '',
                                       'chatId': widget.chatId ?? '',
                                       'messageId': '',
+                                      'isBookmarked': false,
+                                      'isLiked': false,
+                                      'isDisliked': false,
                                     });
                                     _currentResponseIndex =
                                         chatHistory.length - 1;
@@ -857,6 +1064,10 @@ class _GptScreenState extends State<GptScreen>
                                     isEdited = false;
                                   }
                                   PrefUtils.setChatHistory(chatHistory);
+                                  developer.log(
+                                    'New message added/edited: ${chatHistory[_currentResponseIndex!]}',
+                                    name: 'CHAT_MESSAGE',
+                                  );
                                 });
 
                                 if (PrefUtils.getChatID().isEmpty &&

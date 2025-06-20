@@ -212,6 +212,45 @@ class GetAllPrayersFailure extends HomeFlowState {
   GetAllPrayersFailure(this.failureResponse);
 }
 
+// Bookmark Single Chat States
+class BookmarkChatLoading extends HomeFlowState {}
+
+class BookmarkChatSuccess extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  BookmarkChatSuccess(this.successResponse);
+}
+
+class BookmarkChatFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  BookmarkChatFailure(this.failureResponse);
+}
+
+// Unbookmark Single Chat States
+class UnbookmarkChatLoading extends HomeFlowState {}
+
+class UnbookmarkChatSuccess extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  UnbookmarkChatSuccess(this.successResponse);
+}
+
+class UnbookmarkChatFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  UnbookmarkChatFailure(this.failureResponse);
+}
+
+// Get All Bookmarks Chat States
+class GetAllBookmarksChatLoading extends HomeFlowState {}
+
+class GetAllBookmarksChatSuccess extends HomeFlowState {
+  final List<dynamic> successResponse;
+  GetAllBookmarksChatSuccess(this.successResponse);
+}
+
+class GetAllBookmarksChatFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  GetAllBookmarksChatFailure(this.failureResponse);
+}
+
 // Common Server Failure State
 class CommonServerFailure extends HomeFlowState {
   final String error;

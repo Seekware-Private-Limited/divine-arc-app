@@ -144,3 +144,18 @@ class GetSingleChatHistoryEvent extends HomeFlowEvent {
 
 // Get All Prayers
 class GetAllPrayersEvent extends HomeFlowEvent {}
+
+// Bookmark Chat
+class BookmarkChat extends HomeFlowEvent {
+  final String messageId;
+  BookmarkChat({required this.messageId});
+}
+
+// Unbookmark Chat
+class UnbookmarkChat extends HomeFlowEvent {
+  final String messageId;
+  UnbookmarkChat({required this.messageId});
+}
+
+// Get All Bookmarks Chat
+class GetAllBookmarksChat extends HomeFlowEvent {}

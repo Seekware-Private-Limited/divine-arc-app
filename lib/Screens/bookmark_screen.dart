@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:developer' as developer;
+
 import 'package:gita_gpt/Utils/app_imports.dart';
 
 class BookmarkScreen extends StatefulWidget {
@@ -8,72 +11,242 @@ class BookmarkScreen extends StatefulWidget {
 }
 
 class _BookmarkScreenState extends State<BookmarkScreen> {
+  List<dynamic> allBookmarksChat = [];
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    developer.log(jsonEncode(PrefUtils.getChatHistory()), name: 'CHAT HISTORY');
+    BlocProvider.of<HomeFlowBloc>(context).add(GetAllBookmarksChat());
+  }
+
   @override
   Widget build(BuildContext context) {
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)),
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: const TextScaler.linear(1)),
       child: Scaffold(
         backgroundColor: AppColors.GlobalBG,
         body: SafeArea(
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/bgGitaGPT.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(AppLocalizations.of(context)!.translate('bookmark'), style: FTextStyle.homeText),
-                        const LanguageDropdown()
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: AppColors.gradientStart,
-                            width: 1.5,
-                          ),
-                          color: Colors.white,
-                        ),
-                        child: ListView.builder(
-                          itemCount: 10,
-                          itemBuilder: (context, index) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: Container(
-                                padding: EdgeInsets.all(20),
-                                 decoration: BoxDecoration(
-                                   color: AppColors.GlobalBG,
-                                   borderRadius: BorderRadius.circular(8),
-                                 ),
-                                 child:Row(
-                                   children: [
-                                     Expanded(child: Text(AppLocalizations.of(context)!.translate('dummyText'),style: FTextStyle.defaultText)),
-                                     Image.asset('assets/images/bookmark.png',height: 18,width: 18,)
-                                   ],
-                                 )
-                              ),
-                            );
-                          },
+          child: BlocListener<HomeFlowBloc, HomeFlowState>(
+            listener: (context, state) {
+              if (state is GetAllBookmarksChatLoading) {
+                setState(() {
+                  isLoading = true;
+                });
+              } else if (state is GetAllBookmarksChatSuccess) {
+                setState(() {
+                  isLoading = false;
+                  allBookmarksChat = state.successResponse;
+                });
+              } else if (state is GetAllBookmarksChatFailure) {
+                setState(() {
+                  isLoading = false;
+                });
+                CommonUtils.showErrorToast(state.failureResponse['message']);
+              } else if (state is UnbookmarkChatSuccess) {
+                final messageId = state.successResponse['data']['message_id'];
+                debugPrint(
+                  'UnbookmarkChatSuccess received for messageId: $messageId',
+                );
 
-                        )
-                      ),
-                    )
-                  ],
+                // Update local bookmarks list
+                setState(() {
+                  allBookmarksChat.removeWhere(
+                    (chat) => chat['message_id'] == messageId,
+                  );
+                  debugPrint('Updated allBookmarksChat after removal.');
+                });
+
+                // Update chatHistory in PrefUtils
+                List<Map<String, dynamic>> chatHistory =
+                    PrefUtils.getChatHistory();
+                debugPrint('Loaded chatHistory from PrefUtils: $chatHistory');
+
+                // Print all messageIds in chatHistory for verification
+                for (var chat in chatHistory) {
+                  debugPrint('chatHistory messageId: ${chat['messageId']}');
+                }
+
+                final index = chatHistory.indexWhere(
+                  (chat) => chat['messageId'] == messageId,
+                );
+                debugPrint('Found index: $index');
+
+                if (index != -1) {
+                  chatHistory[index]['isBookmarked'] = false;
+                  PrefUtils.setChatHistory(chatHistory);
+                  debugPrint('Updated chatHistory in PrefUtils: $chatHistory');
+                } else {
+                  debugPrint(
+                    '❌ No matching messageId found in chatHistory. messageId: $messageId',
+                  );
+                }
+
+                CommonUtils.showSuccessToast('Bookmark removed successfully!');
+              } else if (state is UnbookmarkChatFailure) {
+                CommonUtils.showErrorToast(state.failureResponse['message']);
+              }
+            },
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/images/bgGitaGPT.png',
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context)!.translate('bookmark'),
+                            style: FTextStyle.homeText,
+                          ),
+                          const LanguageDropdown(),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Expanded(
+                        child:
+                            isLoading
+                                ? Center(
+                                  child:
+                                      LoadingAnimationWidget.staggeredDotsWave(
+                                        color: AppColors.gradientStart,
+                                        size: 50,
+                                      ),
+                                )
+                                : allBookmarksChat.isEmpty
+                                ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(
+                                          150,
+                                        ),
+                                        child: Image.asset(
+                                          'assets/images/errorImage.png',
+                                          height: 250,
+                                          width: 250,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.translate('noBookmarks'),
+                                        textAlign: TextAlign.center,
+                                        style: FTextStyle.defaultText,
+                                      ),
+                                    ],
+                                  ),
+                                )
+                                : Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: AppColors.gradientStart,
+                                      width: 1.5,
+                                    ),
+                                    color: Colors.white,
+                                  ),
+                                  child: ListView.builder(
+                                    itemCount: allBookmarksChat.length,
+                                    itemBuilder: (context, index) {
+                                      final chat = allBookmarksChat[index];
+                                      final question = chat['question'] ?? '';
+                                      final answer = chat['answer'] ?? '';
+                                      final messageId =
+                                          chat['message_id'] ?? '';
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 10,
+                                        ),
+                                        child: ExpansionTile(
+                                          iconColor: AppColors.gradientStart,
+                                          collapsedIconColor:
+                                              AppColors.gradientStart,
+                                          backgroundColor: AppColors.GlobalBG,
+                                          collapsedBackgroundColor:
+                                              AppColors.GlobalBG,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          title: Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  question,
+                                                  style: FTextStyle.defaultText,
+                                                ),
+                                              ),
+                                              GestureDetector(
+                                                onTap: () {
+                                                  if (messageId.isNotEmpty) {
+                                                    setState(() {
+                                                      allBookmarksChat.removeAt(
+                                                        index,
+                                                      );
+                                                    });
+                                                    BlocProvider.of<
+                                                      HomeFlowBloc
+                                                    >(context).add(
+                                                      UnbookmarkChat(
+                                                        messageId: messageId,
+                                                      ),
+                                                    );
+                                                  } else {
+                                                    CommonUtils.showErrorToast(
+                                                      'Cannot remove bookmark: Message ID is missing',
+                                                    );
+                                                  }
+                                                },
+                                                child: Image.asset(
+                                                  'assets/images/bookmark.png',
+                                                  height: 18,
+                                                  width: 18,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.all(16),
+                                              child: Text(
+                                                answer,
+                                                style: FTextStyle.defaultText
+                                                    .copyWith(
+                                                      color: Colors.black87,
+                                                    ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

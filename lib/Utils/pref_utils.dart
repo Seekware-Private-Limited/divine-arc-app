@@ -11,7 +11,6 @@ class PrefUtils {
     return value ?? '';
   }
 
-
   static setName(String value) {
     Prefs.prefs?.setString(SharedPrefsKeys.name, value);
   }
@@ -26,7 +25,9 @@ class PrefUtils {
   }
 
   static String getProfilePicture() {
-    final String? value = Prefs.prefs?.getString(SharedPrefsKeys.profilePicture);
+    final String? value = Prefs.prefs?.getString(
+      SharedPrefsKeys.profilePicture,
+    );
     return value ?? '';
   }
 
@@ -38,7 +39,6 @@ class PrefUtils {
     final String? value = Prefs.prefs?.getString(SharedPrefsKeys.email);
     return value ?? '';
   }
-
 
   static setLanguage(String value) {
     Prefs.prefs?.setString(SharedPrefsKeys.lang, value);
@@ -99,22 +99,26 @@ class PrefUtils {
   }
 
   static int getUnreadNotificationCount() {
-    final int? value = Prefs.prefs?.getInt(SharedPrefsKeys.unreadNotificationCount);
+    final int? value = Prefs.prefs?.getInt(
+      SharedPrefsKeys.unreadNotificationCount,
+    );
     return value ?? 0;
   }
 
   // New method to save chatHistory
-  static void setChatHistory(List<Map<String, String>> chatHistory) {
+  static void setChatHistory(List<Map<String, dynamic>> chatHistory) {
     final String chatHistoryJson = jsonEncode(chatHistory);
     Prefs.prefs?.setString(SharedPrefsKeys.chatHistory, chatHistoryJson);
   }
 
   // New method to retrieve chatHistory
-  static List<Map<String, String>> getChatHistory() {
-    final String? chatHistoryJson = Prefs.prefs?.getString(SharedPrefsKeys.chatHistory);
+  static List<Map<String, dynamic>> getChatHistory() {
+    final String? chatHistoryJson = Prefs.prefs?.getString(
+      SharedPrefsKeys.chatHistory,
+    );
     if (chatHistoryJson != null && chatHistoryJson.isNotEmpty) {
       final List<dynamic> decoded = jsonDecode(chatHistoryJson);
-      return decoded.map((item) => Map<String, String>.from(item)).toList();
+      return decoded.map((item) => Map<String, dynamic>.from(item)).toList();
     }
     return [];
   }
@@ -122,7 +126,6 @@ class PrefUtils {
   static void clearAll() {
     Prefs.prefs?.clear();
   }
-
 }
 
 class SharedPrefsKeys {
