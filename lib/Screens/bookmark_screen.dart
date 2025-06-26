@@ -175,67 +175,85 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
                                         padding: const EdgeInsets.only(
                                           bottom: 10,
                                         ),
-                                        child: ExpansionTile(
-                                          iconColor: AppColors.gradientStart,
-                                          collapsedIconColor:
-                                              AppColors.gradientStart,
-                                          backgroundColor: AppColors.GlobalBG,
-                                          collapsedBackgroundColor:
-                                              AppColors.GlobalBG,
-                                          shape: RoundedRectangleBorder(
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: AppColors.GlobalBG,
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
                                           ),
-                                          title: Row(
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  question,
-                                                  style: FTextStyle.defaultText,
-                                                ),
-                                              ),
-                                              GestureDetector(
-                                                onTap: () {
-                                                  if (messageId.isNotEmpty) {
-                                                    setState(() {
-                                                      allBookmarksChat.removeAt(
-                                                        index,
-                                                      );
-                                                    });
-                                                    BlocProvider.of<
-                                                      HomeFlowBloc
-                                                    >(context).add(
-                                                      UnbookmarkChat(
-                                                        messageId: messageId,
-                                                      ),
-                                                    );
-                                                  } else {
-                                                    CommonUtils.showErrorToast(
-                                                      'Cannot remove bookmark: Message ID is missing',
-                                                    );
-                                                  }
-                                                },
-                                                child: Image.asset(
-                                                  'assets/images/bookmark.png',
-                                                  height: 18,
-                                                  width: 18,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          children: [
-                                            Padding(
-                                              padding: const EdgeInsets.all(16),
-                                              child: Text(
-                                                answer,
-                                                style: FTextStyle.defaultText
-                                                    .copyWith(
-                                                      color: Colors.black87,
-                                                    ),
-                                              ),
+                                          clipBehavior: Clip.antiAlias,
+                                          child: Theme(
+                                            data: Theme.of(context).copyWith(
+                                              dividerColor: Colors.transparent,
                                             ),
-                                          ],
+                                            child: ExpansionTile(
+                                              iconColor:
+                                                  AppColors.gradientStart,
+                                              collapsedIconColor:
+                                                  AppColors.gradientStart,
+                                              backgroundColor:
+                                                  Colors.transparent,
+                                              collapsedBackgroundColor:
+                                                  Colors.transparent,
+                                              title: Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      question,
+                                                      style:
+                                                          FTextStyle
+                                                              .defaultText,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 16),
+                                                  GestureDetector(
+                                                    onTap: () {
+                                                      if (messageId
+                                                          .isNotEmpty) {
+                                                        setState(() {
+                                                          allBookmarksChat
+                                                              .removeAt(index);
+                                                        });
+                                                        BlocProvider.of<
+                                                          HomeFlowBloc
+                                                        >(context).add(
+                                                          UnbookmarkChat(
+                                                            messageId:
+                                                                messageId,
+                                                          ),
+                                                        );
+                                                      } else {
+                                                        CommonUtils.showErrorToast(
+                                                          'Cannot remove bookmark: Message ID is missing',
+                                                        );
+                                                      }
+                                                    },
+                                                    child: Image.asset(
+                                                      'assets/images/bookmark.png',
+                                                      height: 18,
+                                                      width: 18,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              children: [
+                                                Padding(
+                                                  padding: const EdgeInsets.all(
+                                                    16,
+                                                  ),
+                                                  child: Text(
+                                                    answer,
+                                                    style: FTextStyle
+                                                        .defaultText
+                                                        .copyWith(
+                                                          color: Colors.black87,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                         ),
                                       );
                                     },
