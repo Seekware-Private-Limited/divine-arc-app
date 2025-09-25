@@ -72,4 +72,7 @@
             <data android:mimeType="text/plain" />
         </intent>
     </queries>
+    <queries>
+  <provider android:authorities="com.facebook.katana.provider.PlatformProvider" />
+</queries>
 </manifest>

@@ -13,10 +13,11 @@ class APIEndPoints {
   static const String healthCheck = '$streamingBaseUrl/api/health';
 
   // GitaGPT App APIs
-  // static const String baseUrl = 'https://gitagptapp.vexoo.ai';
-  static const String baseUrl = 'http://192.168.5.95:3001'; // Local
+  static const String baseUrl = 'https://gitagptapp.vexoo.ai';
+  // static const String baseUrl = 'http://192.168.5.95:3001'; // Local
   static const String signup = '$baseUrl/auth/register';
   static const String login = '$baseUrl/auth/login';
+  static const String socialLogin = '$baseUrl/auth/socialLogin';
   static const String googleLogin = '$baseUrl/auth/google/login';
   static const String initiateChat = '$baseUrl/chat/initiate';
   static String allPrayers(String lan) => '$baseUrl/chat/${lan}/prayers';

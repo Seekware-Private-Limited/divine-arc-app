@@ -22,7 +22,7 @@ dependencies {
 
 android {
     namespace = "com.seekware.gitagpt"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -46,7 +46,7 @@ android {
         create("release") {
             keyAlias = "Seekware"
             keyPassword = "Seekware@GitaGPT"
-            storeFile = file("/home/seekware/Documents/Prince-GitaGPT-Flutter/Prince-Geeta-GPT/android/app/Keystore.jks")
+            storeFile = file("/home/seekware/Documents/Prince-Geeta-GPT-Flutter/android/app/Keystore.jks")
             storePassword = "Seekware@GitaGPT"
         }
     }

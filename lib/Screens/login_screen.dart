@@ -56,16 +56,24 @@ class _LoginScreenState extends State<LoginScreen> {
                     listener: (context, state) async {
                       if (state is GoogleLoginLoading ||
                           state is FacebookLoginLoading ||
+                          state is SocialLoginLoading ||
                           state is LoginLoading) {
                         setState(() {
                           isLoading = true;
                         });
-                      }
-                      else if (state is GoogleLoginSuccess) {
+                      } else if (state is GoogleLoginSuccess) {
                         setState(() {
                           isLoading = false;
                         });
-
+                        print(state.email);
+                        print(state.id);
+                        BlocProvider.of<AuthFlowBloc>(context).add(
+                          SocialLoginEventHandler(
+                            socialId: state.id,
+                            socialType: 'google',
+                            email: state.email,
+                          ),
+                        );
                       } else if (state is GoogleLoginFailure) {
                         setState(() {
                           isLoading = false;
@@ -75,7 +83,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() {
                           isLoading = false;
                         });
-                        CommonUtils.showSuccessToast('Logged in as ${state.name}');
+                        CommonUtils.showSuccessToast(
+                          'Logged in as ${state.name}',
+                        );
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -109,6 +119,25 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() {
                           isLoading = false;
                         });
+                        CommonUtils.showErrorToast(state.failureMessage);
+                      } else if (state is SocialLoginSuccess) {
+                        final response = state.successResponse['data'];
+                        final name = response['name'];
+                        final email = response['email'];
+                        PrefUtils.setName(name);
+                        PrefUtils.setEmail(email);
+                        CommonUtils.showSuccessToast('Logged in successfully.');
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CustomBottomNavBar(),
+                          ),
+                        );
+                      } else if (state is SocialLoginFailure) {
+                        setState(() {
+                          isLoading = false;
+                        });
+                        print(state.failureMessage);
                         CommonUtils.showErrorToast(state.failureMessage);
                       }
                     },
@@ -451,7 +480,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                   alignment: Alignment.center,
                                   child: GestureDetector(
                                     onTap: () {
-                                      Navigator.push(context, MaterialPageRoute(builder: (context) => ForgotPasswordScreen()));
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) =>
+                                                  ForgotPasswordScreen(),
+                                        ),
+                                      );
                                     },
                                     child: Text(
                                       AppLocalizations.of(

@@ -26,12 +26,14 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
               googleSignInAccount.id.toString(),
             ),
           );
-          developer.log('User Name Is : ${googleSignInAccount.displayName}');
-          developer.log('User Email Is : ${googleSignInAccount.email}');
-          developer.log('User Photo Is : ${googleSignInAccount.photoUrl}');
-          developer.log('User Id Is : ${googleSignInAccount.id}');
+          print('User Name Is : ${googleSignInAccount.displayName}');
+          print('User Email Is : ${googleSignInAccount.email}');
+          print('User Photo Is : ${googleSignInAccount.photoUrl}');
+          print('User Id Is : ${googleSignInAccount.id}');
         } else {
-          emit(GoogleLoginFailure(""));
+          emit(
+            GoogleLoginFailure("Something went wrong.Please try again later."),
+          );
         }
       } catch (e) {
         if (kDebugMode) {
@@ -277,6 +279,68 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
       } else {
         emit(CheckNetworkConnection());
         developer.log("❗ No internet connection.");
+      }
+    });
+
+    on<SocialLoginEventHandler>((event, emit) async {
+      if (!await ConnectivityService.isConnected()) {
+        emit(CheckNetworkConnection());
+        developer.log("No internet connection.");
+        return;
+      }
+
+      emit(SocialLoginLoading());
+
+      final requestUrl = Uri.parse(APIEndPoints.socialLogin);
+      final Map<String, dynamic> requestBody = {
+        "email": event.email,
+        "social_id": event.socialId,
+        "social_type": event.socialType,
+      };
+
+      developer.log("Login API Request URL: $requestUrl");
+      developer.log("Login API Request Body: ${jsonEncode(requestBody)}");
+
+      try {
+        final response = await http.post(
+          requestUrl,
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode(requestBody),
+        );
+
+        developer.log(
+          "Social Login API Response Status Code: ${response.statusCode}",
+        );
+        developer.log("Social Login API Response Body: ${response.body}");
+
+        // ✅ Extract Set-Cookie token
+        final setCookieHeader = response.headers['set-cookie'];
+        if (setCookieHeader != null) {
+          final authCookie = setCookieHeader
+              .split(';')
+              .firstWhere(
+                (c) => c.contains('Authorization='),
+                orElse: () => '',
+              );
+
+          if (authCookie.isNotEmpty) {
+            developer.log("Extracted Cookie Token: $authCookie");
+            PrefUtils.setToken(authCookie);
+          }
+        } else {
+          developer.log("Set-Cookie header not found.");
+        }
+
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        if (response.statusCode == 200) {
+          emit(SocialLoginSuccess(responseData));
+        } else {
+          emit(SocialLoginFailure(responseData['message']));
+        }
+      } catch (e) {
+        emit(CommonServerFailure(e.toString()));
+        developer.log("Exception occurred: $e");
       }
     });
   }
