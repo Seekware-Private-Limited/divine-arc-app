@@ -87,11 +87,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               children: [
                                 const SizedBox(height: 20),
                                 Center(
-                                  child: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.translate('gitagpt'),
-                                    style: FTextStyle.gita_gpt_text,
+                                  child: Image.asset(
+                                    'assets/images/GitaGPTLogo.png',
+                                    height: 100,
+                                    width: 100,
                                   ),
                                 ),
                                 const SizedBox(height: 5),

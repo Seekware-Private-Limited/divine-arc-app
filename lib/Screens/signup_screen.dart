@@ -36,10 +36,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool isValidPassword(String password) {
     return password.length >= 9 &&
         password.length <= 32 &&
-        RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{9,32}$')
-            .hasMatch(password);
+        RegExp(
+          r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{9,32}$',
+        ).hasMatch(password);
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -64,17 +64,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     listener: (context, state) async {
                       if (state is GoogleLoginLoading ||
                           state is FacebookLoginLoading ||
+                          state is SocialLoginLoading ||
                           state is SignUpLoading) {
                         setState(() {
                           isLoading = true;
                         });
-                      }
-                      else if (state is GoogleLoginSuccess) {
+                      } else if (state is GoogleLoginSuccess) {
                         setState(() {
                           isLoading = false;
                         });
-                      }
-                      else if (state is GoogleLoginFailure) {
+                        print(state.email);
+                        print(state.id);
+                        BlocProvider.of<AuthFlowBloc>(context).add(
+                          SocialLoginEventHandler(
+                            socialId: state.id,
+                            socialType: 'google',
+                            email: state.email,
+                            name: state.name,
+                          ),
+                        );
+                      } else if (state is GoogleLoginFailure) {
                         setState(() {
                           isLoading = false;
                         });
@@ -83,7 +92,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         setState(() {
                           isLoading = false;
                         });
-                        CommonUtils.showSuccessToast('Logged In As - ${state.name}');
+                        CommonUtils.showSuccessToast(
+                          'Logged In As - ${state.name}',
+                        );
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -102,12 +113,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         PrefUtils.setIsLogin(true);
                         PrefUtils.setIsGuest(false);
                         Navigator.pop(context);
-                        CommonUtils.showSuccessToast('Account Created Successfully!');
+                        CommonUtils.showSuccessToast(
+                          'Account Created Successfully!',
+                        );
                       } else if (state is SignUpFailure) {
                         setState(() {
                           isLoading = false;
                         });
-                        CommonUtils.showErrorToast(state.failureResponse['message']);
+                        CommonUtils.showErrorToast(
+                          state.failureResponse['message'],
+                        );
+                      } else if (state is SocialLoginSuccess) {
+                        setState(() {
+                          isLoading = false;
+                        });
+                        final response = state.successResponse['data'];
+                        final name = response['name'];
+                        final email = response['email'];
+                        PrefUtils.setName(name);
+                        PrefUtils.setEmail(email);
+                        CommonUtils.showSuccessToast('Logged in successfully.');
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CustomBottomNavBar(),
+                          ),
+                        );
+                      } else if (state is SocialLoginFailure) {
+                        setState(() {
+                          isLoading = false;
+                        });
+                        print(state.failureMessage);
+                        CommonUtils.showErrorToast(state.failureMessage);
                       }
                     },
                     child: Padding(
@@ -159,11 +196,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 Center(
-                                  child: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.translate('gitagpt'),
-                                    style: FTextStyle.gita_gpt_text,
+                                  child: Image.asset(
+                                    'assets/images/GitaGPTLogo.png',
+                                    height: 100,
+                                    width: 100,
                                   ),
                                 ),
                                 Text(
@@ -194,23 +230,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       borderSide: BorderSide.none,
                                     ),
                                   ),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value.isEmpty) {
-                                          nameError = true;
-                                          nameErrorText = AppLocalizations.of(context)!.translate('emptyNameError');
-                                        } else if (value.length > 32) {
-                                          nameError = true;
-                                          nameErrorText = AppLocalizations.of(context)!.translate('nameLengthError');
-                                        } else if (!isValidName(value)) {
-                                          nameError = true;
-                                          nameErrorText = AppLocalizations.of(context)!.translate('invalidNameError');
-                                        } else {
-                                          nameError = false;
-                                          nameErrorText = null;
-                                        }
-                                      });
-                                    }
+                                  onChanged: (value) {
+                                    setState(() {
+                                      if (value.isEmpty) {
+                                        nameError = true;
+                                        nameErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('emptyNameError');
+                                      } else if (value.length > 32) {
+                                        nameError = true;
+                                        nameErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('nameLengthError');
+                                      } else if (!isValidName(value)) {
+                                        nameError = true;
+                                        nameErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('invalidNameError');
+                                      } else {
+                                        nameError = false;
+                                        nameErrorText = null;
+                                      }
+                                    });
+                                  },
                                 ),
                                 Visibility(
                                   visible: nameError,
@@ -248,24 +290,29 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       borderSide: BorderSide.none,
                                     ),
                                   ),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value.isEmpty) {
-                                          emailError = true;
-                                          emailErrorText = AppLocalizations.of(context)!.translate('emptyEmailError');
-                                        } else if (!isValidEmail(value)) {
-                                          emailError = true;
-                                          emailErrorText = AppLocalizations.of(context)!.translate('invalidEmailError');
-                                        } else if (value.length > 255) {
-                                          emailError = true;
-                                          emailErrorText = AppLocalizations.of(context)!.translate('emailLengthError');
-                                        } else {
-                                          emailError = false;
-                                          emailErrorText = null;
-                                        }
-                                      });
-                                    }
-
+                                  onChanged: (value) {
+                                    setState(() {
+                                      if (value.isEmpty) {
+                                        emailError = true;
+                                        emailErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('emptyEmailError');
+                                      } else if (!isValidEmail(value)) {
+                                        emailError = true;
+                                        emailErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('invalidEmailError');
+                                      } else if (value.length > 255) {
+                                        emailError = true;
+                                        emailErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('emailLengthError');
+                                      } else {
+                                        emailError = false;
+                                        emailErrorText = null;
+                                      }
+                                    });
+                                  },
                                 ),
                                 Visibility(
                                   visible: emailError,
@@ -302,26 +349,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       borderSide: BorderSide.none,
                                     ),
                                   ),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        if (value.isEmpty) {
-                                          passwordError = true;
-                                          passwordErrorText = AppLocalizations.of(context)!.translate('emptyPasswordError');
-                                        } else if (value.length < 9) {
-                                          passwordError = true;
-                                          passwordErrorText = AppLocalizations.of(context)!.translate('shortPasswordError');
-                                        } else if (value.length > 32) {
-                                          passwordError = true;
-                                          passwordErrorText = AppLocalizations.of(context)!.translate('longPasswordError');
-                                        } else if (!isValidPassword(value)) {
-                                          passwordError = true;
-                                          passwordErrorText = AppLocalizations.of(context)!.translate('invalidPasswordError');
-                                        } else {
-                                          passwordError = false;
-                                          passwordErrorText = null;
-                                        }
-                                      });
-                                    }
+                                  onChanged: (value) {
+                                    setState(() {
+                                      if (value.isEmpty) {
+                                        passwordError = true;
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('emptyPasswordError');
+                                      } else if (value.length < 9) {
+                                        passwordError = true;
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('shortPasswordError');
+                                      } else if (value.length > 32) {
+                                        passwordError = true;
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('longPasswordError');
+                                      } else if (!isValidPassword(value)) {
+                                        passwordError = true;
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('invalidPasswordError');
+                                      } else {
+                                        passwordError = false;
+                                        passwordErrorText = null;
+                                      }
+                                    });
+                                  },
                                 ),
                                 Visibility(
                                   visible: passwordError,
@@ -345,19 +400,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     if (nameController.text.isEmpty) {
                                       setState(() {
                                         nameError = true;
-                                        nameErrorText = AppLocalizations.of(context)!.translate('emptyNameError');
+                                        nameErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('emptyNameError');
                                       });
                                       hasError = true;
-                                    } else if (nameController.text.length > 32) {
+                                    } else if (nameController.text.length >
+                                        32) {
                                       setState(() {
                                         nameError = true;
-                                        nameErrorText = AppLocalizations.of(context)!.translate('nameLengthError');
+                                        nameErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('nameLengthError');
                                       });
                                       hasError = true;
-                                    } else if (!isValidName(nameController.text)) {
+                                    } else if (!isValidName(
+                                      nameController.text,
+                                    )) {
                                       setState(() {
                                         nameError = true;
-                                        nameErrorText = AppLocalizations.of(context)!.translate('invalidNameError');
+                                        nameErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('invalidNameError');
                                       });
                                       hasError = true;
                                     }
@@ -365,19 +429,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     if (emailController.text.isEmpty) {
                                       setState(() {
                                         emailError = true;
-                                        emailErrorText = AppLocalizations.of(context)!.translate('emptyEmailError');
+                                        emailErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('emptyEmailError');
                                       });
                                       hasError = true;
-                                    } else if (!isValidEmail(emailController.text)) {
+                                    } else if (!isValidEmail(
+                                      emailController.text,
+                                    )) {
                                       setState(() {
                                         emailError = true;
-                                        emailErrorText = AppLocalizations.of(context)!.translate('invalidEmailError');
+                                        emailErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('invalidEmailError');
                                       });
                                       hasError = true;
-                                    } else if (emailController.text.length > 255) {
+                                    } else if (emailController.text.length >
+                                        255) {
                                       setState(() {
                                         emailError = true;
-                                        emailErrorText = AppLocalizations.of(context)!.translate('emailLengthError');
+                                        emailErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('emailLengthError');
                                       });
                                       hasError = true;
                                     }
@@ -385,35 +458,50 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     if (passwordController.text.isEmpty) {
                                       setState(() {
                                         passwordError = true;
-                                        passwordErrorText = AppLocalizations.of(context)!.translate('emptyPasswordError');
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('emptyPasswordError');
                                       });
                                       hasError = true;
-                                    } else if (passwordController.text.length < 9) {
+                                    } else if (passwordController.text.length <
+                                        9) {
                                       setState(() {
                                         passwordError = true;
-                                        passwordErrorText = AppLocalizations.of(context)!.translate('shortPasswordError');
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('shortPasswordError');
                                       });
                                       hasError = true;
-                                    } else if (passwordController.text.length > 32) {
+                                    } else if (passwordController.text.length >
+                                        32) {
                                       setState(() {
                                         passwordError = true;
-                                        passwordErrorText = AppLocalizations.of(context)!.translate('longPasswordError');
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('longPasswordError');
                                       });
                                       hasError = true;
-                                    } else if (!isValidPassword(passwordController.text)) {
+                                    } else if (!isValidPassword(
+                                      passwordController.text,
+                                    )) {
                                       setState(() {
                                         passwordError = true;
-                                        passwordErrorText = AppLocalizations.of(context)!.translate('invalidPasswordError');
+                                        passwordErrorText = AppLocalizations.of(
+                                          context,
+                                        )!.translate('invalidPasswordError');
                                       });
                                       hasError = true;
                                     }
 
                                     if (!hasError) {
-                                      BlocProvider.of<AuthFlowBloc>(context).add(
+                                      BlocProvider.of<AuthFlowBloc>(
+                                        context,
+                                      ).add(
                                         SignupEventHandler(
                                           name: nameController.text.trim(),
                                           email: emailController.text.trim(),
-                                          password: passwordController.text.trim(),
+                                          password:
+                                              passwordController.text.trim(),
                                         ),
                                       );
                                     }
@@ -475,7 +563,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 // Social Login Buttons (Google, Apple, Microsoft)
                                 GestureDetector(
                                   onTap: () {
-                                    BlocProvider.of<AuthFlowBloc>(context).add(GoogleLoginEventHandler());
+                                    BlocProvider.of<AuthFlowBloc>(
+                                      context,
+                                    ).add(GoogleLoginEventHandler());
                                   },
                                   child: Container(
                                     height: 45,
@@ -488,7 +578,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     ),
                                     child: Row(
                                       mainAxisAlignment:
-                                      MainAxisAlignment.center,
+                                          MainAxisAlignment.center,
                                       children: [
                                         SvgPicture.asset(
                                           'assets/images/google.svg',
@@ -501,7 +591,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                             context,
                                           )!.translate('continueWithGoogle'),
                                           style:
-                                          FTextStyle.socialloginbuttonText,
+                                              FTextStyle.socialloginbuttonText,
                                         ),
                                       ],
                                     ),

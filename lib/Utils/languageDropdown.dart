@@ -96,7 +96,7 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
         context,
         listen: false,
       ).changeLanguage(languageCode);
-      developer.log('LANGUAGE CHANGED TO - ${languageCode}');
+      print('LANGUAGE CHANGED TO - ${languageCode}');
       PrefUtils.setLanguage(languageCode);
       BlocProvider.of<HomeFlowBloc>(
         context,

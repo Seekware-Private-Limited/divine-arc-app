@@ -7,12 +7,12 @@ export 'package:url_launcher/url_launcher.dart';
 export '../Screens/profile_screen.dart';
 export '../Screens/history_screen.dart';
 export 'package:flutter_bloc/flutter_bloc.dart';
-export 'package:flutter_sound/flutter_sound.dart';
 export 'package:gita_gpt/Utils/common_utils.dart';
 export 'package:path_provider/path_provider.dart';
 export 'package:permission_handler/permission_handler.dart';
 export 'package:flutter/services.dart';
-export 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart' hide CommonServerFailure ,CheckNetworkConnection;
+export 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart'
+    hide CommonServerFailure, CheckNetworkConnection;
 export 'package:gita_gpt/l10n/language_provider.dart';
 export '../Screens/bookmark_screen.dart';
 export '../Screens/login_screen.dart';

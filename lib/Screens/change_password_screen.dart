@@ -13,7 +13,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool newpasswordError = false;
   String? currentpasswordErrorText;
   String? newpasswordErrorText;
-  final TextEditingController currentPasswordController = TextEditingController();
+  final TextEditingController currentPasswordController =
+      TextEditingController();
   final TextEditingController newPasswordController = TextEditingController();
 
   // Password validation regex
@@ -44,8 +45,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               Center(
                 child: SingleChildScrollView(
                   child: BlocListener<AuthFlowBloc, AuthFlowState>(
-                    listener: (context, state) async
-                    {
+                    listener: (context, state) async {
                       if (state is ChangePasswordLoading) {
                         setState(() {
                           isLoading = true;
@@ -54,7 +54,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         setState(() {
                           isLoading = false;
                         });
-                        CommonUtils.showSuccessToast(state.successResponse['message']);
+                        CommonUtils.showSuccessToast(
+                          state.successResponse['message'],
+                        );
                         Navigator.pop(context);
                       } else if (state is ChangePasswordFailure) {
                         setState(() {
@@ -63,8 +65,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         CommonUtils.showErrorToast(
                           state.failureResponse['message'],
                         );
-                      }
-                      else if (state is CheckNetworkConnection){
+                      } else if (state is CheckNetworkConnection) {
                         setState(() {
                           isLoading = false;
                         });
@@ -93,15 +94,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             child: SingleChildScrollView(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
                                 children: [
                                   const SizedBox(height: 20),
                                   Center(
-                                    child: Text(
-                                      AppLocalizations.of(
-                                        context,
-                                      )!.translate('gitagpt'),
-                                      style: FTextStyle.gita_gpt_text,
+                                    child: Image.asset(
+                                      'assets/images/GitaGPTLogo.png',
+                                      height: 100,
+                                      width: 100,
                                     ),
                                   ),
                                   const SizedBox(height: 5),
@@ -159,24 +160,36 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                       setState(() {
                                         if (value.isEmpty) {
                                           currentpasswordError = true;
-                                          currentpasswordErrorText = AppLocalizations.of(
-                                            context,
-                                          )!.translate('currentPasswordError');
+                                          currentpasswordErrorText =
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate(
+                                                'currentPasswordError',
+                                              );
                                         } else if (value.length < 9) {
                                           currentpasswordError = true;
-                                          currentpasswordErrorText = AppLocalizations.of(
-                                            context,
-                                          )!.translate('currentShortPasswordError');
+                                          currentpasswordErrorText =
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate(
+                                                'currentShortPasswordError',
+                                              );
                                         } else if (value.length > 32) {
                                           currentpasswordError = true;
-                                          currentpasswordErrorText = AppLocalizations.of(
-                                            context,
-                                          )!.translate('currentLongPasswordError');
+                                          currentpasswordErrorText =
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate(
+                                                'currentLongPasswordError',
+                                              );
                                         } else if (!isValidPassword(value)) {
                                           currentpasswordError = true;
-                                          currentpasswordErrorText = AppLocalizations.of(
-                                            context,
-                                          )!.translate('currentInvalidPasswordError');
+                                          currentpasswordErrorText =
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate(
+                                                'currentInvalidPasswordError',
+                                              );
                                         } else {
                                           currentpasswordError = false;
                                           currentpasswordErrorText = null;
@@ -224,24 +237,34 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                       setState(() {
                                         if (value.isEmpty) {
                                           newpasswordError = true;
-                                          newpasswordErrorText = AppLocalizations.of(
-                                            context,
-                                          )!.translate('newPasswordError');
+                                          newpasswordErrorText =
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate('newPasswordError');
                                         } else if (value.length < 9) {
                                           newpasswordError = true;
-                                          newpasswordErrorText = AppLocalizations.of(
-                                            context,
-                                          )!.translate('newShortPasswordError');
+                                          newpasswordErrorText =
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate(
+                                                'newShortPasswordError',
+                                              );
                                         } else if (value.length > 32) {
                                           newpasswordError = true;
-                                          newpasswordErrorText = AppLocalizations.of(
-                                            context,
-                                          )!.translate('newLongPasswordError');
+                                          newpasswordErrorText =
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate(
+                                                'newLongPasswordError',
+                                              );
                                         } else if (!isValidPassword(value)) {
                                           newpasswordError = true;
-                                          newpasswordErrorText = AppLocalizations.of(
-                                            context,
-                                          )!.translate('newInvalidPasswordError');
+                                          newpasswordErrorText =
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate(
+                                                'newInvalidPasswordError',
+                                              );
                                         } else {
                                           newpasswordError = false;
                                           newpasswordErrorText = null;
@@ -261,48 +284,65 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                   GestureDetector(
                                     onTap: () {
                                       bool hasError = false;
-                              
-                                      if (currentPasswordController.text.isEmpty) {
+
+                                      if (currentPasswordController
+                                          .text
+                                          .isEmpty) {
                                         setState(() {
-                                          currentpasswordErrorText = AppLocalizations.of(
-                                            context,
-                                          )!.translate('currentPasswordError');
+                                          currentpasswordErrorText =
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate(
+                                                'currentPasswordError',
+                                              );
                                         });
                                         hasError = true;
                                       }
                                       if (newPasswordController.text.isEmpty) {
                                         setState(() {
-                                          newpasswordErrorText = AppLocalizations.of(
-                                            context,
-                                          )!.translate('newPasswordError');
+                                          newpasswordErrorText =
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate('newPasswordError');
+                                        });
+                                        hasError = true;
+                                      } else if (!isValidPassword(
+                                        currentPasswordController.text,
+                                      )) {
+                                        setState(() {
+                                          currentpasswordErrorText =
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate(
+                                                'currentInvalidPasswordError',
+                                              );
+                                        });
+                                        hasError = true;
+                                      } else if (!isValidPassword(
+                                        newPasswordController.text,
+                                      )) {
+                                        setState(() {
+                                          newpasswordErrorText =
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate(
+                                                'newInvalidPasswordError',
+                                              );
                                         });
                                         hasError = true;
                                       }
 
-                                      else if (!isValidPassword(
-                                        currentPasswordController.text,
-                                      )) {
-                                        setState(() {
-                                          currentpasswordErrorText = AppLocalizations.of(
-                                            context,
-                                          )!.translate('currentInvalidPasswordError');
-                                        });
-                                        hasError = true;
-                                      }
-                                      else if (!isValidPassword(
-                                        newPasswordController.text,
-                                      )) {
-                                        setState(() {
-                                          newpasswordErrorText = AppLocalizations.of(
-                                            context,
-                                          )!.translate('newInvalidPasswordError');
-                                        });
-                                        hasError = true;
-                                      }
-                              
                                       if (!hasError) {
-                                         BlocProvider.of<AuthFlowBloc>(context).add(
-                                             ChangePasswordEventHandler(currentPassword: currentPasswordController.text, newPassword: newPasswordController.text));
+                                        BlocProvider.of<AuthFlowBloc>(
+                                          context,
+                                        ).add(
+                                          ChangePasswordEventHandler(
+                                            currentPassword:
+                                                currentPasswordController.text,
+                                            newPassword:
+                                                newPasswordController.text,
+                                          ),
+                                        );
                                       }
                                     },
                                     child: Container(
@@ -329,14 +369,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                       ),
                                     ),
                                   ),
-                              
+
                                   const SizedBox(height: 24),
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
                                       if (Localizations.localeOf(
-                                        context,
-                                      ).languageCode ==
+                                            context,
+                                          ).languageCode ==
                                           'en') ...[
                                         Text(
                                           AppLocalizations.of(

@@ -1,5 +1,78 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:record/record.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
 import 'dart:developer' as developer;
+
+class CustomAudioPlayer extends StatelessWidget {
+  final String audioPath;
+  final bool isPlaying;
+  final VoidCallback onPlayPause;
+  final String label;
+
+  const CustomAudioPlayer({
+    super.key,
+    required this.audioPath,
+    required this.isPlaying,
+    required this.onPlayPause,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: [AppColors.gradientStart, AppColors.gradientEnd],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            onTap: onPlayPause,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isPlaying ? Icons.pause : Icons.play_arrow,
+                color: AppColors.gradientStart,
+                size: 20,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            isPlaying ? 'Playing $label' : 'Play $label',
+            style: FTextStyle.defaultText.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class GptScreen extends StatefulWidget {
   final String? searchQueryFromAskAnythingScreen;
@@ -19,19 +92,41 @@ class _GptScreenState extends State<GptScreen>
   final TextEditingController inputController = TextEditingController();
   final TextEditingController feedbackTextController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final FlutterSoundRecorder recorder = FlutterSoundRecorder();
+  late final AudioRecorder _audioRecorder;
+  late final AudioPlayer _audioPlayer;
+  late final AnimationController _animationController;
+  late final Animation<double> _scaleAnimation;
   bool isRecording = false;
-  String? audioPath;
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  List<Map<String, dynamic>> chatHistory = [];
+  bool isPlaying = false;
+  bool isPlayingResponse = false;
+  bool isSending = false;
+  String? _audioPath;
+  String? _responseAudioPath;
+  String? _apiResponse;
   String reactionId = '';
   int? _editingIndex;
   int? _currentResponseIndex;
+  List<Map<String, dynamic>> chatHistory = [];
 
   @override
   void initState() {
     super.initState();
+    _audioRecorder = AudioRecorder();
+    _audioPlayer = AudioPlayer();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      setState(() {
+        isPlaying = state == PlayerState.playing;
+        isPlayingResponse = state == PlayerState.playing;
+      });
+    });
+
     chatHistory = PrefUtils.getChatHistory();
     developer.log('Initial chatHistory: $chatHistory', name: 'CHAT_HISTORY');
     if (widget.chatId != null && widget.chatId!.isNotEmpty) {
@@ -40,18 +135,156 @@ class _GptScreenState extends State<GptScreen>
         context,
       ).add(GetSingleChatHistoryEvent(chatId: widget.chatId!));
     }
-    _initializeRecorder();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
     if (widget.searchQueryFromAskAnythingScreen != null &&
         widget.searchQueryFromAskAnythingScreen!.trim().isNotEmpty) {
       callAPI();
     }
+  }
+
+  @override
+  void dispose() {
+    inputController.dispose();
+    feedbackTextController.dispose();
+    _scrollController.dispose();
+    _audioRecorder.dispose();
+    _audioPlayer.dispose();
+    _animationController.dispose();
+    // Clear temporary audio files
+    if (_audioPath != null) File(_audioPath!).delete();
+    if (_responseAudioPath != null) File(_responseAudioPath!).delete();
+    super.dispose();
+  }
+
+  String _generateRandomId() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    final random = Random();
+    return List.generate(
+      10,
+      (index) => chars[random.nextInt(chars.length)],
+    ).join();
+  }
+
+  Future<void> startRecording() async {
+    try {
+      if (Theme.of(context).platform == TargetPlatform.windows ||
+          Theme.of(context).platform == TargetPlatform.linux ||
+          Theme.of(context).platform == TargetPlatform.macOS) {
+        CommonUtils.showErrorToast('Recording not supported on this platform');
+        return;
+      }
+
+      final status = await Permission.microphone.request();
+      if (!status.isGranted) {
+        CommonUtils.showErrorToast('Microphone permission denied');
+        return;
+      }
+
+      final dir = await getTemporaryDirectory(); // Use temporary storage
+      _audioPath = '${dir.path}/${_generateRandomId()}.wav';
+      await _audioRecorder.start(
+        const RecordConfig(encoder: AudioEncoder.wav),
+        path: _audioPath!,
+      );
+      setState(() {
+        isRecording = true;
+        _responseAudioPath = null;
+        _apiResponse = null;
+      });
+      print('Recording started... Path: $_audioPath');
+    } catch (e) {
+      print('Error starting recording: $e');
+      CommonUtils.showErrorToast('Failed to start recording: $e');
+    }
+  }
+
+  Future<void> stopRecording() async {
+    if (!isRecording) return;
+    try {
+      final path = await _audioRecorder.stop();
+      setState(() {
+        isRecording = false;
+        _audioPath = path;
+      });
+      print('Recording stopped. File: $_audioPath');
+      if (_audioPath != null) {
+        await _sendAudioToApi();
+      } else {
+        CommonUtils.showErrorToast('No recording file found');
+      }
+    } catch (e) {
+      print('Error stopping recording: $e');
+      CommonUtils.showErrorToast('Failed to stop recording: $e');
+    }
+  }
+
+  Future<void> _sendAudioToApi() async {
+    if (_audioPath == null) return;
+    setState(() => isSending = true);
+
+    try {
+      final audioFile = File(_audioPath!);
+      BlocProvider.of<HomeFlowBloc>(context).add(
+        VoiceConversationEvent(
+          audioFile: audioFile,
+          language: PrefUtils.getLanguage(),
+          sessionId: PrefUtils.getSessionID(),
+        ),
+      );
+      setState(() {
+        chatHistory.add({
+          'question': 'Audio Recording',
+          'answer': '',
+          'chatId': widget.chatId ?? PrefUtils.getChatID(),
+          'messageId': '',
+          'isBookmarked': false,
+          'isLiked': false,
+          'isDisliked': false,
+        });
+        _currentResponseIndex = chatHistory.length - 1;
+        PrefUtils.setChatHistory(chatHistory);
+        developer.log(
+          'Added audio chat entry: ${chatHistory.last}',
+          name: 'CHAT_ADD',
+        );
+      });
+      _scrollToBottom();
+    } catch (e) {
+      print('Error sending audio: $e');
+      CommonUtils.showErrorToast('Error sending audio: $e');
+    } finally {
+      setState(() => isSending = false);
+    }
+  }
+
+  Future<void> _playRecording() async {
+    if (_audioPath == null) return;
+    await _audioPlayer.play(DeviceFileSource(_audioPath!));
+  }
+
+  Future<void> _playResponseAudio() async {
+    if (_responseAudioPath == null) return;
+    await _audioPlayer.play(DeviceFileSource(_responseAudioPath!));
+  }
+
+  Future<String> _writeResponseFile(List<int> bytes) async {
+    final dir = await getTemporaryDirectory(); // Use temporary storage
+    final path = '${dir.path}/${_generateRandomId()}_response.wav';
+    final file = File(path);
+    await file.writeAsBytes(bytes);
+    return path;
+  }
+
+  bool _isValidHex(String input) {
+    final clean = input.replaceAll(RegExp(r'\s+'), '');
+    return RegExp(r'^[0-9a-fA-F]+$').hasMatch(clean) && clean.length % 2 == 0;
+  }
+
+  List<int> _hexToBytes(String hex) {
+    final clean = hex.replaceAll(RegExp(r'\s+'), '');
+    return [
+      for (int i = 0; i < clean.length; i += 2)
+        int.parse(clean.substring(i, i + 2), radix: 16),
+    ];
   }
 
   void callAPI() {
@@ -60,7 +293,7 @@ class _GptScreenState extends State<GptScreen>
         chatHistory.add({
           'question': widget.searchQueryFromAskAnythingScreen!,
           'answer': '',
-          'chatId': '',
+          'chatId': widget.chatId ?? '',
           'messageId': '',
           'isBookmarked': false,
           'isLiked': false,
@@ -74,7 +307,7 @@ class _GptScreenState extends State<GptScreen>
         );
       });
 
-      if (PrefUtils.getChatID().isEmpty) {
+      if (PrefUtils.getChatID().isEmpty && widget.chatId == null) {
         BlocProvider.of<HomeFlowBloc>(context).add(
           InitiateChatEvent(
             message: widget.searchQueryFromAskAnythingScreen!,
@@ -100,85 +333,16 @@ class _GptScreenState extends State<GptScreen>
     }
   }
 
-  Future<void> _initializeRecorder() async {
-    try {
-      await recorder.openRecorder();
-    } catch (e) {
-      print('Failed to initialize recorder: $e');
-      CommonUtils.showErrorToast('Failed to initialize recorder: $e');
-    }
-  }
-
-  Future<void> startRecording() async {
-    try {
-      if (Theme.of(context).platform == TargetPlatform.windows ||
-          Theme.of(context).platform == TargetPlatform.linux ||
-          Theme.of(context).platform == TargetPlatform.macOS) {
-        CommonUtils.showErrorToast('Recording not supported on this platform');
-        return;
-      }
-
-      final status = await Permission.microphone.request();
-      if (!status.isGranted) {
-        CommonUtils.showErrorToast('Microphone permission denied');
-        return;
-      }
-
-      final dir = await getTemporaryDirectory();
-      audioPath = '${dir.path}/input.wav';
-
-      await recorder.startRecorder(toFile: audioPath, codec: Codec.pcm16WAV);
-
-      setState(() {
-        isRecording = true;
-      });
-
-      print('Recording started... Path: $audioPath');
-    } catch (e) {
-      print('Error starting recording: $e');
-      CommonUtils.showErrorToast('Failed to start recording: $e');
-    }
-  }
-
-  Future<void> stopRecording() async {
-    try {
-      await recorder.stopRecorder();
-
-      setState(() {
-        isRecording = false;
-      });
-
-      print('Recording stopped. File: $audioPath');
-
-      if (audioPath != null) {
-        final audioFile = File(audioPath!);
-
-        BlocProvider.of<HomeFlowBloc>(context).add(
-          VoiceConversationEvent(
-            audioFile: audioFile,
-            language: PrefUtils.getLanguage(),
-            sessionId: PrefUtils.getSessionID(),
-          ),
-        );
-      } else {
-        CommonUtils.showErrorToast('No recording file found');
-      }
-    } catch (e) {
-      print('Error stopping recording: $e');
-      CommonUtils.showErrorToast('Failed to stop recording: $e');
-    }
-  }
-
   void _showFeedbackPopup(BuildContext context) {
     feedbackTextController.clear();
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          insetPadding: EdgeInsets.all(20),
+          insetPadding: const EdgeInsets.all(20),
           backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            side: BorderSide(color: AppColors.gradientStart),
+            side: const BorderSide(color: AppColors.gradientStart),
             borderRadius: BorderRadius.circular(10),
           ),
           title: Column(
@@ -201,7 +365,7 @@ class _GptScreenState extends State<GptScreen>
                         width: 20,
                         color: Colors.black,
                       ),
-                      SizedBox(width: 16),
+                      const SizedBox(width: 16),
                       Text(
                         AppLocalizations.of(context)!.translate('feedback'),
                         style: FTextStyle.boldText.copyWith(
@@ -212,14 +376,12 @@ class _GptScreenState extends State<GptScreen>
                   ),
                   const SizedBox(width: 20),
                   IconButton(
-                    icon: Icon(Icons.close, color: Colors.black),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                    },
+                    icon: const Icon(Icons.close, color: Colors.black),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
               ),
-              Divider(),
+              const Divider(),
             ],
           ),
           content: SizedBox(
@@ -250,7 +412,7 @@ class _GptScreenState extends State<GptScreen>
                     maxLines: 4,
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 GestureDetector(
                   onTap: () {
                     final feedbackText = feedbackTextController.text.trim();
@@ -299,15 +461,16 @@ class _GptScreenState extends State<GptScreen>
     );
   }
 
-  @override
-  void dispose() {
-    inputController.dispose();
-    feedbackTextController.dispose();
-    _scrollController.dispose();
-    _animationController.stop();
-    _animationController.dispose();
-    recorder.closeRecorder();
-    super.dispose();
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override
@@ -374,7 +537,6 @@ class _GptScreenState extends State<GptScreen>
                   PrefUtils.setChatHistory(chatHistory);
                 }
               });
-
               if (_currentResponseIndex != null &&
                   _currentResponseIndex! < chatHistory.length) {
                 setState(() {
@@ -401,17 +563,56 @@ class _GptScreenState extends State<GptScreen>
               _scrollToBottom();
             } else if (state is ChatErrorState) {
               CommonUtils.showErrorToast(state.error['message']);
+            } else if (state is VoiceConversationSuccess) {
+              final response = state.successResponse;
+              setState(() {
+                if (_currentResponseIndex != null &&
+                    _currentResponseIndex! < chatHistory.length) {
+                  if (response is Map<String, dynamic> &&
+                      response.containsKey('audio')) {
+                    final hexString = response['audio'];
+                    if (_isValidHex(hexString)) {
+                      final bytes = _hexToBytes(hexString);
+                      _writeResponseFile(bytes).then((path) {
+                        setState(() {
+                          _responseAudioPath = path;
+                          chatHistory[_currentResponseIndex!]['answer'] =
+                              'Audio Response';
+                          PrefUtils.setChatHistory(chatHistory);
+                        });
+                        _scrollToBottom();
+                      });
+                    }
+                  } else if (response is List<int>) {
+                    _writeResponseFile(response).then((path) {
+                      setState(() {
+                        _responseAudioPath = path;
+                        chatHistory[_currentResponseIndex!]['answer'] =
+                            'Audio Response';
+                        PrefUtils.setChatHistory(chatHistory);
+                      });
+                      _scrollToBottom();
+                    });
+                  } else {
+                    _apiResponse = response.toString();
+                    chatHistory[_currentResponseIndex!]['answer'] =
+                        _apiResponse;
+                    PrefUtils.setChatHistory(chatHistory);
+                    _scrollToBottom();
+                  }
+                }
+              });
+            } else if (state is VoiceConversationFailure) {
+              CommonUtils.showErrorToast(state.failureResponse);
             } else if (state is GetSingleChatHistorySuccess) {
               final response = state.successResponse;
               final String chatId = response['chat']['id']?.toString() ?? '';
               final List<dynamic> messages =
                   response['messages'] as List<dynamic>;
               setState(() {
-                // Create a map of existing chatHistory entries by messageId
                 final Map<String, Map<String, dynamic>> localChatMap = {
                   for (var chat in chatHistory) chat['messageId']: chat,
                 };
-                // Merge server response with local state
                 chatHistory =
                     messages.map<Map<String, dynamic>>((message) {
                       final String messageId = message['id']?.toString() ?? '';
@@ -427,7 +628,6 @@ class _GptScreenState extends State<GptScreen>
                           message['isBookmarked'] ?? false;
                       final bool isLiked = message['isLiked'] ?? false;
                       final bool isDisliked = message['isDisliked'] ?? false;
-                      // Get existing local entry, if any
                       final localChat = localChatMap[messageId] ?? {};
                       return {
                         'question': question,
@@ -479,7 +679,6 @@ class _GptScreenState extends State<GptScreen>
                   (chat) => chat['messageId'] == messageId,
                 );
                 if (index != -1) {
-                  // Revert the state on failure
                   chatHistory[index]['isLiked'] =
                       wasLike ? false : chatHistory[index]['isLiked'];
                   chatHistory[index]['isDisliked'] =
@@ -608,7 +807,7 @@ class _GptScreenState extends State<GptScreen>
                               children: [
                                 ListView.builder(
                                   shrinkWrap: true,
-                                  physics: NeverScrollableScrollPhysics(),
+                                  physics: const NeverScrollableScrollPhysics(),
                                   itemCount: chatHistory.length,
                                   itemBuilder: (context, index) {
                                     final question =
@@ -633,8 +832,10 @@ class _GptScreenState extends State<GptScreen>
                                       children: [
                                         Container(
                                           width: double.infinity,
-                                          padding: EdgeInsets.all(12),
-                                          margin: EdgeInsets.only(bottom: 20),
+                                          padding: const EdgeInsets.all(12),
+                                          margin: const EdgeInsets.only(
+                                            bottom: 20,
+                                          ),
                                           decoration: BoxDecoration(
                                             color: Colors.white,
                                             border: Border.all(
@@ -679,7 +880,7 @@ class _GptScreenState extends State<GptScreen>
                                               answer.toString().trim().isEmpty
                                                   ? Row(
                                                     children: [
-                                                      SizedBox(
+                                                      const SizedBox(
                                                         height: 16,
                                                         width: 16,
                                                         child: CircularProgressIndicator(
@@ -689,7 +890,7 @@ class _GptScreenState extends State<GptScreen>
                                                                   .gradientStart,
                                                         ),
                                                       ),
-                                                      SizedBox(width: 10),
+                                                      const SizedBox(width: 10),
                                                       Text(
                                                         'Loading...',
                                                         style: FTextStyle
@@ -704,10 +905,61 @@ class _GptScreenState extends State<GptScreen>
                                                       ),
                                                     ],
                                                   )
-                                                  : Text(
-                                                    answer,
-                                                    style:
-                                                        FTextStyle.defaultText,
+                                                  : Column(
+                                                    children: [
+                                                      Text(
+                                                        answer,
+                                                        style:
+                                                            FTextStyle
+                                                                .defaultText,
+                                                      ),
+                                                      if (index ==
+                                                              _currentResponseIndex &&
+                                                          _audioPath != null)
+                                                        CustomAudioPlayer(
+                                                          audioPath:
+                                                              _audioPath!,
+                                                          isPlaying: isPlaying,
+                                                          onPlayPause:
+                                                              _playRecording,
+                                                          label: 'Recording',
+                                                        ),
+                                                      if (index ==
+                                                              _currentResponseIndex &&
+                                                          _responseAudioPath !=
+                                                              null)
+                                                        CustomAudioPlayer(
+                                                          audioPath:
+                                                              _responseAudioPath!,
+                                                          isPlaying:
+                                                              isPlayingResponse,
+                                                          onPlayPause:
+                                                              _playResponseAudio,
+                                                          label: 'Response',
+                                                        ),
+                                                      if (index ==
+                                                              _currentResponseIndex &&
+                                                          _apiResponse != null)
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets.only(
+                                                                top: 8.0,
+                                                              ),
+                                                          child: Text(
+                                                            _apiResponse!,
+                                                            style:
+                                                                const TextStyle(
+                                                                  color:
+                                                                      Colors
+                                                                          .red,
+                                                                ),
+                                                            maxLines: 5,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                        ),
+                                                    ],
                                                   ),
                                               const SizedBox(height: 16),
                                               Row(
@@ -722,7 +974,7 @@ class _GptScreenState extends State<GptScreen>
                                                         height: 16,
                                                         width: 16,
                                                       ),
-                                                      SizedBox(width: 10),
+                                                      const SizedBox(width: 10),
                                                       Text(
                                                         AppLocalizations.of(
                                                           context,
@@ -979,9 +1231,21 @@ class _GptScreenState extends State<GptScreen>
                                           35 + (_animationController.value * 5),
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: Colors.green.withOpacity(
-                                          0.3 *
-                                              (1 - _animationController.value),
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            AppColors.gradientStart.withOpacity(
+                                              0.3 *
+                                                  (1 -
+                                                      _animationController
+                                                          .value),
+                                            ),
+                                            AppColors.gradientEnd.withOpacity(
+                                              0.3 *
+                                                  (1 -
+                                                      _animationController
+                                                          .value),
+                                            ),
+                                          ],
                                         ),
                                       ),
                                     );
@@ -991,7 +1255,7 @@ class _GptScreenState extends State<GptScreen>
                                 scale:
                                     isRecording
                                         ? _scaleAnimation
-                                        : AlwaysStoppedAnimation(1.0),
+                                        : const AlwaysStoppedAnimation(1.0),
                                 child: Container(
                                   height: 30,
                                   width: 30,
@@ -1003,15 +1267,21 @@ class _GptScreenState extends State<GptScreen>
                                               : AppColors.gradientStart,
                                     ),
                                     borderRadius: BorderRadius.circular(40),
-                                    color:
+                                    gradient:
                                         isRecording
-                                            ? Colors.green
-                                            : Colors.white,
+                                            ? LinearGradient(
+                                              colors: [
+                                                AppColors.gradientStart,
+                                                AppColors.gradientEnd,
+                                              ],
+                                            )
+                                            : null,
+                                    color: isRecording ? null : Colors.white,
                                   ),
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     icon: Icon(
-                                      Icons.mic,
+                                      isRecording ? Icons.stop : Icons.mic,
                                       size: 20,
                                       color:
                                           isRecording
@@ -1109,7 +1379,7 @@ class _GptScreenState extends State<GptScreen>
                                   ],
                                 ),
                               ),
-                              child: Icon(
+                              child: const Icon(
                                 Icons.send,
                                 color: Colors.white,
                                 size: 18,
@@ -1119,6 +1389,24 @@ class _GptScreenState extends State<GptScreen>
                         ],
                       ),
                     ),
+                    if (isSending)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Column(
+                          children: [
+                            CircularProgressIndicator(
+                              color: AppColors.gradientStart,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Sending to API...',
+                              style: FTextStyle.defaultText.copyWith(
+                                color: AppColors.gradientStart,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: 10),
                   ],
                 ),
@@ -1128,17 +1416,5 @@ class _GptScreenState extends State<GptScreen>
         ),
       ),
     );
-  }
-
-  void _scrollToBottom() {
-    Future.delayed(Duration(milliseconds: 300), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
   }
 }

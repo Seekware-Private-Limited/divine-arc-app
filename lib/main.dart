@@ -1,6 +1,6 @@
+import 'package:gita_gpt/Screens/VoiceConversation.dart';
 import 'package:gita_gpt/Screens/splash_screen.dart';
 import 'package:gita_gpt/Utils/app_imports.dart';
-
 
 Future<void> main() async {
   ErrorWidget.builder = (FlutterErrorDetails details) {
@@ -16,7 +16,6 @@ Future<void> main() async {
       child: const MyApp(),
     ),
   );
-
 }
 
 class MyApp extends StatelessWidget {
@@ -48,7 +47,7 @@ class MyApp extends StatelessWidget {
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
             ),
-            home: LoginScreen(),
+            home: SplashScreen(),
           ),
         );
       },

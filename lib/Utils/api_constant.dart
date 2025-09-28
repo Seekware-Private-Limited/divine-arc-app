@@ -14,7 +14,8 @@ class APIEndPoints {
 
   // GitaGPT App APIs
   static const String baseUrl = 'https://gitagptapp.vexoo.ai';
-  // static const String baseUrl = 'http://192.168.5.95:3001'; // Local
+  // static const String baseUrl = 'https://8acd09e21b08.ngrok-free.app'; // Local
+
   static const String signup = '$baseUrl/auth/register';
   static const String login = '$baseUrl/auth/login';
   static const String socialLogin = '$baseUrl/auth/socialLogin';

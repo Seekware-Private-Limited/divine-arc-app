@@ -19,7 +19,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         emit(CreateSessionLoading());
 
         final requestUrl = Uri.parse(APIEndPoints.createSession);
-        developer.log("Request URL: $requestUrl");
+        print("Request URL: $requestUrl");
 
         try {
           final response = await http.post(
@@ -34,32 +34,37 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           if (response.statusCode == 200) {
             final Map<String, dynamic> data = jsonDecode(response.body);
             emit(CreateSessionSuccess(data));
-            developer.log("Create Session Response Data: $data");
+            print("Create Session Response Data: $data");
           } else {
             final errorData = jsonDecode(response.body);
             emit(CreateSessionFailure(errorData));
-            developer.log("Error Response: $errorData");
+            print("Error Response: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("SocketException: No internet connection.");
+          print("SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("Exception: $e");
+          print("Exception: $e");
         }
       }
     });
 
     // Chat Bloc
     on<ChatEvent>((event, emit) async {
+      // Step 1: Connectivity Validation — Legacy reliability preserved
       if (await ConnectivityService.isConnected()) {
         emit(ChatLoadingState());
 
         final requestUrl = Uri.parse(APIEndPoints.streamChat);
-        developer.log("Request URL: $requestUrl");
-        developer.log(
-          "Request Body: ${jsonEncode({'message': event.message, 'language': event.language, 'session_id': event.sessionId})}",
-        );
+        final requestBody = {
+          'message': event.message,
+          'language': event.language,
+          'session_id': event.sessionId,
+        };
+
+        print("📡 [API REQUEST] → URL: $requestUrl");
+        print("📝 [REQUEST BODY]: ${jsonEncode(requestBody)}");
 
         http.Client? client;
 
@@ -70,18 +75,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
               http.Request('POST', requestUrl)
                 ..headers['accept'] = 'application/json'
                 ..headers['Content-Type'] = 'application/json'
-                ..body = jsonEncode({
-                  'message': event.message,
-                  'language': event.language,
-                  'session_id': event.sessionId,
-                });
+                ..body = jsonEncode(requestBody);
 
           final response = await client.send(request);
-          developer.log("Response Status: ${response.statusCode}");
+
+          print("📥 [RESPONSE STATUS]: ${response.statusCode}");
+          print("📄 [RESPONSE HEADERS]: ${response.headers}");
 
           if (response.statusCode == 200) {
             final contentType = response.headers['content-type']?.toLowerCase();
 
+            // Step 2: Handle Streaming Responses
             if (contentType?.contains('text/plain') == true ||
                 contentType?.contains('text/event-stream') == true) {
               StringBuffer buffer = StringBuffer();
@@ -90,14 +94,20 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
                 utf8.decoder,
               )) {
                 buffer.write(chunk);
-                emit(ChatStreamingState(chunk)); // emit only the new chunk
+                emit(ChatStreamingState(chunk));
               }
 
-              emit(
-                ChatLoadedState(buffer.toString()),
-              ); // ✅ Final message complete
-            } else {
+              final finalMessage = buffer.toString();
+              print("✅ [FINAL STREAM RESPONSE]: $finalMessage");
+
+              emit(ChatLoadedState(finalMessage));
+            }
+            // Step 3: Handle Non-Streaming Success
+            else {
               final body = await response.stream.bytesToString();
+              print("⚠️ [UNEXPECTED CONTENT TYPE]: $contentType");
+              print("📄 [RAW RESPONSE BODY]: $body");
+
               emit(
                 ChatErrorState({
                   'error': 'Unsupported content type: $contentType',
@@ -105,8 +115,12 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
                 }),
               );
             }
-          } else {
+          }
+          // Step 4: Handle Non-200 Server Responses
+          else {
             final body = await response.stream.bytesToString();
+            print("❌ [ERROR RESPONSE BODY]: $body");
+
             try {
               final json = jsonDecode(body);
               emit(ChatErrorState({'error': json.toString()}));
@@ -121,6 +135,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           }
         } on SocketException {
           emit(CheckNetworkConnection());
+          print("🚫 SocketException: No internet connection.");
         } catch (e) {
           emit(
             ChatErrorState({
@@ -128,11 +143,13 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
               'details': e.toString(),
             }),
           );
+          print("💥 Exception: $e");
         } finally {
           client?.close();
         }
       } else {
         emit(CheckNetworkConnection());
+        print("🌐 No internet connection.");
       }
     });
 
@@ -142,69 +159,66 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         emit(VoiceConversationLoading());
 
         final requestUrl = Uri.parse(APIEndPoints.voiceConversation);
-        developer.log("Request URL: $requestUrl");
-        developer.log(
+        print("Request URL: $requestUrl");
+        print(
           "Sending multipart request with fields: language=${event.language}, session_id=${event.sessionId}",
         );
 
         try {
-          final request =
-              http.MultipartRequest('POST', requestUrl)
-                ..fields['language'] = event.language
-                ..fields['session_id'] = event.sessionId
-                ..files.add(
-                  await http.MultipartFile.fromPath(
-                    'audio',
-                    event.audioFile.path,
-                    contentType: MediaType('audio', 'wav'),
-                  ),
-                );
+          final request = http.MultipartRequest('POST', requestUrl);
 
-          final streamedResponse = await request.send();
-          final response = await http.Response.fromStream(streamedResponse);
+          request.headers.addAll({
+            'Accept': '*/*',
+            'Connection': 'keep-alive',
+            'Origin': 'null',
+            'User-Agent': 'FlutterApp',
+          });
 
-          developer.log("Response status: ${response.statusCode}");
-          developer.log("Response headers: ${response.headers}");
-          developer.log(
-            "Response body (bytes): ${response.bodyBytes.length} bytes",
+          request.fields['language'] = event.language;
+          request.fields['session_id'] = event.sessionId;
+          request.files.add(
+            await http.MultipartFile.fromPath('audio', event.audioFile.path),
           );
 
+          final response = await request.send();
+          final responseBytes = await response.stream.toBytes();
+
           if (response.statusCode == 200) {
-            final contentType = response.headers['content-type'];
+            final contentType = response.headers['content-type'] ?? '';
 
-            if (contentType != null &&
-                contentType.contains("application/json")) {
-              final json = jsonDecode(response.body);
-              emit(
-                VoiceConversationFailure(
-                  "Unexpected JSON response: ${json.toString()}",
-                ),
-              );
+            if (contentType.contains('audio')) {
+              // Binary audio response
+              emit(VoiceConversationSuccess(responseBytes));
             } else {
-              final transcription = response.headers['x-transcription'] ?? '';
-              final sessionId = response.headers['x-session-id'] ?? '';
-
-              emit(
-                VoiceConversationSuccess(
-                  transcription: transcription,
-                  sessionId: sessionId,
-                  audioBytes: response.bodyBytes,
-                ),
+              // Handle JSON or text response
+              final responseText = utf8.decode(
+                responseBytes,
+                allowMalformed: true,
               );
+              try {
+                final json = jsonDecode(responseText);
+                if (json is Map<String, dynamic> && json.containsKey('audio')) {
+                  emit(
+                    VoiceConversationSuccess(json),
+                  ); // JSON with hex-encoded audio
+                } else {
+                  emit(VoiceConversationFailure("Unexpected JSON response"));
+                }
+              } catch (_) {
+                // Non-JSON response, possibly plain hex or text
+                emit(VoiceConversationSuccess(responseText));
+              }
             }
           } else {
+            final errorText = utf8.decode(responseBytes, allowMalformed: true);
             emit(
               VoiceConversationFailure(
-                "Failed: ${response.statusCode} ${response.reasonPhrase}",
+                "API error: ${response.statusCode} $errorText",
               ),
             );
           }
         } catch (e, stackTrace) {
-          developer.log(
-            "Voice conversation error",
-            error: e,
-            stackTrace: stackTrace,
-          );
+          print("Voice conversation error");
           emit(VoiceConversationFailure("Exception: $e"));
         }
       } else {
@@ -219,7 +233,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         emit(InitiateChatLoading());
 
         final Uri requestUrl = Uri.parse(APIEndPoints.initiateChat);
-        developer.log("Request URL: $requestUrl");
+        print("Request URL: $requestUrl");
 
         try {
           final response = await http.post(
@@ -243,37 +257,48 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           if (response.statusCode == 201) {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(InitiateChatSuccess(responseData['data']));
-            developer.log(
-              "Initiate Chat Response Data: ${responseData['data']}",
-            );
+            print("Initiate Chat Response Data: ${responseData['data']}");
           } else {
             final errorData = jsonDecode(response.body);
             emit(InitiateChatFailure(errorData));
-            developer.log("Error Response: $errorData");
+            print("Error Response: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("SocketException: No internet connection.");
+          print("SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("Exception: $e");
+          print("Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("No internet connection.");
+        print("No internet connection.");
       }
     });
 
     // Store Chat Bloc
     on<StoreChatEvent>((event, emit) async {
-      // Check for internet connectivity
+      // Step 1: Connectivity Check — Legacy approach retained for reliability
       if (await ConnectivityService.isConnected()) {
         emit(StoreChatLoading());
 
         final Uri requestUrl = Uri.parse(APIEndPoints.storeChatConversation);
-        developer.log("Request URL: $requestUrl");
+        print("📡 [API REQUEST] → URL: $requestUrl");
+
+        // Step 2: Build Request Body
+        final Map<String, dynamic> requestBody = {
+          'message': event.message,
+          'chat_id': event.chatId,
+          'model_name': event.modelName,
+          'search_engine': event.searchEngine,
+          'edited': event.edited,
+          'sender': event.sender,
+        };
+
+        print("📝 [REQUEST BODY]: ${jsonEncode(requestBody)}");
 
         try {
+          // Step 3: Execute POST Call
           final response = await http.post(
             requestUrl,
             headers: {
@@ -281,35 +306,32 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
               'Content-Type': 'application/json',
               'Cookie': PrefUtils.getToken(),
             },
-            body: jsonEncode({
-              'message': event.message,
-              'chat_id': event.chatId,
-              'model_name': event.modelName,
-              'search_engine': event.searchEngine,
-              'edited': event.edited,
-              'sender': event.sender,
-            }),
+            body: jsonEncode(requestBody),
           );
 
+          print("📥 [RESPONSE STATUS]: ${response.statusCode}");
+          print("📄 [RESPONSE BODY]: ${response.body}");
+
+          // Step 4: Evaluate Response
           if (response.statusCode == 201) {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(StoreChatSuccess(responseData['data']));
-            developer.log("Store Chat Response Data: ${responseData['data']}");
+            print("✅ Store Chat Success: ${responseData['data']}");
           } else {
             final errorData = jsonDecode(response.body);
             emit(StoreChatError(errorData));
-            developer.log("Error Response: $errorData");
+            print("❌ Store Chat Error: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("SocketException: No internet connection.");
+          print("⚠️ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("Exception: $e");
+          print("💥 Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("No internet connection.");
+        print("🚫 No internet connection.");
       }
     });
 
@@ -329,11 +351,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           'api_error': event.apiError,
         });
 
-        developer.log("🔵 Request URL: $requestUrl");
-        developer.log(
+        print("🔵 Request URL: $requestUrl");
+        print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
-        developer.log("🟠 Request Body: $requestBody");
+        print("🟠 Request Body: $requestBody");
 
         try {
           final response = await http.post(
@@ -346,30 +368,30 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             body: requestBody,
           );
 
-          developer.log("🟣 Response Status Code: ${response.statusCode}");
-          developer.log("🟤 Raw Response Body: ${response.body}");
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
 
           if (response.statusCode == 201) {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(SendAPIResponseSuccess(responseData['data']));
-            developer.log(
+            print(
               "✅ SEND API RESPONSE API - Response Data: ${responseData['data']}",
             );
           } else {
             final errorData = jsonDecode(response.body);
             emit(SendAPIResponseFailure(errorData));
-            developer.log("❌ Error Response Data: $errorData");
+            print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("❗ SocketException: No internet connection.");
+          print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("❗ Exception: $e");
+          print("❗ Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("❗ No internet connection.");
+        print("❗ No internet connection.");
       }
     });
 
@@ -380,7 +402,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         emit(GetChatHistoryLoading());
 
         final Uri requestUrl = Uri.parse(APIEndPoints.getChatHistory);
-        developer.log("Request URL: $requestUrl");
+        print("Request URL: $requestUrl");
 
         try {
           final response = await http.get(
@@ -395,22 +417,22 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           if (response.statusCode == 200) {
             final responseData = jsonDecode(response.body);
             emit(GetChatHistorySuccess(responseData));
-            developer.log("Response Data: $responseData");
+            print("Response Data: $responseData");
           } else {
             final errorData = jsonDecode(response.body);
             emit(GetChatHistoryFailure(errorData));
-            developer.log("Error Response: $errorData");
+            print("Error Response: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("SocketException: No internet connection.");
+          print("SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("Exception: $e");
+          print("Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("No internet connection.");
+        print("No internet connection.");
       }
     });
 
@@ -428,11 +450,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           'is_guest': event.is_guest,
         });
 
-        developer.log("🔵 Request URL: $requestUrl");
-        developer.log(
+        print("🔵 Request URL: $requestUrl");
+        print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
-        developer.log("🟠 Request Body: $requestBody");
+        print("🟠 Request Body: $requestBody");
 
         try {
           final response = await http.post(
@@ -445,28 +467,28 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             body: requestBody,
           );
 
-          developer.log("🟣 Response Status Code: ${response.statusCode}");
-          developer.log("🟤 Raw Response Body: ${response.body}");
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
 
           if (response.statusCode == 200) {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(ReactOnChatSuccess(responseData));
-            developer.log("✅ Parsed Response Data: $responseData");
+            print("✅ Parsed Response Data: $responseData");
           } else {
             final errorData = jsonDecode(response.body);
             emit(ReactOnChatFailure(errorData));
-            developer.log("❌ Error Response Data: $errorData");
+            print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("❗ SocketException: No internet connection.");
+          print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("❗ Exception: $e");
+          print("❗ Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("❗ No internet connection.");
+        print("❗ No internet connection.");
       }
     });
 
@@ -482,11 +504,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           'reactionId': event.reactionId,
         });
 
-        developer.log("🔵 Request URL: $requestUrl");
-        developer.log(
+        print("🔵 Request URL: $requestUrl");
+        print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
-        developer.log("🟠 Request Body: $requestBody");
+        print("🟠 Request Body: $requestBody");
 
         try {
           final response = await http.post(
@@ -499,28 +521,28 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             body: requestBody,
           );
 
-          developer.log("🟣 Response Status Code: ${response.statusCode}");
-          developer.log("🟤 Raw Response Body: ${response.body}");
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
 
           if (response.statusCode == 201) {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(ChatFeedbackSuccess(responseData));
-            developer.log("✅ Parsed Response Data: $responseData");
+            print("✅ Parsed Response Data: $responseData");
           } else {
             final errorData = jsonDecode(response.body);
             emit(ChatFeedbackFailure(errorData));
-            developer.log("❌ Error Response Data: $errorData");
+            print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("❗ SocketException: No internet connection.");
+          print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("❗ Exception: $e");
+          print("❗ Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("❗ No internet connection.");
+        print("❗ No internet connection.");
       }
     });
 
@@ -534,8 +556,8 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           APIEndPoints.shareChatUrl(event.chatId),
         );
 
-        developer.log("🔵 Request URL: $requestUrl");
-        developer.log(
+        print("🔵 Request URL: $requestUrl");
+        print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
 
@@ -549,30 +571,28 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             },
           );
 
-          developer.log("🟣 Response Status Code: ${response.statusCode}");
-          developer.log("🟤 Raw Response Body: ${response.body}");
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
 
           if (response.statusCode == 200) {
             final responseData = jsonDecode(response.body);
             emit(ShareChatSuccess(responseData['shareUrl']));
-            developer.log(
-              "✅ Parsed Response Data: ${responseData['shareUrl']}",
-            );
+            print("✅ Parsed Response Data: ${responseData['shareUrl']}");
           } else {
             final errorData = jsonDecode(response.body);
             emit(ShareChatFailure(errorData));
-            developer.log("❌ Error Response Data: $errorData");
+            print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("❗ SocketException: No internet connection.");
+          print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("❗ Exception: $e");
+          print("❗ Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("❗ No internet connection.");
+        print("❗ No internet connection.");
       }
     });
 
@@ -584,8 +604,8 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
 
         final Uri requestUrl = Uri.parse(APIEndPoints.logout);
 
-        developer.log("🔵 Request URL: $requestUrl");
-        developer.log(
+        print("🔵 Request URL: $requestUrl");
+        print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
 
@@ -599,28 +619,28 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             },
           );
 
-          developer.log("🟣 Response Status Code: ${response.statusCode}");
-          developer.log("🟤 Raw Response Body: ${response.body}");
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
 
           if (response.statusCode == 200) {
             final responseData = jsonDecode(response.body);
             emit(LogoutSuccess(successRespose: responseData['message']));
-            developer.log("✅ Parsed Response Data: $responseData");
+            print("✅ Parsed Response Data: $responseData");
           } else {
             final errorData = jsonDecode(response.body);
             emit(LogoutFailure(errorData));
-            developer.log("❌ Error Response Data: $errorData");
+            print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("❗ SocketException: No internet connection.");
+          print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("❗ Exception: $e");
+          print("❗ Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("❗ No internet connection.");
+        print("❗ No internet connection.");
       }
     });
 
@@ -632,8 +652,8 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
 
         final Uri requestUrl = Uri.parse(APIEndPoints.updateProfile);
         final requestBody = jsonEncode({'name': event.name});
-        developer.log("🔵 Request URL: $requestUrl");
-        developer.log(
+        print("🔵 Request URL: $requestUrl");
+        print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
 
@@ -648,28 +668,28 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             body: requestBody,
           );
 
-          developer.log("🟣 Response Status Code: ${response.statusCode}");
-          developer.log("🟤 Raw Response Body: ${response.body}");
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
 
           if (response.statusCode == 200) {
             final responseData = jsonDecode(response.body);
             emit(UpdateProfileLoaded(responseData));
-            developer.log("✅ Parsed Response Data: $responseData");
+            print("✅ Parsed Response Data: $responseData");
           } else {
             final errorData = jsonDecode(response.body);
             emit(UpdateProfileError(errorData));
-            developer.log("❌ Error Response Data: $errorData");
+            print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("❗ SocketException: No internet connection.");
+          print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("❗ Exception: $e");
+          print("❗ Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("❗ No internet connection.");
+        print("❗ No internet connection.");
       }
     });
 
@@ -683,8 +703,8 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           APIEndPoints.singleChatHistory(event.chatId),
         );
 
-        developer.log("🔵 Request URL: $requestUrl");
-        developer.log(
+        print("🔵 Request URL: $requestUrl");
+        print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
 
@@ -698,28 +718,28 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             },
           );
 
-          developer.log("🟣 Response Status Code: ${response.statusCode}");
-          developer.log("🟤 Raw Response Body: ${response.body}");
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
 
           if (response.statusCode == 200) {
             final responseData = jsonDecode(response.body);
             emit(GetSingleChatHistorySuccess(responseData));
-            developer.log("✅ Parsed Response Data: $responseData");
+            print("✅ Parsed Response Data: $responseData");
           } else {
             final errorData = jsonDecode(response.body);
             emit(GetSingleChatHistoryFailure(errorData));
-            developer.log("❌ Error Response Data: $errorData");
+            print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("❗ SocketException: No internet connection.");
+          print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("❗ Exception: $e");
+          print("❗ Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("❗ No internet connection.");
+        print("❗ No internet connection.");
       }
     });
 
@@ -731,8 +751,8 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
 
         final Uri requestUrl = Uri.parse(APIEndPoints.getRandomQuote);
 
-        developer.log("🔵 Request URL: $requestUrl");
-        developer.log(
+        print("🔵 Request URL: $requestUrl");
+        print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
 
@@ -745,8 +765,8 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             },
           );
 
-          developer.log("🟣 Response Status Code: ${response.statusCode}");
-          developer.log("🟤 Raw Response Body: ${response.body}");
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
 
           if (response.statusCode == 200) {
             final quote = response.body;
@@ -754,18 +774,18 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           } else {
             final errorData = jsonDecode(response.body);
             emit(GetRandomQuoteFailure(errorData));
-            developer.log("❌ Error Response Data: $errorData");
+            print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("❗ SocketException: No internet connection.");
+          print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("❗ Exception: $e");
+          print("❗ Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("❗ No internet connection.");
+        print("❗ No internet connection.");
       }
     });
 
@@ -779,8 +799,8 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           APIEndPoints.allPrayers(PrefUtils.getLanguage()),
         );
 
-        developer.log("🔵 Request URL: $requestUrl");
-        developer.log(
+        print("🔵 Request URL: $requestUrl");
+        print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
 
@@ -793,8 +813,8 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             },
           );
 
-          developer.log("🟣 Response Status Code: ${response.statusCode}");
-          developer.log("🟤 Raw Response Body: ${response.body}");
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
 
           if (response.statusCode == 200) {
             final responseData = jsonDecode(response.body);
@@ -802,18 +822,18 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           } else {
             final errorData = jsonDecode(response.body);
             emit(GetAllPrayersFailure(errorData));
-            developer.log("❌ Error Response Data: $errorData");
+            print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("❗ SocketException: No internet connection.");
+          print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("❗ Exception: $e");
+          print("❗ Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("❗ No internet connection.");
+        print("❗ No internet connection.");
       }
     });
 
@@ -826,11 +846,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         final Uri requestUrl = Uri.parse(APIEndPoints.bookmarkChat);
         final requestBody = jsonEncode({'message_id': event.messageId});
 
-        developer.log("🔵 Request URL: $requestUrl");
-        developer.log(
+        print("🔵 Request URL: $requestUrl");
+        print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
-        developer.log("🟠 Request Body: $requestBody");
+        print("🟠 Request Body: $requestBody");
 
         try {
           final response = await http.post(
@@ -843,28 +863,28 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             body: requestBody,
           );
 
-          developer.log("🟣 Response Status Code: ${response.statusCode}");
-          developer.log("🟤 Raw Response Body: ${response.body}");
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
 
           if (response.statusCode == 201) {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(BookmarkChatSuccess(responseData));
-            developer.log("✅ Parsed Response Data: $responseData");
+            print("✅ Parsed Response Data: $responseData");
           } else {
             final errorData = jsonDecode(response.body);
             emit(BookmarkChatFailure(errorData));
-            developer.log("❌ Error Response Data: $errorData");
+            print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("❗ SocketException: No internet connection.");
+          print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("❗ Exception: $e");
+          print("❗ Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("❗ No internet connection.");
+        print("❗ No internet connection.");
       }
     });
 
@@ -877,11 +897,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         final Uri requestUrl = Uri.parse(APIEndPoints.bookmarkChat);
         final requestBody = jsonEncode({'message_id': event.messageId});
 
-        developer.log("🔵 Request URL: $requestUrl");
-        developer.log(
+        print("🔵 Request URL: $requestUrl");
+        print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
-        developer.log("🟠 Request Body: $requestBody");
+        print("🟠 Request Body: $requestBody");
 
         try {
           final response = await http.delete(
@@ -894,28 +914,28 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             body: requestBody,
           );
 
-          developer.log("🟣 Response Status Code: ${response.statusCode}");
-          developer.log("🟤 Raw Response Body: ${response.body}");
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
 
           if (response.statusCode == 201) {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(UnbookmarkChatSuccess(responseData));
-            developer.log("✅ Parsed Response Data: $responseData");
+            print("✅ Parsed Response Data: $responseData");
           } else {
             final errorData = jsonDecode(response.body);
             emit(UnbookmarkChatFailure(errorData));
-            developer.log("❌ Error Response Data: $errorData");
+            print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("❗ SocketException: No internet connection.");
+          print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("❗ Exception: $e");
+          print("❗ Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("❗ No internet connection.");
+        print("❗ No internet connection.");
       }
     });
 
@@ -927,8 +947,8 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
 
         final Uri requestUrl = Uri.parse(APIEndPoints.bookmarkChatList);
 
-        developer.log("🔵 Request URL: $requestUrl");
-        developer.log(
+        print("🔵 Request URL: $requestUrl");
+        print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
 
@@ -942,8 +962,8 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             },
           );
 
-          developer.log("🟣 Response Status Code: ${response.statusCode}");
-          developer.log("🟤 Raw Response Body: ${response.body}");
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
 
           if (response.statusCode == 200) {
             final responseData = jsonDecode(response.body);
@@ -951,18 +971,18 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           } else {
             final errorData = jsonDecode(response.body);
             emit(GetAllBookmarksChatFailure(errorData));
-            developer.log("❌ Error Response Data: $errorData");
+            print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
           emit(CheckNetworkConnection());
-          developer.log("❗ SocketException: No internet connection.");
+          print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
-          developer.log("❗ Exception: $e");
+          print("❗ Exception: $e");
         }
       } else {
         emit(CheckNetworkConnection());
-        developer.log("❗ No internet connection.");
+        print("❗ No internet connection.");
       }
     });
   }

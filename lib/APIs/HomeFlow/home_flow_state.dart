@@ -40,20 +40,13 @@ class ChatErrorState extends HomeFlowState {
 class VoiceConversationLoading extends HomeFlowState {}
 
 class VoiceConversationSuccess extends HomeFlowState {
-  final String transcription;
-  final String sessionId;
-  final List<int> audioBytes; // Response .wav bytes
-
-  VoiceConversationSuccess({
-    required this.transcription,
-    required this.sessionId,
-    required this.audioBytes,
-  });
+  final dynamic successResponse;
+  VoiceConversationSuccess(this.successResponse);
 }
 
 class VoiceConversationFailure extends HomeFlowState {
-  final String error;
-  VoiceConversationFailure(this.error);
+  final String failureResponse;
+  VoiceConversationFailure(this.failureResponse);
 }
 
 // Initiate Chat States

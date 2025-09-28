@@ -4,10 +4,12 @@ class OtpVerificationPasswordScreen extends StatefulWidget {
   const OtpVerificationPasswordScreen({super.key});
 
   @override
-  State<OtpVerificationPasswordScreen> createState() => _OtpVerificationPasswordScreenState();
+  State<OtpVerificationPasswordScreen> createState() =>
+      _OtpVerificationPasswordScreenState();
 }
 
-class _OtpVerificationPasswordScreenState extends State<OtpVerificationPasswordScreen> {
+class _OtpVerificationPasswordScreenState
+    extends State<OtpVerificationPasswordScreen> {
   String? emailErrorText;
   bool isLoading = false;
   final TextEditingController emailController = TextEditingController();
@@ -38,16 +40,15 @@ class _OtpVerificationPasswordScreenState extends State<OtpVerificationPasswordS
               Center(
                 child: SingleChildScrollView(
                   child: BlocListener<AuthFlowBloc, AuthFlowState>(
-                    listener: (context, state) async {
-
-                    },
+                    listener: (context, state) async {},
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: [
                           Align(
-                              alignment: Alignment.centerRight,
-                              child: const LanguageDropdown()),
+                            alignment: Alignment.centerRight,
+                            child: const LanguageDropdown(),
+                          ),
                           const SizedBox(height: 20),
                           Container(
                             height: screenHeight * 0.70,
@@ -66,11 +67,10 @@ class _OtpVerificationPasswordScreenState extends State<OtpVerificationPasswordS
                               children: [
                                 const SizedBox(height: 20),
                                 Center(
-                                  child: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.translate('gitagpt'),
-                                    style: FTextStyle.gita_gpt_text,
+                                  child: Image.asset(
+                                    'assets/images/GitaGPTLogo.png',
+                                    height: 100,
+                                    width: 100,
                                   ),
                                 ),
                                 const SizedBox(height: 5),
@@ -82,12 +82,20 @@ class _OtpVerificationPasswordScreenState extends State<OtpVerificationPasswordS
                                   textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 20),
-                                Text( AppLocalizations.of(
-                                  context,
-                                )!.translate('otpVerification'),style: FTextStyle.defaultTextBold.copyWith(fontSize: 20)),
-                                Text( AppLocalizations.of(
-                                  context,
-                                )!.translate('otpVerifcationsubText'),style: FTextStyle.defaultText),
+                                Text(
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.translate('otpVerification'),
+                                  style: FTextStyle.defaultTextBold.copyWith(
+                                    fontSize: 20,
+                                  ),
+                                ),
+                                Text(
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.translate('otpVerifcationsubText'),
+                                  style: FTextStyle.defaultText,
+                                ),
                                 const SizedBox(height: 30),
                                 TextFormField(
                                   controller: emailController,
@@ -163,9 +171,7 @@ class _OtpVerificationPasswordScreenState extends State<OtpVerificationPasswordS
                                       hasError = true;
                                     }
 
-                                    if (!hasError) {
-
-                                    }
+                                    if (!hasError) {}
                                   },
                                   child: Container(
                                     decoration: BoxDecoration(
@@ -197,8 +203,8 @@ class _OtpVerificationPasswordScreenState extends State<OtpVerificationPasswordS
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     if (Localizations.localeOf(
-                                      context,
-                                    ).languageCode ==
+                                          context,
+                                        ).languageCode ==
                                         'en') ...[
                                       Text(
                                         AppLocalizations.of(

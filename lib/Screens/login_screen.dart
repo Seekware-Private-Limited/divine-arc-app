@@ -65,13 +65,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() {
                           isLoading = false;
                         });
-                        print(state.email);
-                        print(state.id);
+
                         BlocProvider.of<AuthFlowBloc>(context).add(
                           SocialLoginEventHandler(
                             socialId: state.id,
                             socialType: 'google',
                             email: state.email,
+                            name: state.name,
                           ),
                         );
                       } else if (state is GoogleLoginFailure) {
@@ -121,7 +121,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         });
                         CommonUtils.showErrorToast(state.failureMessage);
                       } else if (state is SocialLoginSuccess) {
+                        setState(() {
+                          isLoading = false;
+                        });
                         final response = state.successResponse['data'];
+                        print(response);
                         final name = response['name'];
                         final email = response['email'];
                         PrefUtils.setName(name);
@@ -191,20 +195,21 @@ class _LoginScreenState extends State<LoginScreen> {
                               children: [
                                 const SizedBox(height: 20),
                                 Center(
-                                  child: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.translate('gitagpt'),
-                                    style: FTextStyle.gita_gpt_text,
+                                  child: Image.asset(
+                                    'assets/images/GitaGPTLogo.png',
+                                    height: 100,
+                                    width: 100,
                                   ),
                                 ),
                                 const SizedBox(height: 5),
-                                Text(
-                                  AppLocalizations.of(
-                                    context,
-                                  )!.translate('dummyText'),
-                                  style: FTextStyle.defaultText,
-                                  textAlign: TextAlign.center,
+                                Center(
+                                  child: Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.translate('dummyText'),
+                                    style: FTextStyle.defaultText,
+                                    textAlign: TextAlign.center,
+                                  ),
                                 ),
                                 const SizedBox(height: 30),
                                 TextFormField(

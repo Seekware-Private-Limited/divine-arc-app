@@ -18,14 +18,14 @@ class LanguageProvider with ChangeNotifier {
     final savedCode = prefs.getString(_languageCodeKey) ?? 'en';
     _locale = Locale(savedCode);
     await PrefUtils.setLanguage(savedCode);
-    developer.log('LANGUAGE SET TO - ${savedCode}');
+    print('LANGUAGE SET TO - ${savedCode}');
     notifyListeners();
   }
 
   Future<void> changeLanguage(String languageCode) async {
     _locale = Locale(languageCode);
     await PrefUtils.setLanguage(languageCode);
-    developer.log('LANGUAGE SET TO - ${languageCode}');
+    print('LANGUAGE SET TO - ${languageCode}');
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_languageCodeKey, languageCode);
     notifyListeners(); // Rebuild widgets with new language

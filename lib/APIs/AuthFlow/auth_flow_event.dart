@@ -33,10 +33,12 @@ class SocialLoginEventHandler extends AuthFlowEvent {
   final String socialId;
   final String socialType;
   final String email;
+  final String name;
   SocialLoginEventHandler({
     required this.socialId,
     required this.socialType,
     required this.email,
+    required this.name,
   });
 }
 

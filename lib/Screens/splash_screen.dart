@@ -15,29 +15,27 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    Timer(
-      const Duration(seconds: 3),
-          () => navigateUser(context),
-    );
+    Timer(const Duration(seconds: 3), () => navigateUser(context));
   }
 
   @override
   Widget build(BuildContext context) {
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: const TextScaler.linear(1),
-      ),
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: const TextScaler.linear(1)),
       child: Scaffold(
-        body: SizedBox.expand(
+        body: Center(
           child: Image.asset(
-            'assets/images/splash.png',
+            'assets/images/GitaGPTAppIcon.png',
+            height: 200,
+            width: 200,
             fit: BoxFit.cover, // Makes the image fill the screen
           ),
         ),
       ),
     );
   }
-
 
   void navigateUser(BuildContext context) {
     // Navigate based on the condition
@@ -47,11 +45,11 @@ class _SplashScreenState extends State<SplashScreen> {
           if (PrefUtils.getIsLogin() == true) {
             return const CustomBottomNavBar();
           } else {
-              return const LoginScreen();
+            return const LoginScreen();
           }
         },
       ),
-          (route) => false, // Remove all routes from the stack
+      (route) => false, // Remove all routes from the stack
     );
   }
 }
@@ -65,10 +63,7 @@ class BackgroundImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage(image),
-          fit: BoxFit.cover,
-        ),
+        image: DecorationImage(image: AssetImage(image), fit: BoxFit.cover),
       ),
     );
   }
