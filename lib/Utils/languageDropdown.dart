@@ -1,12 +1,11 @@
-import 'dart:developer' as developer;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
-import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
-import 'package:gita_gpt/Utils/common_utils.dart';
-import 'package:gita_gpt/Utils/flutter_color_themes.dart';
-import 'package:gita_gpt/Utils/flutter_font_style.dart';
-import 'package:gita_gpt/Utils/pref_utils.dart';
-import 'package:gita_gpt/l10n/language_provider.dart';
+import 'package:divine_arc/APIs/HomeFlow/home_flow_bloc.dart';
+import 'package:divine_arc/Utils/common_utils.dart';
+import 'package:divine_arc/Utils/flutter_color_themes.dart';
+import 'package:divine_arc/Utils/flutter_font_style.dart';
+import 'package:divine_arc/Utils/pref_utils.dart';
+import 'package:divine_arc/l10n/language_provider.dart';
 import 'package:provider/provider.dart';
 
 class LanguageDropdown extends StatefulWidget {

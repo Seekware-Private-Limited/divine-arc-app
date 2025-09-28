@@ -2,30 +2,29 @@ import 'package:flutter/material.dart';
 import 'flutter_color_themes.dart';
 
 class FTextStyle {
-  static const gita_gpt_text = TextStyle(
-      fontFamily: 'Warnes-Regular',
-      fontSize: 28,
-      fontWeight: FontWeight.w400,
-      color: AppColors.gradientStart
+  static const divine_arc_text = TextStyle(
+    fontFamily: 'Warnes-Regular',
+    fontSize: 28,
+    fontWeight: FontWeight.w400,
+    color: AppColors.gradientStart,
   );
   static const selectedRadioColorText = TextStyle(
-      fontFamily: 'DM_Sans',
-      fontSize: 14,
-      fontWeight: FontWeight.w400,
-      color: AppColors.gradientStart
+    fontFamily: 'DM_Sans',
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: AppColors.gradientStart,
   );
   static const answerText = TextStyle(
-      fontFamily: 'DM_Sans',
-      fontSize: 16,
-      fontWeight: FontWeight.w700,
-      color: AppColors.gradientStart
+    fontFamily: 'DM_Sans',
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    color: AppColors.gradientStart,
   );
   static const boldText = TextStyle(
-      fontFamily: 'DM_Sans',
-      fontSize: 24,
-      fontWeight: FontWeight.w700,
-      color: AppColors.gradientStart,
-
+    fontFamily: 'DM_Sans',
+    fontSize: 24,
+    fontWeight: FontWeight.w700,
+    color: AppColors.gradientStart,
   );
   static const defaultText = TextStyle(
     fontFamily: 'DM_Sans',
@@ -83,7 +82,4 @@ class FTextStyle {
     fontWeight: FontWeight.w600,
     color: Colors.white,
   );
-
 }
-
-

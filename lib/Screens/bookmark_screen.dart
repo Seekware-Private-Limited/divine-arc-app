@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import 'package:gita_gpt/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/app_imports.dart';
 
 class BookmarkScreen extends StatefulWidget {
   const BookmarkScreen({super.key});

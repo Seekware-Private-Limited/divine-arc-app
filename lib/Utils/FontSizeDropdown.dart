@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gita_gpt/Utils/flutter_color_themes.dart';
-import 'package:gita_gpt/Utils/flutter_font_style.dart';
+import 'package:divine_arc/Utils/flutter_color_themes.dart';
+import 'package:divine_arc/Utils/flutter_font_style.dart';
 
 class FontSizeDropdown extends StatefulWidget {
   final double currentScale;
@@ -28,14 +28,16 @@ class _FontSizeDropdownState extends State<FontSizeDropdown> {
 
   String _getSelectedSizeLabel(double scale) {
     return _sizeMap.entries
-        .firstWhere((entry) => entry.value == scale,
-        orElse: () => const MapEntry('Medium', 1.0))
+        .firstWhere(
+          (entry) => entry.value == scale,
+          orElse: () => const MapEntry('Medium', 1.0),
+        )
         .key;
   }
 
   void _showFontSizeMenu(BuildContext context) async {
     final RenderBox renderBox =
-    _dropdownKey.currentContext!.findRenderObject() as RenderBox;
+        _dropdownKey.currentContext!.findRenderObject() as RenderBox;
     final Offset offset = renderBox.localToGlobal(Offset.zero);
     final Size size = renderBox.size;
 
@@ -59,24 +61,26 @@ class _FontSizeDropdownState extends State<FontSizeDropdown> {
           ),
         ),
         ..._fontSizes.map(
-              (size) => PopupMenuItem<String>(
+          (size) => PopupMenuItem<String>(
             value: size,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   size,
-                  style: _getSelectedSizeLabel(widget.currentScale) == size
-                      ? FTextStyle.selectedRadioColorText
-                      : FTextStyle.socialloginbuttonText,
+                  style:
+                      _getSelectedSizeLabel(widget.currentScale) == size
+                          ? FTextStyle.selectedRadioColorText
+                          : FTextStyle.socialloginbuttonText,
                 ),
                 Icon(
                   _getSelectedSizeLabel(widget.currentScale) == size
                       ? Icons.radio_button_checked
                       : Icons.radio_button_unchecked,
-                  color: _getSelectedSizeLabel(widget.currentScale) == size
-                      ? AppColors.gradientStart
-                      : Colors.grey,
+                  color:
+                      _getSelectedSizeLabel(widget.currentScale) == size
+                          ? AppColors.gradientStart
+                          : Colors.grey,
                 ),
               ],
             ),

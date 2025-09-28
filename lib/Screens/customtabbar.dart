@@ -1,4 +1,4 @@
-import 'package:gita_gpt/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/app_imports.dart';
 
 class CustomBottomNavBar extends StatefulWidget {
   const CustomBottomNavBar({super.key});
@@ -40,7 +40,9 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
       AppLocalizations.of(context)!.translate('profile'),
     ];
     return MediaQuery(
-      data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1)),
+      data: MediaQuery.of(
+        context,
+      ).copyWith(textScaler: const TextScaler.linear(1)),
       child: Scaffold(
         extendBody: true,
         body: _screens[_selectedIndex],
@@ -53,15 +55,12 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
               ),
             ),
             Container(
-              margin: EdgeInsets.only(left: 20,right: 20,bottom: 20,top: 0),
+              margin: EdgeInsets.only(left: 20, right: 20, bottom: 20, top: 0),
               padding: EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Colors.orangeAccent,
-                  width: 1.5,
-                ),
+                border: Border.all(color: Colors.orangeAccent, width: 1.5),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -75,19 +74,28 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                     },
                     child: AnimatedContainer(
                       duration: Duration(milliseconds: 500),
-                      padding: EdgeInsets.symmetric(horizontal: isSelected ? 20 : 0, vertical: 8),
-                      decoration: isSelected
-                          ? BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [AppColors.gradientStart,AppColors.gradientEnd],
-                        ),
-                        borderRadius: BorderRadius.circular(10),
-                      )
-                          : null,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isSelected ? 20 : 0,
+                        vertical: 8,
+                      ),
+                      decoration:
+                          isSelected
+                              ? BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.gradientStart,
+                                    AppColors.gradientEnd,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              )
+                              : null,
                       child: Row(
                         children: [
                           SvgPicture.asset(
-                            isSelected ? _selectedImages[index] : _unselectedImages[index],
+                            isSelected
+                                ? _selectedImages[index]
+                                : _unselectedImages[index],
                             height: 16,
                             width: 16,
                           ),
@@ -95,9 +103,9 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                             SizedBox(width: 8),
                             Text(
                               labels[index],
-                              style: FTextStyle.tabbarTextStyle
+                              style: FTextStyle.tabbarTextStyle,
                             ),
-                          ]
+                          ],
                         ],
                       ),
                     ),

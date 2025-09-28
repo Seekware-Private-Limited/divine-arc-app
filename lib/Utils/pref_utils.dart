@@ -1,4 +1,4 @@
-import 'package:gita_gpt/Utils/shared_preference.dart';
+import 'package:divine_arc/Utils/shared_preference.dart';
 import 'dart:convert'; // Import for JSON encoding/decoding
 
 class PrefUtils {
@@ -76,6 +76,15 @@ class PrefUtils {
     return value ?? false;
   }
 
+  static void setIsSocialLogin(bool value) {
+    Prefs.prefs?.setBool(SharedPrefsKeys.isSocialLogin, value);
+  }
+
+  static bool getIsSocialLogin() {
+    final bool? value = Prefs.prefs?.getBool(SharedPrefsKeys.isSocialLogin);
+    return value ?? false;
+  }
+
   static void setIsGuest(bool value) {
     Prefs.prefs?.setBool(SharedPrefsKeys.isGuest, value);
   }
@@ -139,6 +148,7 @@ class SharedPrefsKeys {
   static const isLogin = 'isLogin';
   static const ChatID = 'ChatID';
   static const isGuest = 'isGuest';
+  static const isSocialLogin = 'isSocialLogin';
   static const unreadNotificationCount = 'unreadNotificationCount';
-  static const chatHistory = 'chatHistory'; // New key for chatHistory
+  static const chatHistory = 'chatHistory';
 }

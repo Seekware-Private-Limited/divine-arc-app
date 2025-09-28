@@ -1,13 +1,11 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:bloc/bloc.dart';
-import 'package:gita_gpt/Utils/api_constant.dart';
-import 'package:gita_gpt/Utils/connectivity_service.dart';
-import 'package:gita_gpt/Utils/pref_utils.dart';
+import 'package:divine_arc/Utils/api_constant.dart';
+import 'package:divine_arc/Utils/connectivity_service.dart';
+import 'package:divine_arc/Utils/pref_utils.dart';
 import 'package:meta/meta.dart';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 part 'home_flow_event.dart';
 part 'home_flow_state.dart';
 

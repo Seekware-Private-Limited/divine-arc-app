@@ -1,8 +1,7 @@
-import 'dart:developer' as developer;
-import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
-import 'package:gita_gpt/Screens/change_password_screen.dart';
-import 'package:gita_gpt/Utils/app_imports.dart';
-import 'package:gita_gpt/Utils/common_utils.dart';
+import 'package:divine_arc/APIs/HomeFlow/home_flow_bloc.dart';
+import 'package:divine_arc/Screens/change_password_screen.dart';
+import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/common_utils.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -511,7 +510,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                                     // Update Password Button
                                     Visibility(
-                                      visible: isEdit,
+                                      visible:
+                                          isEdit &&
+                                          !PrefUtils.getIsSocialLogin(),
                                       child: GestureDetector(
                                         onTap: () {
                                           setState(() {

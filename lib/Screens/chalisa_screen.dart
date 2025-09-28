@@ -1,5 +1,5 @@
-import 'package:gita_gpt/Utils/FontSizeDropdown.dart';
-import 'package:gita_gpt/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/FontSizeDropdown.dart';
+import 'package:divine_arc/Utils/app_imports.dart';
 
 class ChalisaScreen extends StatefulWidget {
   final String title;

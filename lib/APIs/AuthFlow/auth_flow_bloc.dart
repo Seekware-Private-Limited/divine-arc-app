@@ -1,7 +1,6 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
-import 'package:gita_gpt/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/app_imports.dart';
 part 'auth_flow_event.dart';
 part 'auth_flow_state.dart';
 

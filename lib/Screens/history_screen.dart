@@ -1,6 +1,6 @@
-import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
-import 'package:gita_gpt/Utils/app_imports.dart';
-import 'package:gita_gpt/Utils/common_utils.dart';
+import 'package:divine_arc/APIs/HomeFlow/home_flow_bloc.dart';
+import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/common_utils.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -141,10 +141,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                               context,
                                               MaterialPageRoute(
                                                 builder:
-                                                    (context) =>
-                                                        GptScreen(
-                                                          chatId: ChatID,
-                                                        ),
+                                                    (context) => GptScreen(
+                                                      chatId: ChatID,
+                                                    ),
                                               ),
                                             );
                                           },

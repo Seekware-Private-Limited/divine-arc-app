@@ -1,34 +1,31 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
-import 'package:gita_gpt/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/app_imports.dart';
 import 'dart:developer' as developer;
 
 class CustomAudioPlayer extends StatelessWidget {
   final String audioPath;
   final bool isPlaying;
   final VoidCallback onPlayPause;
-  final String label;
 
   const CustomAudioPlayer({
     super.key,
     required this.audioPath,
     required this.isPlaying,
     required this.onPlayPause,
-    required this.label,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(top: 8.0),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
@@ -42,33 +39,20 @@ class CustomAudioPlayer extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: onPlayPause,
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isPlaying ? Icons.pause : Icons.play_arrow,
-                color: AppColors.gradientStart,
-                size: 20,
-              ),
-            ),
+      child: GestureDetector(
+        onTap: onPlayPause,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
           ),
-          const SizedBox(width: 8),
-          Text(
-            isPlaying ? 'Playing $label' : 'Play $label',
-            style: FTextStyle.defaultText.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
+          child: Icon(
+            isPlaying ? Icons.pause : Icons.play_arrow,
+            color: AppColors.gradientStart,
+            size: 20,
           ),
-        ],
+        ),
       ),
     );
   }
@@ -96,13 +80,15 @@ class _GptScreenState extends State<GptScreen>
   late final AudioPlayer _audioPlayer;
   late final AnimationController _animationController;
   late final Animation<double> _scaleAnimation;
+  StreamSubscription<PlayerState>? _playerStateSubscription;
   bool isRecording = false;
-  bool isPlaying = false;
-  bool isPlayingResponse = false;
+  bool isPlaying = false; // For user recording
+  bool isPlayingResponse = false; // For API response
   bool isSending = false;
   String? _audioPath;
   String? _responseAudioPath;
   String? _apiResponse;
+  String? _currentPlayingPath; // Track which audio is playing
   String reactionId = '';
   int? _editingIndex;
   int? _currentResponseIndex;
@@ -120,11 +106,23 @@ class _GptScreenState extends State<GptScreen>
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    _audioPlayer.onPlayerStateChanged.listen((state) {
-      setState(() {
-        isPlaying = state == PlayerState.playing;
-        isPlayingResponse = state == PlayerState.playing;
-      });
+    _playerStateSubscription = _audioPlayer.onPlayerStateChanged.listen((
+      state,
+    ) {
+      if (mounted) {
+        setState(() {
+          if (_currentPlayingPath == _audioPath) {
+            isPlaying = state == PlayerState.playing;
+            isPlayingResponse = false;
+          } else if (_currentPlayingPath == _responseAudioPath) {
+            isPlayingResponse = state == PlayerState.playing;
+            isPlaying = false;
+          } else {
+            isPlaying = false;
+            isPlayingResponse = false;
+          }
+        });
+      }
     });
 
     chatHistory = PrefUtils.getChatHistory();
@@ -143,16 +141,35 @@ class _GptScreenState extends State<GptScreen>
 
   @override
   void dispose() {
+    developer.log('Disposing GptScreen', name: 'DISPOSE');
+    _animationController.stop();
+    _animationController.dispose();
+    developer.log('AnimationController disposed', name: 'DISPOSE');
+    _playerStateSubscription?.cancel();
+    developer.log('AudioPlayer subscription canceled', name: 'DISPOSE');
     inputController.dispose();
     feedbackTextController.dispose();
     _scrollController.dispose();
+    developer.log('ScrollController disposed', name: 'DISPOSE');
+    if (isRecording) {
+      _audioRecorder.stop();
+    }
     _audioRecorder.dispose();
+    developer.log('AudioRecorder disposed', name: 'DISPOSE');
+    if (isPlaying || isPlayingResponse) {
+      _audioPlayer.stop();
+    }
     _audioPlayer.dispose();
-    _animationController.dispose();
-    // Clear temporary audio files
-    if (_audioPath != null) File(_audioPath!).delete();
-    if (_responseAudioPath != null) File(_responseAudioPath!).delete();
+    developer.log('AudioPlayer disposed', name: 'DISPOSE');
+    try {
+      if (_audioPath != null) File(_audioPath!).deleteSync();
+      if (_responseAudioPath != null) File(_responseAudioPath!).deleteSync();
+      developer.log('Audio files deleted', name: 'DISPOSE');
+    } catch (e) {
+      developer.log('Error deleting audio files: $e', name: 'FILE_CLEANUP');
+    }
     super.dispose();
+    developer.log('GptScreen disposed', name: 'DISPOSE');
   }
 
   String _generateRandomId() {
@@ -179,17 +196,19 @@ class _GptScreenState extends State<GptScreen>
         return;
       }
 
-      final dir = await getTemporaryDirectory(); // Use temporary storage
+      final dir = await getTemporaryDirectory();
       _audioPath = '${dir.path}/${_generateRandomId()}.wav';
       await _audioRecorder.start(
         const RecordConfig(encoder: AudioEncoder.wav),
         path: _audioPath!,
       );
-      setState(() {
-        isRecording = true;
-        _responseAudioPath = null;
-        _apiResponse = null;
-      });
+      if (mounted) {
+        setState(() {
+          isRecording = true;
+          _responseAudioPath = null;
+          _apiResponse = null;
+        });
+      }
       print('Recording started... Path: $_audioPath');
     } catch (e) {
       print('Error starting recording: $e');
@@ -201,10 +220,12 @@ class _GptScreenState extends State<GptScreen>
     if (!isRecording) return;
     try {
       final path = await _audioRecorder.stop();
-      setState(() {
-        isRecording = false;
-        _audioPath = path;
-      });
+      if (mounted) {
+        setState(() {
+          isRecording = false;
+          _audioPath = path;
+        });
+      }
       print('Recording stopped. File: $_audioPath');
       if (_audioPath != null) {
         await _sendAudioToApi();
@@ -219,7 +240,9 @@ class _GptScreenState extends State<GptScreen>
 
   Future<void> _sendAudioToApi() async {
     if (_audioPath == null) return;
-    setState(() => isSending = true);
+    if (mounted) {
+      setState(() => isSending = true);
+    }
 
     try {
       final audioFile = File(_audioPath!);
@@ -230,44 +253,61 @@ class _GptScreenState extends State<GptScreen>
           sessionId: PrefUtils.getSessionID(),
         ),
       );
-      setState(() {
-        chatHistory.add({
-          'question': 'Audio Recording',
-          'answer': '',
-          'chatId': widget.chatId ?? PrefUtils.getChatID(),
-          'messageId': '',
-          'isBookmarked': false,
-          'isLiked': false,
-          'isDisliked': false,
+      if (mounted) {
+        setState(() {
+          chatHistory.add({
+            'question': 'Audio Recording',
+            'answer': '',
+            'chatId': widget.chatId ?? PrefUtils.getChatID(),
+            'messageId': '',
+            'isBookmarked': false,
+            'isLiked': false,
+            'isDisliked': false,
+            'isUserAudio': true, // Flag to indicate user audio
+          });
+          _currentResponseIndex = chatHistory.length - 1;
+          PrefUtils.setChatHistory(chatHistory);
+          developer.log(
+            'Added audio chat entry: ${chatHistory.last}',
+            name: 'CHAT_ADD',
+          );
         });
-        _currentResponseIndex = chatHistory.length - 1;
-        PrefUtils.setChatHistory(chatHistory);
-        developer.log(
-          'Added audio chat entry: ${chatHistory.last}',
-          name: 'CHAT_ADD',
-        );
-      });
+      }
       _scrollToBottom();
     } catch (e) {
       print('Error sending audio: $e');
       CommonUtils.showErrorToast('Error sending audio: $e');
     } finally {
-      setState(() => isSending = false);
+      if (mounted) {
+        setState(() => isSending = false);
+      }
     }
   }
 
   Future<void> _playRecording() async {
     if (_audioPath == null) return;
+    await _audioPlayer.stop(); // Stop any ongoing playback
+    setState(() {
+      _currentPlayingPath = _audioPath; // Track user recording
+      isPlaying = true;
+      isPlayingResponse = false;
+    });
     await _audioPlayer.play(DeviceFileSource(_audioPath!));
   }
 
   Future<void> _playResponseAudio() async {
     if (_responseAudioPath == null) return;
+    await _audioPlayer.stop(); // Stop any ongoing playback
+    setState(() {
+      _currentPlayingPath = _responseAudioPath; // Track API response
+      isPlayingResponse = true;
+      isPlaying = false;
+    });
     await _audioPlayer.play(DeviceFileSource(_responseAudioPath!));
   }
 
   Future<String> _writeResponseFile(List<int> bytes) async {
-    final dir = await getTemporaryDirectory(); // Use temporary storage
+    final dir = await getTemporaryDirectory();
     final path = '${dir.path}/${_generateRandomId()}_response.wav';
     final file = File(path);
     await file.writeAsBytes(bytes);
@@ -289,23 +329,26 @@ class _GptScreenState extends State<GptScreen>
 
   void callAPI() {
     if (widget.searchQueryFromAskAnythingScreen!.isNotEmpty) {
-      setState(() {
-        chatHistory.add({
-          'question': widget.searchQueryFromAskAnythingScreen!,
-          'answer': '',
-          'chatId': widget.chatId ?? '',
-          'messageId': '',
-          'isBookmarked': false,
-          'isLiked': false,
-          'isDisliked': false,
+      if (mounted) {
+        setState(() {
+          chatHistory.add({
+            'question': widget.searchQueryFromAskAnythingScreen!,
+            'answer': '',
+            'chatId': widget.chatId ?? '',
+            'messageId': '',
+            'isBookmarked': false,
+            'isLiked': false,
+            'isDisliked': false,
+            'isUserAudio': false, // Flag for text-based queries
+          });
+          _currentResponseIndex = chatHistory.length - 1;
+          PrefUtils.setChatHistory(chatHistory);
+          developer.log(
+            'Added new chat entry: ${chatHistory.last}',
+            name: 'CHAT_ADD',
+          );
         });
-        _currentResponseIndex = chatHistory.length - 1;
-        PrefUtils.setChatHistory(chatHistory);
-        developer.log(
-          'Added new chat entry: ${chatHistory.last}',
-          name: 'CHAT_ADD',
-        );
-      });
+      }
 
       if (PrefUtils.getChatID().isEmpty && widget.chatId == null) {
         BlocProvider.of<HomeFlowBloc>(context).add(
@@ -463,7 +506,7 @@ class _GptScreenState extends State<GptScreen>
 
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 300), () {
-      if (_scrollController.hasClients) {
+      if (_scrollController.hasClients && mounted) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
@@ -490,7 +533,8 @@ class _GptScreenState extends State<GptScreen>
               final response = state.successResponse;
               final messageId = response['id'];
               if (_currentResponseIndex != null &&
-                  _currentResponseIndex! < chatHistory.length) {
+                  _currentResponseIndex! < chatHistory.length &&
+                  mounted) {
                 setState(() {
                   chatHistory[_currentResponseIndex!]['messageId'] = messageId;
                   PrefUtils.setChatHistory(chatHistory);
@@ -517,33 +561,40 @@ class _GptScreenState extends State<GptScreen>
             } else if (state is SendAPIResponseFailure) {
               CommonUtils.showErrorToast(state.failureResponse['message']);
             } else if (state is ChatStreamingState) {
-              setState(() {
-                if (_currentResponseIndex != null &&
-                    _currentResponseIndex! < chatHistory.length) {
-                  String currentAnswer =
-                      chatHistory[_currentResponseIndex!]['answer'] ?? '';
-                  currentAnswer += state.response;
-                  chatHistory[_currentResponseIndex!]['answer'] = currentAnswer;
-                  PrefUtils.setChatHistory(chatHistory);
-                }
-              });
+              if (mounted) {
+                setState(() {
+                  if (_currentResponseIndex != null &&
+                      _currentResponseIndex! < chatHistory.length) {
+                    String currentAnswer =
+                        chatHistory[_currentResponseIndex!]['answer'] ?? '';
+                    currentAnswer += state.response;
+                    chatHistory[_currentResponseIndex!]['answer'] =
+                        currentAnswer;
+                    PrefUtils.setChatHistory(chatHistory);
+                  }
+                });
+              }
               _scrollToBottom();
             } else if (state is ChatLoadedState) {
-              setState(() {
-                if (_currentResponseIndex != null &&
-                    _currentResponseIndex! < chatHistory.length) {
-                  chatHistory[_currentResponseIndex!]['answer'] =
-                      state.partialResponse;
-                  PrefUtils.setChatHistory(chatHistory);
-                }
-              });
+              if (mounted) {
+                setState(() {
+                  if (_currentResponseIndex != null &&
+                      _currentResponseIndex! < chatHistory.length) {
+                    chatHistory[_currentResponseIndex!]['answer'] =
+                        state.partialResponse;
+                    PrefUtils.setChatHistory(chatHistory);
+                  }
+                });
+              }
               if (_currentResponseIndex != null &&
                   _currentResponseIndex! < chatHistory.length) {
-                setState(() {
-                  chatHistory[_currentResponseIndex!]['chatId'] =
-                      PrefUtils.getChatID();
-                  PrefUtils.setChatHistory(chatHistory);
-                });
+                if (mounted) {
+                  setState(() {
+                    chatHistory[_currentResponseIndex!]['chatId'] =
+                        PrefUtils.getChatID();
+                    PrefUtils.setChatHistory(chatHistory);
+                  });
+                }
                 String? latestQuestion =
                     chatHistory[_currentResponseIndex!]['question'];
                 print(
@@ -565,43 +616,49 @@ class _GptScreenState extends State<GptScreen>
               CommonUtils.showErrorToast(state.error['message']);
             } else if (state is VoiceConversationSuccess) {
               final response = state.successResponse;
-              setState(() {
-                if (_currentResponseIndex != null &&
-                    _currentResponseIndex! < chatHistory.length) {
-                  if (response is Map<String, dynamic> &&
-                      response.containsKey('audio')) {
-                    final hexString = response['audio'];
-                    if (_isValidHex(hexString)) {
-                      final bytes = _hexToBytes(hexString);
-                      _writeResponseFile(bytes).then((path) {
-                        setState(() {
-                          _responseAudioPath = path;
-                          chatHistory[_currentResponseIndex!]['answer'] =
-                              'Audio Response';
-                          PrefUtils.setChatHistory(chatHistory);
+              if (mounted) {
+                setState(() {
+                  if (_currentResponseIndex != null &&
+                      _currentResponseIndex! < chatHistory.length) {
+                    if (response is Map<String, dynamic> &&
+                        response.containsKey('audio')) {
+                      final hexString = response['audio'];
+                      if (_isValidHex(hexString)) {
+                        final bytes = _hexToBytes(hexString);
+                        _writeResponseFile(bytes).then((path) {
+                          if (mounted) {
+                            setState(() {
+                              _responseAudioPath = path;
+                              chatHistory[_currentResponseIndex!]['answer'] =
+                                  'Audio Response';
+                              PrefUtils.setChatHistory(chatHistory);
+                            });
+                          }
+                          _scrollToBottom();
                         });
+                      }
+                    } else if (response is List<int>) {
+                      _writeResponseFile(response).then((path) {
+                        if (mounted) {
+                          setState(() {
+                            _responseAudioPath = path;
+                            chatHistory[_currentResponseIndex!]['answer'] =
+                                'Audio Response';
+                            PrefUtils.setChatHistory(chatHistory);
+                          });
+                        }
                         _scrollToBottom();
                       });
-                    }
-                  } else if (response is List<int>) {
-                    _writeResponseFile(response).then((path) {
-                      setState(() {
-                        _responseAudioPath = path;
-                        chatHistory[_currentResponseIndex!]['answer'] =
-                            'Audio Response';
-                        PrefUtils.setChatHistory(chatHistory);
-                      });
+                    } else {
+                      _apiResponse = response.toString();
+                      chatHistory[_currentResponseIndex!]['answer'] =
+                          _apiResponse;
+                      PrefUtils.setChatHistory(chatHistory);
                       _scrollToBottom();
-                    });
-                  } else {
-                    _apiResponse = response.toString();
-                    chatHistory[_currentResponseIndex!]['answer'] =
-                        _apiResponse;
-                    PrefUtils.setChatHistory(chatHistory);
-                    _scrollToBottom();
+                    }
                   }
-                }
-              });
+                });
+              }
             } else if (state is VoiceConversationFailure) {
               CommonUtils.showErrorToast(state.failureResponse);
             } else if (state is GetSingleChatHistorySuccess) {
@@ -609,44 +666,48 @@ class _GptScreenState extends State<GptScreen>
               final String chatId = response['chat']['id']?.toString() ?? '';
               final List<dynamic> messages =
                   response['messages'] as List<dynamic>;
-              setState(() {
-                final Map<String, Map<String, dynamic>> localChatMap = {
-                  for (var chat in chatHistory) chat['messageId']: chat,
-                };
-                chatHistory =
-                    messages.map<Map<String, dynamic>>((message) {
-                      final String messageId = message['id']?.toString() ?? '';
-                      final String question =
-                          message['message']?.toString() ?? '';
-                      final String answer =
-                          message['apiResponses']?.isNotEmpty == true
-                              ? message['apiResponses'][0]['api_response']
-                                      ?.toString() ??
-                                  ''
-                              : '';
-                      final bool isBookmarked =
-                          message['isBookmarked'] ?? false;
-                      final bool isLiked = message['isLiked'] ?? false;
-                      final bool isDisliked = message['isDisliked'] ?? false;
-                      final localChat = localChatMap[messageId] ?? {};
-                      return {
-                        'question': question,
-                        'answer': answer,
-                        'chatId': chatId,
-                        'messageId': messageId,
-                        'isBookmarked':
-                            isBookmarked || localChat['isBookmarked'] == true,
-                        'isLiked': isLiked || localChat['isLiked'] == true,
-                        'isDisliked':
-                            isDisliked || localChat['isDisliked'] == true,
-                      };
-                    }).toList();
-                PrefUtils.setChatHistory(chatHistory);
-                developer.log(
-                  'Updated chatHistory from server: $chatHistory',
-                  name: 'CHAT_UPDATE',
-                );
-              });
+              if (mounted) {
+                setState(() {
+                  final Map<String, Map<String, dynamic>> localChatMap = {
+                    for (var chat in chatHistory) chat['messageId']: chat,
+                  };
+                  chatHistory =
+                      messages.map<Map<String, dynamic>>((message) {
+                        final String messageId =
+                            message['id']?.toString() ?? '';
+                        final String question =
+                            message['message']?.toString() ?? '';
+                        final String answer =
+                            message['apiResponses']?.isNotEmpty == true
+                                ? message['apiResponses'][0]['api_response']
+                                        ?.toString() ??
+                                    ''
+                                : '';
+                        final bool isBookmarked =
+                            message['isBookmarked'] ?? false;
+                        final bool isLiked = message['isLiked'] ?? false;
+                        final bool isDisliked = message['isDisliked'] ?? false;
+                        final localChat = localChatMap[messageId] ?? {};
+                        return {
+                          'question': question,
+                          'answer': answer,
+                          'chatId': chatId,
+                          'messageId': messageId,
+                          'isBookmarked':
+                              isBookmarked || localChat['isBookmarked'] == true,
+                          'isLiked': isLiked || localChat['isLiked'] == true,
+                          'isDisliked':
+                              isDisliked || localChat['isDisliked'] == true,
+                          'isUserAudio': localChat['isUserAudio'] ?? false,
+                        };
+                      }).toList();
+                  PrefUtils.setChatHistory(chatHistory);
+                  developer.log(
+                    'Updated chatHistory from server: $chatHistory',
+                    name: 'CHAT_UPDATE',
+                  );
+                });
+              }
               _scrollToBottom();
             } else if (state is GetSingleChatHistoryFailure) {
               CommonUtils.showErrorToast(state.failureResponse['message']);
@@ -655,41 +716,45 @@ class _GptScreenState extends State<GptScreen>
               reactionId = response['data']['id'];
               final messageId = response['data']['message_id'] ?? '';
               final bool isLike = response['data']['is_like'] ?? false;
-              setState(() {
-                final index = chatHistory.indexWhere(
-                  (chat) => chat['messageId'] == messageId,
-                );
-                if (index != -1) {
-                  chatHistory[index]['isLiked'] = isLike;
-                  chatHistory[index]['isDisliked'] = !isLike;
-                  PrefUtils.setChatHistory(chatHistory);
-                }
-                developer.log(
-                  'ReactOnChatSuccess: $chatHistory',
-                  name: 'CHAT_REACT',
-                );
-              });
+              if (mounted) {
+                setState(() {
+                  final index = chatHistory.indexWhere(
+                    (chat) => chat['messageId'] == messageId,
+                  );
+                  if (index != -1) {
+                    chatHistory[index]['isLiked'] = isLike;
+                    chatHistory[index]['isDisliked'] = !isLike;
+                    PrefUtils.setChatHistory(chatHistory);
+                  }
+                  developer.log(
+                    'ReactOnChatSuccess: $chatHistory',
+                    name: 'CHAT_REACT',
+                  );
+                });
+              }
               _showFeedbackPopup(context);
               CommonUtils.showSuccessToast(response['message']);
             } else if (state is ReactOnChatFailure) {
               final messageId = state.failureResponse['message_id'] ?? '';
               final bool wasLike = state.failureResponse['is_like'] ?? false;
-              setState(() {
-                final index = chatHistory.indexWhere(
-                  (chat) => chat['messageId'] == messageId,
-                );
-                if (index != -1) {
-                  chatHistory[index]['isLiked'] =
-                      wasLike ? false : chatHistory[index]['isLiked'];
-                  chatHistory[index]['isDisliked'] =
-                      !wasLike ? false : chatHistory[index]['isDisliked'];
-                  PrefUtils.setChatHistory(chatHistory);
-                }
-                developer.log(
-                  'ReactOnChatFailure: $chatHistory',
-                  name: 'CHAT_REACT_FAIL',
-                );
-              });
+              if (mounted) {
+                setState(() {
+                  final index = chatHistory.indexWhere(
+                    (chat) => chat['messageId'] == messageId,
+                  );
+                  if (index != -1) {
+                    chatHistory[index]['isLiked'] =
+                        wasLike ? false : chatHistory[index]['isLiked'];
+                    chatHistory[index]['isDisliked'] =
+                        !wasLike ? false : chatHistory[index]['isDisliked'];
+                    PrefUtils.setChatHistory(chatHistory);
+                  }
+                  developer.log(
+                    'ReactOnChatFailure: $chatHistory',
+                    name: 'CHAT_REACT_FAIL',
+                  );
+                });
+              }
               CommonUtils.showErrorToast(state.failureResponse['message']);
             } else if (state is ChatFeedbackSuccess) {
               CommonUtils.showSuccessToast(state.successResponse['message']);
@@ -709,59 +774,67 @@ class _GptScreenState extends State<GptScreen>
               CommonUtils.showErrorToast('No Internet Connection!');
             } else if (state is BookmarkChatSuccess) {
               final messageId = state.successResponse['messageId'];
-              setState(() {
-                final index = chatHistory.indexWhere(
-                  (chat) => chat['messageId'] == messageId,
-                );
-                if (index != -1) {
-                  chatHistory[index]['isBookmarked'] = true;
-                  PrefUtils.setChatHistory(chatHistory);
-                }
-                developer.log(
-                  'BookmarkChatSuccess: $chatHistory',
-                  name: 'CHAT_BOOKMARK',
-                );
-              });
+              if (mounted) {
+                setState(() {
+                  final index = chatHistory.indexWhere(
+                    (chat) => chat['messageId'] == messageId,
+                  );
+                  if (index != -1) {
+                    chatHistory[index]['isBookmarked'] = true;
+                    PrefUtils.setChatHistory(chatHistory);
+                  }
+                  developer.log(
+                    'BookmarkChatSuccess: $chatHistory',
+                    name: 'CHAT_BOOKMARK',
+                  );
+                });
+              }
               CommonUtils.showSuccessToast('Chat bookmarked successfully!');
             } else if (state is BookmarkChatFailure) {
               final messageId = state.failureResponse['messageId'] ?? '';
-              setState(() {
-                final index = chatHistory.indexWhere(
-                  (chat) => chat['messageId'] == messageId,
-                );
-                if (index != -1) {
-                  chatHistory[index]['isBookmarked'] = false;
-                  PrefUtils.setChatHistory(chatHistory);
-                }
-              });
+              if (mounted) {
+                setState(() {
+                  final index = chatHistory.indexWhere(
+                    (chat) => chat['messageId'] == messageId,
+                  );
+                  if (index != -1) {
+                    chatHistory[index]['isBookmarked'] = false;
+                    PrefUtils.setChatHistory(chatHistory);
+                  }
+                });
+              }
               CommonUtils.showErrorToast(state.failureResponse['message']);
             } else if (state is UnbookmarkChatSuccess) {
               final messageId = state.successResponse['messageId'];
-              setState(() {
-                final index = chatHistory.indexWhere(
-                  (chat) => chat['messageId'] == messageId,
-                );
-                if (index != -1) {
-                  chatHistory[index]['isBookmarked'] = false;
-                  PrefUtils.setChatHistory(chatHistory);
-                }
-                developer.log(
-                  'UnbookmarkChatSuccess: $chatHistory',
-                  name: 'CHAT_UNBOOKMARK',
-                );
-              });
+              if (mounted) {
+                setState(() {
+                  final index = chatHistory.indexWhere(
+                    (chat) => chat['messageId'] == messageId,
+                  );
+                  if (index != -1) {
+                    chatHistory[index]['isBookmarked'] = false;
+                    PrefUtils.setChatHistory(chatHistory);
+                  }
+                  developer.log(
+                    'UnbookmarkChatSuccess: $chatHistory',
+                    name: 'CHAT_UNBOOKMARK',
+                  );
+                });
+              }
               CommonUtils.showSuccessToast('Chat unbookmarked successfully!');
             } else if (state is UnbookmarkChatFailure) {
               final messageId = state.failureResponse['messageId'] ?? '';
-              setState(() {
-                final index = chatHistory.indexWhere(
-                  (chat) => chat['messageId'] == messageId,
-                );
-                if (index != -1) {
-                  chatHistory[index]['isBookmarked'] = true;
-                  PrefUtils.setChatHistory(chatHistory);
-                }
-              });
+              if (mounted) {
+                setState(() {
+                  final index = chatHistory.indexWhere(
+                    (chat) => chat['messageId'] == messageId,
+                  );
+                  if (index != -1) {
+                    chatHistory[index]['isBookmarked'] = true;
+                    PrefUtils.setChatHistory(chatHistory);
+                  }
+                });
+              }
               CommonUtils.showErrorToast(state.failureResponse['message']);
             }
           },
@@ -826,6 +899,9 @@ class _GptScreenState extends State<GptScreen>
                                     final bool isDisliked =
                                         chatHistory[index]['isDisliked'] ??
                                         false;
+                                    final bool isUserAudio =
+                                        chatHistory[index]['isUserAudio'] ??
+                                        false;
                                     return Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -862,11 +938,13 @@ class _GptScreenState extends State<GptScreen>
                                                   const SizedBox(width: 16),
                                                   GestureDetector(
                                                     onTap: () {
-                                                      setState(() {
-                                                        inputController.text =
-                                                            question;
-                                                        _editingIndex = index;
-                                                      });
+                                                      if (mounted) {
+                                                        setState(() {
+                                                          inputController.text =
+                                                              question;
+                                                          _editingIndex = index;
+                                                        });
+                                                      }
                                                     },
                                                     child: Image.asset(
                                                       'assets/images/edit.png',
@@ -915,27 +993,38 @@ class _GptScreenState extends State<GptScreen>
                                                       ),
                                                       if (index ==
                                                               _currentResponseIndex &&
-                                                          _audioPath != null)
-                                                        CustomAudioPlayer(
-                                                          audioPath:
-                                                              _audioPath!,
-                                                          isPlaying: isPlaying,
-                                                          onPlayPause:
-                                                              _playRecording,
-                                                          label: 'Recording',
+                                                          _audioPath != null &&
+                                                          !isRecording &&
+                                                          isUserAudio)
+                                                        Align(
+                                                          alignment:
+                                                              Alignment
+                                                                  .centerRight,
+                                                          child: CustomAudioPlayer(
+                                                            audioPath:
+                                                                _audioPath!,
+                                                            isPlaying:
+                                                                isPlaying,
+                                                            onPlayPause:
+                                                                _playRecording,
+                                                          ),
                                                         ),
                                                       if (index ==
                                                               _currentResponseIndex &&
                                                           _responseAudioPath !=
                                                               null)
-                                                        CustomAudioPlayer(
-                                                          audioPath:
-                                                              _responseAudioPath!,
-                                                          isPlaying:
-                                                              isPlayingResponse,
-                                                          onPlayPause:
-                                                              _playResponseAudio,
-                                                          label: 'Response',
+                                                        Align(
+                                                          alignment:
+                                                              Alignment
+                                                                  .centerLeft,
+                                                          child: CustomAudioPlayer(
+                                                            audioPath:
+                                                                _responseAudioPath!,
+                                                            isPlaying:
+                                                                isPlayingResponse,
+                                                            onPlayPause:
+                                                                _playResponseAudio,
+                                                          ),
                                                         ),
                                                       if (index ==
                                                               _currentResponseIndex &&
@@ -993,23 +1082,25 @@ class _GptScreenState extends State<GptScreen>
                                                         onTap: () {
                                                           if (messageId
                                                               .isNotEmpty) {
-                                                            setState(() {
-                                                              chatHistory[index]['isLiked'] =
-                                                                  !isLiked;
-                                                              if (chatHistory[index]['isLiked'] ==
-                                                                  true) {
-                                                                chatHistory[index]['isDisliked'] =
-                                                                    false;
-                                                              }
-                                                              PrefUtils.setChatHistory(
-                                                                chatHistory,
-                                                              );
-                                                              developer.log(
-                                                                'Like toggled: ${chatHistory[index]}',
-                                                                name:
-                                                                    'CHAT_LIKE',
-                                                              );
-                                                            });
+                                                            if (mounted) {
+                                                              setState(() {
+                                                                chatHistory[index]['isLiked'] =
+                                                                    !isLiked;
+                                                                if (chatHistory[index]['isLiked'] ==
+                                                                    true) {
+                                                                  chatHistory[index]['isDisliked'] =
+                                                                      false;
+                                                                }
+                                                                PrefUtils.setChatHistory(
+                                                                  chatHistory,
+                                                                );
+                                                                developer.log(
+                                                                  'Like toggled: ${chatHistory[index]}',
+                                                                  name:
+                                                                      'CHAT_LIKE',
+                                                                );
+                                                              });
+                                                            }
                                                             BlocProvider.of<
                                                               HomeFlowBloc
                                                             >(context).add(
@@ -1042,23 +1133,25 @@ class _GptScreenState extends State<GptScreen>
                                                         onTap: () {
                                                           if (messageId
                                                               .isNotEmpty) {
-                                                            setState(() {
-                                                              chatHistory[index]['isDisliked'] =
-                                                                  !isDisliked;
-                                                              if (chatHistory[index]['isDisliked'] ==
-                                                                  true) {
-                                                                chatHistory[index]['isLiked'] =
-                                                                    false;
-                                                              }
-                                                              PrefUtils.setChatHistory(
-                                                                chatHistory,
-                                                              );
-                                                              developer.log(
-                                                                'Dislike toggled: ${chatHistory[index]}',
-                                                                name:
-                                                                    'CHAT_DISLIKE',
-                                                              );
-                                                            });
+                                                            if (mounted) {
+                                                              setState(() {
+                                                                chatHistory[index]['isDisliked'] =
+                                                                    !isDisliked;
+                                                                if (chatHistory[index]['isDisliked'] ==
+                                                                    true) {
+                                                                  chatHistory[index]['isLiked'] =
+                                                                      false;
+                                                                }
+                                                                PrefUtils.setChatHistory(
+                                                                  chatHistory,
+                                                                );
+                                                                developer.log(
+                                                                  'Dislike toggled: ${chatHistory[index]}',
+                                                                  name:
+                                                                      'CHAT_DISLIKE',
+                                                                );
+                                                              });
+                                                            }
                                                             BlocProvider.of<
                                                               HomeFlowBloc
                                                             >(context).add(
@@ -1109,18 +1202,20 @@ class _GptScreenState extends State<GptScreen>
                                                         onTap: () {
                                                           if (messageId
                                                               .isNotEmpty) {
-                                                            setState(() {
-                                                              chatHistory[index]['isBookmarked'] =
-                                                                  !isBookmarked;
-                                                              PrefUtils.setChatHistory(
-                                                                chatHistory,
-                                                              );
-                                                              developer.log(
-                                                                'Bookmark toggled: ${chatHistory[index]}',
-                                                                name:
-                                                                    'CHAT_BOOKMARK',
-                                                              );
-                                                            });
+                                                            if (mounted) {
+                                                              setState(() {
+                                                                chatHistory[index]['isBookmarked'] =
+                                                                    !isBookmarked;
+                                                                PrefUtils.setChatHistory(
+                                                                  chatHistory,
+                                                                );
+                                                                developer.log(
+                                                                  'Bookmark toggled: ${chatHistory[index]}',
+                                                                  name:
+                                                                      'CHAT_BOOKMARK',
+                                                                );
+                                                              });
+                                                            }
                                                             BlocProvider.of<
                                                               HomeFlowBloc
                                                             >(context).add(
@@ -1307,38 +1402,43 @@ class _GptScreenState extends State<GptScreen>
                               if (message.isNotEmpty) {
                                 String chatId = '';
                                 bool isEdited = false;
-                                setState(() {
-                                  if (_editingIndex != null) {
-                                    chatHistory[_editingIndex!]['question'] =
-                                        message;
-                                    chatHistory[_editingIndex!]['answer'] = '';
-                                    _currentResponseIndex = _editingIndex;
-                                    chatId =
-                                        chatHistory[_editingIndex!]['chatId'] ??
-                                        '';
-                                    isEdited = true;
-                                  } else {
-                                    chatHistory.add({
-                                      'question': message,
-                                      'answer': '',
-                                      'chatId': widget.chatId ?? '',
-                                      'messageId': '',
-                                      'isBookmarked': false,
-                                      'isLiked': false,
-                                      'isDisliked': false,
-                                    });
-                                    _currentResponseIndex =
-                                        chatHistory.length - 1;
-                                    chatId =
-                                        widget.chatId ?? PrefUtils.getChatID();
-                                    isEdited = false;
-                                  }
-                                  PrefUtils.setChatHistory(chatHistory);
-                                  developer.log(
-                                    'New message added/edited: ${chatHistory[_currentResponseIndex!]}',
-                                    name: 'CHAT_MESSAGE',
-                                  );
-                                });
+                                if (mounted) {
+                                  setState(() {
+                                    if (_editingIndex != null) {
+                                      chatHistory[_editingIndex!]['question'] =
+                                          message;
+                                      chatHistory[_editingIndex!]['answer'] =
+                                          '';
+                                      _currentResponseIndex = _editingIndex;
+                                      chatId =
+                                          chatHistory[_editingIndex!]['chatId'] ??
+                                          '';
+                                      isEdited = true;
+                                    } else {
+                                      chatHistory.add({
+                                        'question': message,
+                                        'answer': '',
+                                        'chatId': widget.chatId ?? '',
+                                        'messageId': '',
+                                        'isBookmarked': false,
+                                        'isLiked': false,
+                                        'isDisliked': false,
+                                        'isUserAudio': false,
+                                      });
+                                      _currentResponseIndex =
+                                          chatHistory.length - 1;
+                                      chatId =
+                                          widget.chatId ??
+                                          PrefUtils.getChatID();
+                                      isEdited = false;
+                                    }
+                                    PrefUtils.setChatHistory(chatHistory);
+                                    developer.log(
+                                      'New message added/edited: ${chatHistory[_currentResponseIndex!]}',
+                                      name: 'CHAT_MESSAGE',
+                                    );
+                                  });
+                                }
 
                                 if (PrefUtils.getChatID().isEmpty &&
                                     widget.chatId == null) {

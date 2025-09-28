@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:gita_gpt/Screens/customtabbar.dart';
-import 'package:gita_gpt/Screens/login_screen.dart';
-import 'package:gita_gpt/Utils/pref_utils.dart';
+import 'package:divine_arc/Screens/customtabbar.dart';
+import 'package:divine_arc/Screens/login_screen.dart';
+import 'package:divine_arc/Utils/pref_utils.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});

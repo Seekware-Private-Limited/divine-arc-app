@@ -1,5 +1,5 @@
-import 'package:gita_gpt/Utils/app_imports.dart';
-import 'package:gita_gpt/Utils/common_utils.dart';
+import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/common_utils.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -132,6 +132,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         final email = response['email'];
                         PrefUtils.setName(name);
                         PrefUtils.setEmail(email);
+                        PrefUtils.setIsSocialLogin(true);
                         CommonUtils.showSuccessToast('Logged in successfully.');
                         Navigator.pushReplacement(
                           context,

@@ -1,6 +1,6 @@
-import 'package:gita_gpt/Screens/forgot_password.dart';
-import 'package:gita_gpt/Utils/app_imports.dart';
-import 'package:gita_gpt/Utils/common_utils.dart';
+import 'package:divine_arc/Screens/forgot_password.dart';
+import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/common_utils.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -83,13 +83,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() {
                           isLoading = false;
                         });
-                        CommonUtils.showSuccessToast(
-                          'Logged in as ${state.name}',
-                        );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => CustomBottomNavBar(),
+                        BlocProvider.of<AuthFlowBloc>(context).add(
+                          SocialLoginEventHandler(
+                            socialId: state.id,
+                            socialType: 'facebook',
+                            email: state.email,
+                            name: state.name,
                           ),
                         );
                       } else if (state is FacebookLoginFailure) {
@@ -130,6 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         final email = response['email'];
                         PrefUtils.setName(name);
                         PrefUtils.setEmail(email);
+                        PrefUtils.setIsSocialLogin(true);
                         CommonUtils.showSuccessToast('Logged in successfully.');
                         Navigator.pushReplacement(
                           context,

@@ -1,6 +1,6 @@
-import 'package:gita_gpt/Screens/VoiceConversation.dart';
-import 'package:gita_gpt/Screens/splash_screen.dart';
-import 'package:gita_gpt/Utils/app_imports.dart';
+import 'package:divine_arc/Screens/VoiceConversation.dart';
+import 'package:divine_arc/Screens/splash_screen.dart';
+import 'package:divine_arc/Utils/app_imports.dart';
 
 Future<void> main() async {
   ErrorWidget.builder = (FlutterErrorDetails details) {
@@ -43,7 +43,7 @@ class MyApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            title: 'Gita_GPT',
+            title: 'divine_arc',
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
             ),

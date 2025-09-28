@@ -1,4 +1,4 @@
-# gita_gpt
+# divine_arc
 
 A new Flutter project.
 

@@ -1,7 +1,7 @@
-import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
-import 'package:gita_gpt/Screens/chalisa_screen.dart';
-import 'package:gita_gpt/Utils/app_imports.dart';
-import 'package:gita_gpt/Utils/common_utils.dart';
+import 'package:divine_arc/APIs/HomeFlow/home_flow_bloc.dart';
+import 'package:divine_arc/Screens/chalisa_screen.dart';
+import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/common_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

@@ -1,5 +1,6 @@
-import 'package:gita_gpt/APIs/HomeFlow/home_flow_bloc.dart';
-import 'package:gita_gpt/Utils/app_imports.dart';
+import 'package:divine_arc/APIs/HomeFlow/home_flow_bloc.dart';
+import 'package:divine_arc/Utils/app_imports.dart';
+import 'dart:developer' as developer;
 
 class AskAnythingScreen extends StatefulWidget {
   const AskAnythingScreen({super.key});
@@ -15,6 +16,7 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
   @override
   void initState() {
     super.initState();
+    askAnythingController.clear();
     BlocProvider.of<HomeFlowBloc>(
       context,
     ).add(CreateSessionEvent(language: PrefUtils.getLanguage()));
@@ -25,6 +27,7 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
     // 🧹 Clear input on exit to maintain clean state
     askAnythingController.clear();
     askAnythingController.dispose();
+    developer.log('Disposing AskAnythingScreen', name: 'DISPOSE');
     super.dispose();
   }
 
@@ -59,9 +62,13 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
           child: BlocListener<HomeFlowBloc, HomeFlowState>(
             listener: (context, state) {
               if (state is InitiateChatLoading) {
-                setState(() => isLoading = true);
+                if (mounted) {
+                  setState(() => isLoading = true);
+                }
               } else if (state is InitiateChatSuccess) {
-                setState(() => isLoading = false);
+                if (mounted) {
+                  setState(() => isLoading = false);
+                }
                 final response = state.successResponse;
                 final chatId = response['id'];
                 PrefUtils.setChatID(chatId);
@@ -70,17 +77,16 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                   context,
                   MaterialPageRoute(
                     builder:
-                        (context) => BlocProvider(
-                          create: (context) => HomeFlowBloc(),
-                          child: GptScreen(
-                            searchQueryFromAskAnythingScreen:
-                                askAnythingController.text.trim(),
-                          ),
+                        (context) => GptScreen(
+                          searchQueryFromAskAnythingScreen:
+                              askAnythingController.text.trim(),
                         ),
                   ),
                 );
               } else if (state is InitiateChatFailure) {
-                setState(() => isLoading = false);
+                if (mounted) {
+                  setState(() => isLoading = false);
+                }
                 CommonUtils.showErrorToast(state.failureResponse['message']);
               }
             },
@@ -117,7 +123,6 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                           ],
                         ),
                         const SizedBox(height: 20),
-
                         // 🪔 Main Card
                         Container(
                           padding: const EdgeInsets.all(16),
@@ -132,14 +137,12 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                           child: Column(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(
-                                  2,
-                                ), // Border thickness
+                                padding: const EdgeInsets.all(2),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: Colors.orange, // Border color
-                                    width: 1, // Border width
+                                    color: Colors.orange,
+                                    width: 1,
                                   ),
                                 ),
                                 child: ClipOval(
@@ -151,7 +154,6 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                   ),
                                 ),
                               ),
-
                               const SizedBox(height: 10),
                               Text(
                                 AppLocalizations.of(
@@ -160,7 +162,6 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                 style: FTextStyle.boldText,
                               ),
                               const SizedBox(height: 16),
-
                               // 📝 Input Section
                               Container(
                                 decoration: BoxDecoration(
@@ -269,9 +270,7 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                   ],
                                 ),
                               ),
-
                               const SizedBox(height: 20),
-
                               // 🔸 Trending Question Grid
                               GridView.builder(
                                 shrinkWrap: true,
@@ -292,13 +291,14 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                   final question =
                                       geetaList[index][languageCode] ??
                                       geetaList[index]['en']!;
-
                                   return InkWell(
                                     borderRadius: BorderRadius.circular(8),
                                     onTap: () {
-                                      setState(() {
-                                        askAnythingController.text = question;
-                                      });
+                                      if (mounted) {
+                                        setState(() {
+                                          askAnythingController.text = question;
+                                        });
+                                      }
                                     },
                                     child: Container(
                                       padding: const EdgeInsets.all(16),
