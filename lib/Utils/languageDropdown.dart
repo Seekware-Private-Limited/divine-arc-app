@@ -9,7 +9,12 @@ import 'package:divine_arc/l10n/language_provider.dart';
 import 'package:provider/provider.dart';
 
 class LanguageDropdown extends StatefulWidget {
-  const LanguageDropdown({super.key});
+  final VoidCallback? onLanguageChanged; // Make the callback optional
+
+  const LanguageDropdown({
+    super.key,
+    this.onLanguageChanged, // Optional parameter
+  });
 
   @override
   State<LanguageDropdown> createState() => _LanguageDropdownState();
@@ -20,7 +25,6 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
 
   final List<String> _languages = ['English', 'हिन्दी'];
   final Map<String, String> _languageToCode = {'English': 'en', 'हिन्दी': 'hi'};
-
   final Map<String, String> _codeToLanguage = {'en': 'English', 'hi': 'हिन्दी'};
 
   String _getDisplayLanguage(String? code) =>
@@ -95,11 +99,14 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
         context,
         listen: false,
       ).changeLanguage(languageCode);
-      print('LANGUAGE CHANGED TO - ${languageCode}');
+      print('LANGUAGE CHANGED TO - $languageCode');
       PrefUtils.setLanguage(languageCode);
       BlocProvider.of<HomeFlowBloc>(
         context,
       ).add(CreateSessionEvent(language: languageCode));
+
+      // Call the optional callback if provided
+      widget.onLanguageChanged?.call();
     }
   }
 

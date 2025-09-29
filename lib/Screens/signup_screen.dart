@@ -131,7 +131,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         final name = response['name'];
                         final email = response['email'];
                         PrefUtils.setName(name);
+                        PrefUtils.setIsLogin(true);
                         PrefUtils.setEmail(email);
+                        PrefUtils.setIsGuest(false);
                         PrefUtils.setIsSocialLogin(true);
                         CommonUtils.showSuccessToast('Logged in successfully.');
                         Navigator.pushReplacement(

@@ -2,14 +2,23 @@ import 'package:divine_arc/Utils/FontSizeDropdown.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 
 class ChalisaScreen extends StatefulWidget {
-  final String title;
   final String image;
-  final String prayer;
+  final String titleEn;
+  final String titleHi;
+  final String prayerEn;
+  final String prayerHi;
+  final String descriptionEn; // Optional
+  final String descriptionHi; // Optional
+
   const ChalisaScreen({
     super.key,
-    required this.prayer,
-    required this.title,
     required this.image,
+    required this.titleEn,
+    required this.titleHi,
+    required this.prayerEn,
+    required this.prayerHi,
+    required this.descriptionEn,
+    required this.descriptionHi,
   });
 
   @override
@@ -18,9 +27,26 @@ class ChalisaScreen extends StatefulWidget {
 
 class _ChalisaScreenState extends State<ChalisaScreen> {
   double _fontSizeMultiplier = 1.0;
+
+  // Callback function to handle language change
+  void _onLanguageChanged() {
+    setState(() {
+      // Refresh the UI when language changes
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final locale = Localizations.localeOf(context).languageCode;
+
+    // Select content based on locale
+    final title = locale == 'en' ? widget.titleEn : widget.titleHi;
+    final prayer = locale == 'en' ? widget.prayerEn : widget.prayerHi;
+    // Optionally use description
+    final description =
+        locale == 'en' ? widget.descriptionEn : widget.descriptionHi;
+
     return MediaQuery(
       data: MediaQuery.of(
         context,
@@ -51,7 +77,7 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        LanguageDropdown(),
+                        LanguageDropdown(onLanguageChanged: _onLanguageChanged),
                         FontSizeDropdown(
                           currentScale: _fontSizeMultiplier,
                           onFontSizeChanged: (newScale) {
@@ -84,16 +110,36 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                                   height: 100,
                                   width: 100,
                                   fit: BoxFit.cover,
+                                  errorBuilder:
+                                      (
+                                        context,
+                                        error,
+                                        stackTrace,
+                                      ) => Image.asset(
+                                        'assets/images/hanuman_placeholder.png',
+                                        height: 100,
+                                        width: 100,
+                                        fit: BoxFit.cover,
+                                      ),
                                 ),
                               ),
                               const SizedBox(height: 20),
-                              Text(widget.title, style: FTextStyle.boldText),
+                              Text(title, style: FTextStyle.boldText),
                               const SizedBox(height: 10),
                               Text(
-                                widget.prayer,
+                                prayer,
                                 style: FTextStyle.defaultText,
                                 textAlign: TextAlign.center,
                               ),
+                              // Optionally display description
+                              if (description.isNotEmpty) ...[
+                                const SizedBox(height: 10),
+                                Text(
+                                  description,
+                                  style: FTextStyle.defaultText,
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ],
                           ),
                         ),

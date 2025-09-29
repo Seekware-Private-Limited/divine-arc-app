@@ -10,17 +10,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="03f6ba84-f068-4dcc-9b02-42bb39d75ec1" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/APIs/AuthFlow/auth_flow_bloc.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/APIs/AuthFlow/auth_flow_bloc.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/APIs/HomeFlow/home_flow_bloc.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/APIs/HomeFlow/home_flow_bloc.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/Screens/ask_anything_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/Screens/ask_anything_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/Screens/gpt_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/Screens/gpt_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/Screens/home_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/Screens/home_screen.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/Screens/login_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/Screens/login_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/Screens/profile_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/Screens/profile_screen.dart" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/Screens/signup_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/Screens/signup_screen.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/Utils/languageDropdown.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/Utils/languageDropdown.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/Utils/pref_utils.dart" beforeDir="false" afterPath="$PROJECT_DIR$/lib/Utils/pref_utils.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -89,6 +82,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "ScreenshotViewer.SavePath": "/home/seekware/Downloads",
+    "android.gradle.sync.needed": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "com.google.services.firebase.aqiPopupShown": "true",
