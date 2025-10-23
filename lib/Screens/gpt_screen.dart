@@ -852,17 +852,9 @@ class _GptScreenState extends State<GptScreen>
                   vertical: 10,
                 ),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          AppLocalizations.of(context)!.translate('home'),
-                          style: FTextStyle.homeText,
-                        ),
-                        const LanguageDropdown(),
-                      ],
-                    ),
+                    const LanguageDropdown(),
                     const SizedBox(height: 10),
                     Expanded(
                       child: Visibility(

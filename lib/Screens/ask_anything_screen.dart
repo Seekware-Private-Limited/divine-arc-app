@@ -107,21 +107,7 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Stack(
-                          children: [
-                            Center(
-                              child: Text(
-                                AppLocalizations.of(context)!.translate('home'),
-                                style: FTextStyle.homeText,
-                              ),
-                            ),
-                            const Positioned(
-                              right: 0,
-                              top: 5,
-                              child: LanguageDropdown(),
-                            ),
-                          ],
-                        ),
+                        const LanguageDropdown(),
                         const SizedBox(height: 20),
                         // 🪔 Main Card
                         Container(

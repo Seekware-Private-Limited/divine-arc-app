@@ -69,10 +69,6 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                 ),
                 child: Column(
                   children: [
-                    Text(
-                      AppLocalizations.of(context)!.translate('home'),
-                      style: FTextStyle.homeText,
-                    ),
                     const SizedBox(height: 20),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
