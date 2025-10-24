@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'dart:developer' as developer;
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class CustomAudioPlayer extends StatelessWidget {
   final String audioPath;
@@ -976,12 +977,20 @@ class _GptScreenState extends State<GptScreen>
                                                     ],
                                                   )
                                                   : Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
-                                                      Text(
-                                                        answer,
-                                                        style:
-                                                            FTextStyle
-                                                                .defaultText,
+                                                      MarkdownBody(
+                                                        data: answer,
+                                                        styleSheet:
+                                                            MarkdownStyleSheet.fromTheme(
+                                                              Theme.of(context),
+                                                            ).copyWith(
+                                                              p:
+                                                                  FTextStyle
+                                                                      .defaultText,
+                                                            ),
                                                       ),
                                                       if (index ==
                                                               _currentResponseIndex &&
@@ -1042,6 +1051,7 @@ class _GptScreenState extends State<GptScreen>
                                                         ),
                                                     ],
                                                   ),
+
                                               const SizedBox(height: 16),
                                               Row(
                                                 mainAxisAlignment:

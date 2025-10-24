@@ -27,6 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
           "A devotional hymn dedicated to Lord Hanuman, composed by Tulsidas, symbolizing devotion, strength, and protection.",
       "image_url":
           "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRr2az5eDfxbeLjgN7KGpO_FBLDRzUIdx5NtQ&s",
+      "audio": "audio/hanumanChalisa.mp3",
     },
     {
       "title_hi": "दुर्गा माता की आरती",
@@ -41,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
           "A sacred hymn sung in praise of Mother Durga, symbolizing strength, courage, and the blessings of the Goddess.",
       "image_url":
           "https://t4.ftcdn.net/jpg/09/75/63/59/360_F_975635990_6M7X8OwBuHtxmZiti6Rqy4gjyC8uMqid.jpg",
+      "audio": "audio/durgamataAarti.mp3",
     },
     {
       "title_hi": "शिव तांडव स्तोत्रम",
@@ -55,20 +57,22 @@ class _HomeScreenState extends State<HomeScreen> {
           "Composed by Ravana, this hymn describes the glory of Lord Shiva’s Tandava dance, symbolizing power and spiritual energy.",
       "image_url":
           "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTPMeO-wt9Omcum7oYO55hDW4rfZlU-XfW79GmpUQEisa4FRQ4IWaQINDiJtZCbNhOiRlw&usqp=CAU",
+      "audio": "audio/shivaTandavaStotram.mp3",
     },
     {
-      "title_hi": "साईं अमृतवाणी",
-      "title_en": "Sai Amritvani",
+      "title_hi": "आरती कुंजबिहारी",
+      "title_en": "Aarti Kunj Bihari",
       "prayer_hi":
-          "श्री साईं नाथाय नमः\nसाईं बाबा के दरबार में, सबको मिलता है प्यार।\nभक्तों की पुकार सुनते, साईं हैं दयालु अपार॥\n\nसाईं बाबा, साईं बाबा, तुम हो दीनदयाल।\nसच्चिदानंद स्वरूप तुम, भक्तों के रखवाल॥\n\nशिर्डी में बिराजे साईं, द्वारकामाई में ध्यान।\nसबके दुख हर लेते हैं, साईं का है बलवान॥\n\nॐ साईं, श्री साईं, जय जय साईं नाथ।\nभक्तों के हृदय में बस्ते, साईं प्रभु की बात॥\n\nसबका मालिक एक है, साईं का है संदेश।\nहिंदू-मुस्लिम एक करे, प्रेम का है विश्वास॥\n\nउदी लगाकर मस्तक पर, साईं का आशीर्वाद।\nसंकट मोचन साईं बाबा, करते हैं सब बरबाद॥\n\nसाईं की लीला अपरंपार, कोई न समझे भेद।\nभक्तों के जीवन में साईं, बिखेरें सुख की रेत॥\n\nश्रद्धा और सबुरी सिखाते, साईं बाबा महान।\nजो भी शरण में आए, पूरा हो उसका काम॥\n\nसाईं बाबा के चरणों में, अर्पित है यह गान।\nजय साईं राम, जय साईं श्याम, साईं का है सम्मान॥",
+          "आरती कुंजबिहारी की,\nश्री गिरिधर कृष्ण मुरारी की ॥\nआरती कुंजबिहारी की,\nश्री गिरिधर कृष्ण मुरारी की ॥\nगले में बैजंती माला, बजावै मुरली मधुर बाला । श्रवण में कुण्डल झलकाला, नंद के आनंद नंदलाला ।\nगगन सम अंग कांति काली, राधिका चमक रही आली । लतन में ठाढ़े बनमाली भ्रमर सी अलक,\nकस्तूरी तिलक, चंद्र सी झलक, ललित छवि श्यामा प्यारी की, श्री गिरिधर कृष्ण मुरारी की ॥\n॥ आरती कुंजबिहारी की...॥\nकनकमय मोर मुकुट बिलसै, देवता दरसन को तरसैं । गगन सों सुमन रासि बरसै । बजे मुरचंग,\nमधुर मिरदंग, ग्वालिन संग, अतुल रति गोप कुमारी की, श्री गिरिधर कृष्णमुरारी की ॥\n॥ आरती कुंजबिहारी की...॥\nजहां ते प्रकट भई गंगा, सकल मन हारिणि श्री गंगा । स्मरन ते होत मोह भंगा बसी शिव सीस,\nजटा के बीच, हरै अघ कीच, चरन छवि श्रीबनवारी की, श्री गिरिधर कृष्णमुरारी की ॥\n॥ आरती कुंजबिहारी की...॥\nचमकती उज्ज्वल तट रेनू, बज रही वृंदावन बेनू । चहुं दिसि गोपि ग्वाल धेनू हंसत मृदु मंद,\nचांदनी चंद, कटत भव फंद, टेर सुन दीन दुखारी की, श्री गिरिधर कृष्णमुरारी की ॥\n॥ आरती कुंजबिहारी की...॥\nआरती कुंजबिहारी की,\nश्री गिरिधर कृष्ण मुरारी की ॥\nआरती कुंजबिहारी की,\nश्री गिरिधर कृष्ण मुरारी की ॥",
       "prayer_en":
-          "Salutations to Shri Sai Nath.\nIn Sai Baba’s court, everyone receives love.\nHe listens to the cries of devotees, compassionate beyond measure.\n\nSai Baba, Sai Baba, you are the merciful one.\nEmbodiment of truth, consciousness, and bliss, protector of devotees.\n\nSai resides in Shirdi, meditating in Dwarkamai.\nHe removes all sorrows, his power is supreme.\n\nOm Sai, Shri Sai, Victory to Sai Nath.\nResiding in devotees’ hearts, Sai’s words shine.\n\n‘All have one master,’ is Sai’s message.\nUniting Hindu and Muslim, his faith is in love.\n\nApplying udi on the forehead, Sai’s blessings flow.\nSai Baba, the remover of obstacles, destroys all miseries.\n\nSai’s divine play is boundless, beyond comprehension.\nIn devotees’ lives, he spreads the sand of joy.\n\nTeaching faith and patience, Sai Baba is great.\nWhoever seeks his shelter, their wishes are fulfilled.\n\nAt Sai Baba’s feet, this song is offered.\nVictory to Sai Ram, victory to Sai Shyam, Sai is honored.",
+          "Aarti Kunj Bihari,\nShri Giridhar Krishna Murari.\nAarti Kunj Bihari,\nShri Giridhar Krishna Murari.\nAdorned with a garland of Baijanti flowers, playing the sweet flute,\nWith earrings glimmering, beloved of Nanda, full of joy.\nHis form shines like the sky, Radhika glows bright,\nStanding amid creepers like a bumblebee’s dance, lovely Krishna Murari.\n\nGolden peacock crown gleams, even gods long to see,\nFrom the sky, showers of flowers fall; mridang and murcang play,\nWith Gopis and cowherd maidens, unrivaled delight of the divine girl, Shri Giridhar Krishna Murari.\n\nWherever the Ganga manifested, all hearts rejoice,\nRecalling Him dispels attachment; residing within, destroyer of sins,\nFeet of Shri Banwari, divine Krishna Murari.\n\nBright banks of the Reenu river, flute of Vrindavan resounds,\nEverywhere Gopis, cowherds and cows smile gently,\nMoonlight shines, worldly traps vanish, listening to the cries of devotees,\nShri Giridhar Krishna Murari.\n\nAarti Kunj Bihari,\nShri Giridhar Krishna Murari.\nAarti Kunj Bihari,\nShri Giridhar Krishna Murari.",
       "description_hi":
-          "श्री साईं बाबा को समर्पित यह भजन श्रद्धा, सबुरी और एकता का संदेश देता है।",
+          "श्री कृष्ण को समर्पित यह आरती भक्ति, प्रेम और आनंद का संदेश देती है।",
       "description_en":
-          "This hymn dedicated to Shri Sai Baba conveys the message of faith, patience, and unity.",
+          "This Aarti dedicated to Shri Krishna conveys the message of devotion, love, and joy.",
       "image_url":
-          "https://www.tallengestore.com/cdn/shop/products/ShirdiSaiBaba-SpiritualPaintingPoster.jpg?v=1688682538",
+          "https://m.media-amazon.com/images/I/51YrcSFYDRL._AC_UF894,1000_QL80_.jpg",
+      "audio": "audio/krishnaAarti.mp3",
     },
   ];
 
@@ -357,6 +361,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                         descriptionHi:
                                                             item['description_hi'] ??
                                                             'No Hindi Description',
+                                                        audio: item['audio'],
                                                       ),
                                                 ),
                                               );
@@ -466,6 +471,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                                                 descriptionHi:
                                                                     item['description_hi'] ??
                                                                     'No Hindi Description',
+                                                                audio:
+                                                                    item['audio'],
                                                               ),
                                                         ),
                                                       );
