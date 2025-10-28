@@ -65,9 +65,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: [
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: const LanguageDropdown(),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                },
+                                child: Icon(
+                                  Icons.arrow_back_ios_new,
+                                  color: Colors.black,
+                                  size: 22,
+                                ),
+                              ),
+                              const LanguageDropdown(),
+                            ],
                           ),
                           const SizedBox(height: 20),
                           Container(
@@ -88,7 +100,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 const SizedBox(height: 20),
                                 Center(
                                   child: Image.asset(
-                                    'assets/images/GitaGPTLogo.png',
+                                    'assets/images/DivineArcLogo.png',
                                     height: 100,
                                     width: 100,
                                   ),

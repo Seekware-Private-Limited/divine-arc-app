@@ -200,7 +200,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               children: [
                                 Center(
                                   child: Image.asset(
-                                    'assets/images/GitaGPTLogo.png',
+                                    'assets/images/DivineArcLogo.png',
                                     height: 100,
                                     width: 100,
                                   ),

@@ -107,7 +107,22 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const LanguageDropdown(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: Icon(
+                                Icons.arrow_back_ios_new,
+                                color: Colors.black,
+                                size: 22,
+                              ),
+                            ),
+                            const LanguageDropdown(),
+                          ],
+                        ),
                         const SizedBox(height: 20),
                         // 🪔 Main Card
                         Container(
@@ -133,7 +148,7 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                 ),
                                 child: ClipOval(
                                   child: Image.asset(
-                                    'assets/images/GitaGPTAppIcon.png',
+                                    'assets/images/DivineArcLogo.png',
                                     height: 50,
                                     width: 50,
                                     fit: BoxFit.cover,

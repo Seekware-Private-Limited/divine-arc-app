@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:divine_arc/Utils/AudioPlayerWidget.dart';
 import 'package:divine_arc/Utils/FontSizeDropdown.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:flutter/material.dart';
@@ -9,8 +10,8 @@ class ChalisaScreen extends StatefulWidget {
   final String titleHi;
   final String prayerEn;
   final String prayerHi;
-  final String descriptionEn; // Optional
-  final String descriptionHi; // Optional
+  final String descriptionEn;
+  final String descriptionHi;
   final String audio;
 
   const ChalisaScreen({
@@ -33,43 +34,26 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
   double _fontSizeMultiplier = 1.0;
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
-  Duration _currentPosition = Duration.zero; // Track the last paused position
+  Duration _currentPosition = Duration.zero;
 
-  // Callback function to handle language change
-  void _onLanguageChanged() {
-    setState(() {
-      // Refresh the UI when language changes
-    });
-  }
+  void _onLanguageChanged() => setState(() {});
 
-  // Function to toggle audio playback
   Future<void> _toggleAudio() async {
     try {
       if (_isPlaying) {
         _currentPosition =
-            await _audioPlayer.getCurrentPosition() ??
-            Duration.zero; // Save current position
+            await _audioPlayer.getCurrentPosition() ?? Duration.zero;
         await _audioPlayer.pause();
-        setState(() {
-          _isPlaying = false; // Explicitly set to false on pause
-          print("Audio paused, _isPlaying set to: $_isPlaying");
-        });
+        setState(() => _isPlaying = false);
       } else {
         if (_currentPosition.inSeconds > 0) {
-          await _audioPlayer.seek(
-            _currentPosition,
-          ); // Resume from last position
+          await _audioPlayer.seek(_currentPosition);
         }
-        await _audioPlayer.play(
-          AssetSource(widget.audio),
-        ); // Start or resume playback
-        setState(() {
-          _isPlaying = true; // Explicitly set to true on play
-          print("Audio playing, _isPlaying set to: $_isPlaying");
-        });
+        await _audioPlayer.play(AssetSource(widget.audio));
+        setState(() => _isPlaying = true);
       }
     } catch (e) {
-      print("Error playing audio: $e");
+      debugPrint("Error playing audio: $e");
     }
   }
 
@@ -80,9 +64,6 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
       if (mounted) {
         setState(() {
           _isPlaying = state == PlayerState.playing;
-          print(
-            "Player state changed to: ${_isPlaying ? 'playing' : 'paused/stopped'}",
-          );
         });
       }
     });
@@ -96,13 +77,9 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     final locale = Localizations.localeOf(context).languageCode;
-
-    // Select content based on locale
     final title = locale == 'en' ? widget.titleEn : widget.titleHi;
     final prayer = locale == 'en' ? widget.prayerEn : widget.prayerHi;
-    // Optionally use description
     final description =
         locale == 'en' ? widget.descriptionEn : widget.descriptionHi;
 
@@ -128,25 +105,47 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                 ),
                 child: Column(
                   children: [
+                    /// --- HEADER ROW ---
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        LanguageDropdown(onLanguageChanged: _onLanguageChanged),
-                        FontSizeDropdown(
-                          currentScale: _fontSizeMultiplier,
-                          onFontSizeChanged: (newScale) {
-                            setState(() {
-                              _fontSizeMultiplier = newScale;
-                            });
+                        /// Back Icon on Left
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).pop();
                           },
+                          child: Icon(
+                            Icons.arrow_back_ios_new,
+                            color: Colors.black,
+                            size: 22,
+                          ),
+                        ),
+
+                        /// Language + Font Controls on Right
+                        Row(
+                          children: [
+                            LanguageDropdown(
+                              onLanguageChanged: _onLanguageChanged,
+                            ),
+                            const SizedBox(width: 8),
+                            FontSizeDropdown(
+                              currentScale: _fontSizeMultiplier,
+                              onFontSizeChanged: (newScale) {
+                                setState(() => _fontSizeMultiplier = newScale);
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+
+                    const SizedBox(height: 10),
+
+                    /// --- MAIN SCROLL CONTENT ---
                     Expanded(
                       child: SingleChildScrollView(
+                        padding: const EdgeInsets.only(bottom: 100),
                         child: Container(
-                          width: screenWidth * 0.9,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(10),
@@ -177,30 +176,14 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                                       ),
                                 ),
                               ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 15),
                               Text(title, style: FTextStyle.boldText),
-
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  IconButton(
-                                    icon: Icon(
-                                      _isPlaying
-                                          ? Icons.stop
-                                          : Icons.play_arrow,
-                                      color: AppColors.gradientStart,
-                                    ),
-                                    onPressed: _toggleAudio,
-                                  ),
-                                ],
-                              ),
                               const SizedBox(height: 10),
                               Text(
                                 prayer,
                                 style: FTextStyle.defaultText,
                                 textAlign: TextAlign.center,
                               ),
-                              // Optionally display description
                               if (description.isNotEmpty) ...[
                                 const SizedBox(height: 10),
                                 Text(
@@ -216,6 +199,14 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                     ),
                   ],
                 ),
+              ),
+
+              /// --- STICKY AUDIO PLAYER AT BOTTOM ---
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 30,
+                child: AudioPlayerWidget(audioPath: widget.audio),
               ),
             ],
           ),

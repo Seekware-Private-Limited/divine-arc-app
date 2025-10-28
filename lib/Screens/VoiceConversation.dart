@@ -150,7 +150,7 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
     try {
       final uri = Uri.parse(
-        'https://gitagptapi.vexoo.ai/api/voice-conversation',
+        'https://assets/images/DivineArcLogo.pngi.vexoo.ai/api/voice-conversation',
       );
       final request = http.MultipartRequest('POST', uri);
 

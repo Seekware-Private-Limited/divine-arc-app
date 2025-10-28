@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class BookmarkScreen extends StatefulWidget {
   const BookmarkScreen({super.key});
@@ -242,12 +243,15 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
                                                   padding: const EdgeInsets.all(
                                                     16,
                                                   ),
-                                                  child: Text(
-                                                    answer,
-                                                    style: FTextStyle
-                                                        .defaultText
-                                                        .copyWith(
-                                                          color: Colors.black87,
+                                                  child: MarkdownBody(
+                                                    data: answer,
+                                                    styleSheet:
+                                                        MarkdownStyleSheet.fromTheme(
+                                                          Theme.of(context),
+                                                        ).copyWith(
+                                                          p:
+                                                              FTextStyle
+                                                                  .defaultText,
                                                         ),
                                                   ),
                                                 ),

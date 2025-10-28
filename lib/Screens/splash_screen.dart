@@ -27,7 +27,7 @@ class _SplashScreenState extends State<SplashScreen> {
       child: Scaffold(
         body: Center(
           child: Image.asset(
-            'assets/images/GitaGPTAppIcon.png',
+            'assets/images/DivineArcLogo.png',
             height: 200,
             width: 200,
             fit: BoxFit.cover, // Makes the image fill the screen

@@ -198,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const SizedBox(height: 20),
                                 Center(
                                   child: Image.asset(
-                                    'assets/images/GitaGPTLogo.png',
+                                    'assets/images/DivineArcLogo.png',
                                     height: 100,
                                     width: 100,
                                   ),

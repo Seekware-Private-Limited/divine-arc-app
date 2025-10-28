@@ -83,13 +83,13 @@ class _GptScreenState extends State<GptScreen>
   late final Animation<double> _scaleAnimation;
   StreamSubscription<PlayerState>? _playerStateSubscription;
   bool isRecording = false;
-  bool isPlaying = false; // For user recording
-  bool isPlayingResponse = false; // For API response
+  bool isPlaying = false;
+  bool isPlayingResponse = false;
   bool isSending = false;
   String? _audioPath;
   String? _responseAudioPath;
   String? _apiResponse;
-  String? _currentPlayingPath; // Track which audio is playing
+  String? _currentPlayingPath;
   String reactionId = '';
   int? _editingIndex;
   int? _currentResponseIndex;
@@ -145,32 +145,25 @@ class _GptScreenState extends State<GptScreen>
     developer.log('Disposing GptScreen', name: 'DISPOSE');
     _animationController.stop();
     _animationController.dispose();
-    developer.log('AnimationController disposed', name: 'DISPOSE');
     _playerStateSubscription?.cancel();
-    developer.log('AudioPlayer subscription canceled', name: 'DISPOSE');
     inputController.dispose();
     feedbackTextController.dispose();
     _scrollController.dispose();
-    developer.log('ScrollController disposed', name: 'DISPOSE');
     if (isRecording) {
       _audioRecorder.stop();
     }
     _audioRecorder.dispose();
-    developer.log('AudioRecorder disposed', name: 'DISPOSE');
     if (isPlaying || isPlayingResponse) {
       _audioPlayer.stop();
     }
     _audioPlayer.dispose();
-    developer.log('AudioPlayer disposed', name: 'DISPOSE');
     try {
       if (_audioPath != null) File(_audioPath!).deleteSync();
       if (_responseAudioPath != null) File(_responseAudioPath!).deleteSync();
-      developer.log('Audio files deleted', name: 'DISPOSE');
     } catch (e) {
       developer.log('Error deleting audio files: $e', name: 'FILE_CLEANUP');
     }
     super.dispose();
-    developer.log('GptScreen disposed', name: 'DISPOSE');
   }
 
   String _generateRandomId() {
@@ -210,9 +203,7 @@ class _GptScreenState extends State<GptScreen>
           _apiResponse = null;
         });
       }
-      print('Recording started... Path: $_audioPath');
     } catch (e) {
-      print('Error starting recording: $e');
       CommonUtils.showErrorToast('Failed to start recording: $e');
     }
   }
@@ -227,14 +218,12 @@ class _GptScreenState extends State<GptScreen>
           _audioPath = path;
         });
       }
-      print('Recording stopped. File: $_audioPath');
       if (_audioPath != null) {
         await _sendAudioToApi();
       } else {
         CommonUtils.showErrorToast('No recording file found');
       }
     } catch (e) {
-      print('Error stopping recording: $e');
       CommonUtils.showErrorToast('Failed to stop recording: $e');
     }
   }
@@ -264,19 +253,16 @@ class _GptScreenState extends State<GptScreen>
             'isBookmarked': false,
             'isLiked': false,
             'isDisliked': false,
-            'isUserAudio': true, // Flag to indicate user audio
+            'isUserAudio': true,
           });
           _currentResponseIndex = chatHistory.length - 1;
           PrefUtils.setChatHistory(chatHistory);
-          developer.log(
-            'Added audio chat entry: ${chatHistory.last}',
-            name: 'CHAT_ADD',
-          );
         });
       }
+
+      // Scroll only once when sending voice
       _scrollToBottom();
     } catch (e) {
-      print('Error sending audio: $e');
       CommonUtils.showErrorToast('Error sending audio: $e');
     } finally {
       if (mounted) {
@@ -287,9 +273,9 @@ class _GptScreenState extends State<GptScreen>
 
   Future<void> _playRecording() async {
     if (_audioPath == null) return;
-    await _audioPlayer.stop(); // Stop any ongoing playback
+    await _audioPlayer.stop();
     setState(() {
-      _currentPlayingPath = _audioPath; // Track user recording
+      _currentPlayingPath = _audioPath;
       isPlaying = true;
       isPlayingResponse = false;
     });
@@ -298,9 +284,9 @@ class _GptScreenState extends State<GptScreen>
 
   Future<void> _playResponseAudio() async {
     if (_responseAudioPath == null) return;
-    await _audioPlayer.stop(); // Stop any ongoing playback
+    await _audioPlayer.stop();
     setState(() {
-      _currentPlayingPath = _responseAudioPath; // Track API response
+      _currentPlayingPath = _responseAudioPath;
       isPlayingResponse = true;
       isPlaying = false;
     });
@@ -340,14 +326,10 @@ class _GptScreenState extends State<GptScreen>
             'isBookmarked': false,
             'isLiked': false,
             'isDisliked': false,
-            'isUserAudio': false, // Flag for text-based queries
+            'isUserAudio': false,
           });
           _currentResponseIndex = chatHistory.length - 1;
           PrefUtils.setChatHistory(chatHistory);
-          developer.log(
-            'Added new chat entry: ${chatHistory.last}',
-            name: 'CHAT_ADD',
-          );
         });
       }
 
@@ -373,6 +355,8 @@ class _GptScreenState extends State<GptScreen>
         ),
       );
       inputController.clear();
+
+      // Scroll only once on auto-query
       _scrollToBottom();
     }
   }
@@ -575,7 +559,7 @@ class _GptScreenState extends State<GptScreen>
                   }
                 });
               }
-              _scrollToBottom();
+              // REMOVED: _scrollToBottom();
             } else if (state is ChatLoadedState) {
               if (mounted) {
                 setState(() {
@@ -598,9 +582,6 @@ class _GptScreenState extends State<GptScreen>
                 }
                 String? latestQuestion =
                     chatHistory[_currentResponseIndex!]['question'];
-                print(
-                  'Latest Question in InitiateChatSuccess: $latestQuestion',
-                );
                 BlocProvider.of<HomeFlowBloc>(context).add(
                   StoreChatEvent(
                     message: latestQuestion ?? '',
@@ -612,7 +593,7 @@ class _GptScreenState extends State<GptScreen>
                   ),
                 );
               }
-              _scrollToBottom();
+              // REMOVED: _scrollToBottom();
             } else if (state is ChatErrorState) {
               CommonUtils.showErrorToast(state.error['message']);
             } else if (state is VoiceConversationSuccess) {
@@ -635,7 +616,7 @@ class _GptScreenState extends State<GptScreen>
                               PrefUtils.setChatHistory(chatHistory);
                             });
                           }
-                          _scrollToBottom();
+                          // REMOVED: _scrollToBottom();
                         });
                       }
                     } else if (response is List<int>) {
@@ -648,14 +629,14 @@ class _GptScreenState extends State<GptScreen>
                             PrefUtils.setChatHistory(chatHistory);
                           });
                         }
-                        _scrollToBottom();
+                        // REMOVED: _scrollToBottom();
                       });
                     } else {
                       _apiResponse = response.toString();
                       chatHistory[_currentResponseIndex!]['answer'] =
                           _apiResponse;
                       PrefUtils.setChatHistory(chatHistory);
-                      _scrollToBottom();
+                      // REMOVED: _scrollToBottom();
                     }
                   }
                 });
@@ -703,13 +684,9 @@ class _GptScreenState extends State<GptScreen>
                         };
                       }).toList();
                   PrefUtils.setChatHistory(chatHistory);
-                  developer.log(
-                    'Updated chatHistory from server: $chatHistory',
-                    name: 'CHAT_UPDATE',
-                  );
                 });
               }
-              _scrollToBottom();
+              // REMOVED: _scrollToBottom();
             } else if (state is GetSingleChatHistoryFailure) {
               CommonUtils.showErrorToast(state.failureResponse['message']);
             } else if (state is ReactOnChatSuccess) {
@@ -727,10 +704,6 @@ class _GptScreenState extends State<GptScreen>
                     chatHistory[index]['isDisliked'] = !isLike;
                     PrefUtils.setChatHistory(chatHistory);
                   }
-                  developer.log(
-                    'ReactOnChatSuccess: $chatHistory',
-                    name: 'CHAT_REACT',
-                  );
                 });
               }
               _showFeedbackPopup(context);
@@ -750,10 +723,6 @@ class _GptScreenState extends State<GptScreen>
                         !wasLike ? false : chatHistory[index]['isDisliked'];
                     PrefUtils.setChatHistory(chatHistory);
                   }
-                  developer.log(
-                    'ReactOnChatFailure: $chatHistory',
-                    name: 'CHAT_REACT_FAIL',
-                  );
                 });
               }
               CommonUtils.showErrorToast(state.failureResponse['message']);
@@ -784,10 +753,6 @@ class _GptScreenState extends State<GptScreen>
                     chatHistory[index]['isBookmarked'] = true;
                     PrefUtils.setChatHistory(chatHistory);
                   }
-                  developer.log(
-                    'BookmarkChatSuccess: $chatHistory',
-                    name: 'CHAT_BOOKMARK',
-                  );
                 });
               }
               CommonUtils.showSuccessToast('Chat bookmarked successfully!');
@@ -816,10 +781,6 @@ class _GptScreenState extends State<GptScreen>
                     chatHistory[index]['isBookmarked'] = false;
                     PrefUtils.setChatHistory(chatHistory);
                   }
-                  developer.log(
-                    'UnbookmarkChatSuccess: $chatHistory',
-                    name: 'CHAT_UNBOOKMARK',
-                  );
                 });
               }
               CommonUtils.showSuccessToast('Chat unbookmarked successfully!');
@@ -855,7 +816,20 @@ class _GptScreenState extends State<GptScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const LanguageDropdown(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.of(context).pop(),
+                          child: const Icon(
+                            Icons.arrow_back_ios_new,
+                            color: Colors.black,
+                            size: 22,
+                          ),
+                        ),
+                        const LanguageDropdown(),
+                      ],
+                    ),
                     const SizedBox(height: 10),
                     Expanded(
                       child: Visibility(
@@ -895,6 +869,7 @@ class _GptScreenState extends State<GptScreen>
                                     final bool isUserAudio =
                                         chatHistory[index]['isUserAudio'] ??
                                         false;
+
                                     return Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
@@ -1051,7 +1026,6 @@ class _GptScreenState extends State<GptScreen>
                                                         ),
                                                     ],
                                                   ),
-
                                               const SizedBox(height: 16),
                                               Row(
                                                 mainAxisAlignment:
@@ -1095,11 +1069,6 @@ class _GptScreenState extends State<GptScreen>
                                                                 }
                                                                 PrefUtils.setChatHistory(
                                                                   chatHistory,
-                                                                );
-                                                                developer.log(
-                                                                  'Like toggled: ${chatHistory[index]}',
-                                                                  name:
-                                                                      'CHAT_LIKE',
                                                                 );
                                                               });
                                                             }
@@ -1146,11 +1115,6 @@ class _GptScreenState extends State<GptScreen>
                                                                 }
                                                                 PrefUtils.setChatHistory(
                                                                   chatHistory,
-                                                                );
-                                                                developer.log(
-                                                                  'Dislike toggled: ${chatHistory[index]}',
-                                                                  name:
-                                                                      'CHAT_DISLIKE',
                                                                 );
                                                               });
                                                             }
@@ -1210,11 +1174,6 @@ class _GptScreenState extends State<GptScreen>
                                                                     !isBookmarked;
                                                                 PrefUtils.setChatHistory(
                                                                   chatHistory,
-                                                                );
-                                                                developer.log(
-                                                                  'Bookmark toggled: ${chatHistory[index]}',
-                                                                  name:
-                                                                      'CHAT_BOOKMARK',
                                                                 );
                                                               });
                                                             }
@@ -1435,10 +1394,6 @@ class _GptScreenState extends State<GptScreen>
                                       isEdited = false;
                                     }
                                     PrefUtils.setChatHistory(chatHistory);
-                                    developer.log(
-                                      'New message added/edited: ${chatHistory[_currentResponseIndex!]}',
-                                      name: 'CHAT_MESSAGE',
-                                    );
                                   });
                                 }
 
@@ -1466,6 +1421,8 @@ class _GptScreenState extends State<GptScreen>
                                 );
                                 inputController.clear();
                                 _editingIndex = null;
+
+                                // Scroll only once when user sends message
                                 _scrollToBottom();
                               }
                             },
