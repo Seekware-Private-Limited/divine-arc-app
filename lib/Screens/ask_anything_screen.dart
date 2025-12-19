@@ -1,6 +1,4 @@
-import 'package:divine_arc/APIs/HomeFlow/home_flow_bloc.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
-import 'dart:developer' as developer;
 
 class AskAnythingScreen extends StatefulWidget {
   const AskAnythingScreen({super.key});
@@ -12,6 +10,7 @@ class AskAnythingScreen extends StatefulWidget {
 class _AskAnythingScreenState extends State<AskAnythingScreen> {
   final TextEditingController askAnythingController = TextEditingController();
   bool isLoading = false;
+  bool commonserverfailure = false;
 
   @override
   void initState() {
@@ -24,16 +23,13 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
 
   @override
   void dispose() {
-    // 🧹 Clear input on exit to maintain clean state
     askAnythingController.clear();
     askAnythingController.dispose();
-    developer.log('Disposing AskAnythingScreen', name: 'DISPOSE');
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // 🌟 Top 4 Trending Bhagavad Geeta Questions — Multilingual Support
     final List<Map<String, String>> geetaList = [
       {
         'en': 'What is the core message of the Bhagavad Geeta?',
@@ -67,12 +63,14 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                 }
               } else if (state is InitiateChatSuccess) {
                 if (mounted) {
-                  setState(() => isLoading = false);
+                  setState(() {
+                    isLoading = false;
+                    commonserverfailure = false;
+                  });
                 }
                 final response = state.successResponse;
                 final chatId = response['id'];
                 PrefUtils.setChatID(chatId);
-
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -84,10 +82,19 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                   ),
                 );
               } else if (state is InitiateChatFailure) {
+                print('Chat failure: ${state.failureResponse}');
                 if (mounted) {
                   setState(() => isLoading = false);
                 }
                 CommonUtils.showErrorToast(state.failureResponse['message']);
+              } else if (state is CommonServerFailureHome) {
+                print('Server failure detected');
+                if (mounted) {
+                  setState(() {
+                    isLoading = false;
+                    commonserverfailure = true;
+                  });
+                }
               }
             },
             child: Stack(
@@ -124,7 +131,6 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        // 🪔 Main Card
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -163,7 +169,6 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                 style: FTextStyle.boldText,
                               ),
                               const SizedBox(height: 16),
-                              // 📝 Input Section
                               Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(10),
@@ -234,6 +239,13 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                               return;
                                             }
 
+                                            if (commonserverfailure) {
+                                              CommonUtils.showErrorToast(
+                                                'Something went wrong. Please try again later.',
+                                              );
+                                              return;
+                                            }
+
                                             final existingChatId =
                                                 PrefUtils.getChatID();
 
@@ -272,7 +284,6 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                 ),
                               ),
                               const SizedBox(height: 20),
-                              // 🔸 Trending Question Grid
                               GridView.builder(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
@@ -336,6 +347,13 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                     ),
                   ),
                 ),
+                if (isLoading)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.black.withOpacity(0.5),
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
               ],
             ),
           ),

@@ -128,7 +128,7 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
               CommonUtils.showErrorToast(state.error);
             } else if (state is CheckNetworkConnection) {
               CommonUtils.showErrorToast('No Internet Connection!');
-            } else if (state is CommonServerFailure) {
+            } else if (state is CommonServerFailureHome) {
               CommonUtils.showErrorToast(state.error);
             }
           },

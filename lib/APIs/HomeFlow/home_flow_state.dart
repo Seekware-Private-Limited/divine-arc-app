@@ -245,9 +245,9 @@ class GetAllBookmarksChatFailure extends HomeFlowState {
 }
 
 // Common Server Failure State
-class CommonServerFailure extends HomeFlowState {
+class CommonServerFailureHome extends HomeFlowState {
   final String error;
-  CommonServerFailure(this.error);
+  CommonServerFailureHome(this.error);
 }
 
 // Check Network Connection State

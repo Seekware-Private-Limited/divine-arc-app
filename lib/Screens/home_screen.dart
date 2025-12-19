@@ -1,7 +1,5 @@
-import 'package:divine_arc/APIs/HomeFlow/home_flow_bloc.dart';
 import 'package:divine_arc/Screens/chalisa_screen.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
-import 'package:divine_arc/Utils/common_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -112,9 +110,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   } else if (state is GetRandomQuoteFailure) {
                     setState(() {
                       isLoading = false;
+                      quoteResponse = '';
                     });
                     CommonUtils.showErrorToast(
-                      state.failureResponse['message'],
+                      'Something went wrong, Please try again later',
                     );
                   } else if (state is GetAllPrayersLoading) {
                     setState(() {
@@ -130,6 +129,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       isPrayersLoading = false;
                     });
                     CommonUtils.showErrorToast('Failed to load prayers');
+                  } else if (state is CommonServerFailureHome) {
+                    setState(() {
+                      isLoading = false;
+                      isPrayersLoading = false;
+                    });
                   }
                 },
                 child: Stack(
@@ -219,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 ? quoteResponse
                                                 : AppLocalizations.of(
                                                   context,
-                                                )!.translate('loremipsumShort'),
+                                                )!.translate('dummyText'),
                                             style:
                                                 FTextStyle
                                                     .socialloginbuttonText,

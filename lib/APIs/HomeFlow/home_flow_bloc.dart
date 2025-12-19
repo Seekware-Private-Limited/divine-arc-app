@@ -42,7 +42,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("Exception: $e");
         }
       }
@@ -137,7 +141,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         } catch (e) {
           emit(
             ChatErrorState({
-              'error': 'An error occurred: $e',
+              'error': 'Something went wrong, Please try again later',
               'details': e.toString(),
             }),
           );
@@ -265,7 +269,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("Exception: $e");
         }
       } else {
@@ -324,7 +332,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("⚠️ SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("💥 Exception: $e");
         }
       } else {
@@ -384,7 +396,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("❗ Exception: $e");
         }
       } else {
@@ -425,7 +441,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("Exception: $e");
         }
       } else {
@@ -481,7 +501,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("❗ Exception: $e");
         }
       } else {
@@ -535,7 +559,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("❗ Exception: $e");
         }
       } else {
@@ -585,7 +613,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("❗ Exception: $e");
         }
       } else {
@@ -633,7 +665,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("❗ Exception: $e");
         }
       } else {
@@ -682,7 +718,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("❗ Exception: $e");
         }
       } else {
@@ -732,7 +772,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("❗ Exception: $e");
         }
       } else {
@@ -778,7 +822,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("❗ Exception: $e");
         }
       } else {
@@ -826,7 +874,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("❗ Exception: $e");
         }
       } else {
@@ -877,7 +929,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("❗ Exception: $e");
         }
       } else {
@@ -928,7 +984,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("❗ Exception: $e");
         }
       } else {
@@ -975,7 +1035,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(CheckNetworkConnection());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
-          emit(CommonServerFailure('An error occurred: $e'));
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
           print("❗ Exception: $e");
         }
       } else {

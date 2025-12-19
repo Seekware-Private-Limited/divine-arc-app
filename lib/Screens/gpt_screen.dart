@@ -93,6 +93,8 @@ class _GptScreenState extends State<GptScreen>
   String reactionId = '';
   int? _editingIndex;
   int? _currentResponseIndex;
+  bool _hasApiError = false;
+  String _apiErrorMessage = '';
   List<Map<String, dynamic>> chatHistory = [];
 
   @override
@@ -127,13 +129,23 @@ class _GptScreenState extends State<GptScreen>
     });
 
     chatHistory = PrefUtils.getChatHistory();
+    // Filter out empty questions or answers immediately
+    chatHistory =
+        chatHistory.where((chat) {
+          final question = chat['question']?.toString().trim() ?? '';
+          final answer = chat['answer']?.toString().trim() ?? '';
+          return question.isNotEmpty && answer.isNotEmpty;
+        }).toList();
+
     developer.log('Initial chatHistory: $chatHistory', name: 'CHAT_HISTORY');
+
     if (widget.chatId != null && widget.chatId!.isNotEmpty) {
       developer.log(widget.chatId!, name: 'CHATID');
       BlocProvider.of<HomeFlowBloc>(
         context,
       ).add(GetSingleChatHistoryEvent(chatId: widget.chatId!));
     }
+
     if (widget.searchQueryFromAskAnythingScreen != null &&
         widget.searchQueryFromAskAnythingScreen!.trim().isNotEmpty) {
       callAPI();
@@ -158,8 +170,13 @@ class _GptScreenState extends State<GptScreen>
     }
     _audioPlayer.dispose();
     try {
-      if (_audioPath != null) File(_audioPath!).deleteSync();
-      if (_responseAudioPath != null) File(_responseAudioPath!).deleteSync();
+      if (_audioPath != null && File(_audioPath!).existsSync()) {
+        File(_audioPath!).deleteSync();
+      }
+      if (_responseAudioPath != null &&
+          File(_responseAudioPath!).existsSync()) {
+        File(_responseAudioPath!).deleteSync();
+      }
     } catch (e) {
       developer.log('Error deleting audio files: $e', name: 'FILE_CLEANUP');
     }
@@ -201,6 +218,8 @@ class _GptScreenState extends State<GptScreen>
           isRecording = true;
           _responseAudioPath = null;
           _apiResponse = null;
+          _hasApiError = false;
+          _apiErrorMessage = '';
         });
       }
     } catch (e) {
@@ -231,7 +250,11 @@ class _GptScreenState extends State<GptScreen>
   Future<void> _sendAudioToApi() async {
     if (_audioPath == null) return;
     if (mounted) {
-      setState(() => isSending = true);
+      setState(() {
+        isSending = true;
+        _hasApiError = false;
+        _apiErrorMessage = '';
+      });
     }
 
     try {
@@ -260,13 +283,19 @@ class _GptScreenState extends State<GptScreen>
         });
       }
 
-      // Scroll only once when sending voice
       _scrollToBottom();
     } catch (e) {
       CommonUtils.showErrorToast('Error sending audio: $e');
-    } finally {
       if (mounted) {
-        setState(() => isSending = false);
+        setState(() {
+          isSending = false;
+          // Remove the empty entry if API fails
+          if (_currentResponseIndex != null && chatHistory.isNotEmpty) {
+            chatHistory.removeAt(_currentResponseIndex!);
+            _currentResponseIndex = null;
+            PrefUtils.setChatHistory(chatHistory);
+          }
+        });
       }
     }
   }
@@ -330,6 +359,8 @@ class _GptScreenState extends State<GptScreen>
           });
           _currentResponseIndex = chatHistory.length - 1;
           PrefUtils.setChatHistory(chatHistory);
+          _hasApiError = false;
+          _apiErrorMessage = '';
         });
       }
 
@@ -356,7 +387,6 @@ class _GptScreenState extends State<GptScreen>
       );
       inputController.clear();
 
-      // Scroll only once on auto-query
       _scrollToBottom();
     }
   }
@@ -501,8 +531,40 @@ class _GptScreenState extends State<GptScreen>
     });
   }
 
+  void _handleApiError() {
+    if (mounted) {
+      setState(() {
+        isSending = false;
+        _hasApiError = true;
+        _apiErrorMessage = 'Something went wrong. Please try again.';
+
+        // Remove any pending/empty chat entries
+        if (_currentResponseIndex != null && chatHistory.isNotEmpty) {
+          final chat = chatHistory[_currentResponseIndex!];
+          final question = chat['question']?.toString().trim() ?? '';
+          final answer = chat['answer']?.toString().trim() ?? '';
+
+          // Only remove if answer is empty (incomplete response)
+          if (answer.isEmpty) {
+            chatHistory.removeAt(_currentResponseIndex!);
+            _currentResponseIndex = null;
+            PrefUtils.setChatHistory(chatHistory);
+          }
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Filter chat history to only show entries with both question and answer
+    final filteredChatHistory =
+        chatHistory.where((chat) {
+          final question = chat['question']?.toString().trim() ?? '';
+          final answer = chat['answer']?.toString().trim() ?? '';
+          return question.isNotEmpty && answer.isNotEmpty;
+        }).toList();
+
     return Scaffold(
       backgroundColor: AppColors.GlobalBG,
       body: SafeArea(
@@ -514,6 +576,7 @@ class _GptScreenState extends State<GptScreen>
               PrefUtils.setChatID(chatID);
             } else if (state is InitiateChatFailure) {
               CommonUtils.showErrorToast(state.failureResponse['message']);
+              _handleApiError();
             } else if (state is StoreChatSuccess) {
               final response = state.successResponse;
               final messageId = response['id'];
@@ -543,8 +606,10 @@ class _GptScreenState extends State<GptScreen>
               }
             } else if (state is StoreChatError) {
               CommonUtils.showErrorToast(state.failureResponse['message']);
+              _handleApiError();
             } else if (state is SendAPIResponseFailure) {
               CommonUtils.showErrorToast(state.failureResponse['message']);
+              _handleApiError();
             } else if (state is ChatStreamingState) {
               if (mounted) {
                 setState(() {
@@ -556,10 +621,12 @@ class _GptScreenState extends State<GptScreen>
                     chatHistory[_currentResponseIndex!]['answer'] =
                         currentAnswer;
                     PrefUtils.setChatHistory(chatHistory);
+                    _hasApiError = false;
+                    _apiErrorMessage = '';
+                    isSending = false;
                   }
                 });
               }
-              // REMOVED: _scrollToBottom();
             } else if (state is ChatLoadedState) {
               if (mounted) {
                 setState(() {
@@ -568,6 +635,9 @@ class _GptScreenState extends State<GptScreen>
                     chatHistory[_currentResponseIndex!]['answer'] =
                         state.partialResponse;
                     PrefUtils.setChatHistory(chatHistory);
+                    _hasApiError = false;
+                    _apiErrorMessage = '';
+                    isSending = false;
                   }
                 });
               }
@@ -593,13 +663,17 @@ class _GptScreenState extends State<GptScreen>
                   ),
                 );
               }
-              // REMOVED: _scrollToBottom();
             } else if (state is ChatErrorState) {
               CommonUtils.showErrorToast(state.error['message']);
+              _handleApiError();
             } else if (state is VoiceConversationSuccess) {
               final response = state.successResponse;
               if (mounted) {
                 setState(() {
+                  isSending = false;
+                  _hasApiError = false;
+                  _apiErrorMessage = '';
+
                   if (_currentResponseIndex != null &&
                       _currentResponseIndex! < chatHistory.length) {
                     if (response is Map<String, dynamic> &&
@@ -616,7 +690,6 @@ class _GptScreenState extends State<GptScreen>
                               PrefUtils.setChatHistory(chatHistory);
                             });
                           }
-                          // REMOVED: _scrollToBottom();
                         });
                       }
                     } else if (response is List<int>) {
@@ -629,20 +702,19 @@ class _GptScreenState extends State<GptScreen>
                             PrefUtils.setChatHistory(chatHistory);
                           });
                         }
-                        // REMOVED: _scrollToBottom();
                       });
                     } else {
                       _apiResponse = response.toString();
                       chatHistory[_currentResponseIndex!]['answer'] =
                           _apiResponse;
                       PrefUtils.setChatHistory(chatHistory);
-                      // REMOVED: _scrollToBottom();
                     }
                   }
                 });
               }
             } else if (state is VoiceConversationFailure) {
               CommonUtils.showErrorToast(state.failureResponse);
+              _handleApiError();
             } else if (state is GetSingleChatHistorySuccess) {
               final response = state.successResponse;
               final String chatId = response['chat']['id']?.toString() ?? '';
@@ -683,12 +755,21 @@ class _GptScreenState extends State<GptScreen>
                           'isUserAudio': localChat['isUserAudio'] ?? false,
                         };
                       }).toList();
+                  // Filter out empty questions/answers
+                  chatHistory =
+                      chatHistory.where((chat) {
+                        final q = chat['question']?.toString().trim() ?? '';
+                        final a = chat['answer']?.toString().trim() ?? '';
+                        return q.isNotEmpty && a.isNotEmpty;
+                      }).toList();
                   PrefUtils.setChatHistory(chatHistory);
+                  _hasApiError = false;
+                  _apiErrorMessage = '';
                 });
               }
-              // REMOVED: _scrollToBottom();
             } else if (state is GetSingleChatHistoryFailure) {
               CommonUtils.showErrorToast(state.failureResponse['message']);
+              _handleApiError();
             } else if (state is ReactOnChatSuccess) {
               final response = state.successResponse;
               reactionId = response['data']['id'];
@@ -742,6 +823,7 @@ class _GptScreenState extends State<GptScreen>
               CommonUtils.showErrorToast(state.failureResponse['message']);
             } else if (state is CheckNetworkConnection) {
               CommonUtils.showErrorToast('No Internet Connection!');
+              _handleApiError();
             } else if (state is BookmarkChatSuccess) {
               final messageId = state.successResponse['messageId'];
               if (mounted) {
@@ -798,6 +880,12 @@ class _GptScreenState extends State<GptScreen>
                 });
               }
               CommonUtils.showErrorToast(state.failureResponse['message']);
+            } else if (state is CommonServerFailureHome) {
+              // Handle common server failure
+              CommonUtils.showErrorToast(
+                'Server error occurred. Please try again.',
+              );
+              _handleApiError();
             }
           },
           child: Stack(
@@ -832,50 +920,470 @@ class _GptScreenState extends State<GptScreen>
                     ),
                     const SizedBox(height: 10),
                     Expanded(
-                      child: Visibility(
-                        visible: chatHistory.isNotEmpty,
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.gradientStart),
-                            color: Colors.white,
-                          ),
-                          child: SingleChildScrollView(
-                            controller: _scrollController,
-                            child: Column(
-                              children: [
-                                ListView.builder(
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: chatHistory.length,
-                                  itemBuilder: (context, index) {
-                                    final question =
-                                        chatHistory[index]['question'] ?? '';
-                                    final answer =
-                                        chatHistory[index]['answer'] ?? '';
-                                    final messageId =
-                                        chatHistory[index]['messageId'] ?? '';
-                                    final chatId =
-                                        chatHistory[index]['chatId'] ?? '';
-                                    final bool isBookmarked =
-                                        chatHistory[index]['isBookmarked'] ??
-                                        false;
-                                    final bool isLiked =
-                                        chatHistory[index]['isLiked'] ?? false;
-                                    final bool isDisliked =
-                                        chatHistory[index]['isDisliked'] ??
-                                        false;
-                                    final bool isUserAudio =
-                                        chatHistory[index]['isUserAudio'] ??
-                                        false;
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.gradientStart),
+                          color: Colors.white,
+                        ),
+                        child: Column(
+                          children: [
+                            if (_hasApiError)
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                margin: const EdgeInsets.only(bottom: 16),
+                                decoration: BoxDecoration(
+                                  color: Colors.red[50],
+                                  border: Border.all(color: Colors.red),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      color: Colors.red[700],
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        _apiErrorMessage,
+                                        style: TextStyle(
+                                          color: Colors.red[700],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (filteredChatHistory.isEmpty && !isSending)
+                              Expanded(
+                                child: Center(
+                                  child: Text(
+                                    'No conversations yet. Start by typing a message or recording audio.',
+                                    style: FTextStyle.defaultText.copyWith(
+                                      color: Colors.grey,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              )
+                            else
+                              Expanded(
+                                child: SingleChildScrollView(
+                                  controller: _scrollController,
+                                  child: Column(
+                                    children: [
+                                      ListView.builder(
+                                        shrinkWrap: true,
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        itemCount: filteredChatHistory.length,
+                                        itemBuilder: (context, index) {
+                                          final chat =
+                                              filteredChatHistory[index];
+                                          final question =
+                                              chat['question'] ?? '';
+                                          final answer = chat['answer'] ?? '';
+                                          final messageId =
+                                              chat['messageId'] ?? '';
+                                          final chatId = chat['chatId'] ?? '';
+                                          final bool isBookmarked =
+                                              chat['isBookmarked'] ?? false;
+                                          final bool isLiked =
+                                              chat['isLiked'] ?? false;
+                                          final bool isDisliked =
+                                              chat['isDisliked'] ?? false;
+                                          final bool isUserAudio =
+                                              chat['isUserAudio'] ?? false;
 
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
+                                          // Skip if question or answer is empty
+                                          if (question
+                                                  .toString()
+                                                  .trim()
+                                                  .isEmpty ||
+                                              answer
+                                                  .toString()
+                                                  .trim()
+                                                  .isEmpty) {
+                                            return const SizedBox.shrink();
+                                          }
+
+                                          return Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Container(
+                                                width: double.infinity,
+                                                padding: const EdgeInsets.all(
+                                                  12,
+                                                ),
+                                                margin: const EdgeInsets.only(
+                                                  bottom: 20,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  border: Border.all(
+                                                    color:
+                                                        AppColors.gradientStart,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Row(
+                                                      children: [
+                                                        Expanded(
+                                                          child: Text(
+                                                            question,
+                                                            style:
+                                                                FTextStyle
+                                                                    .defaultTextBold,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 16,
+                                                        ),
+                                                        GestureDetector(
+                                                          onTap: () {
+                                                            if (mounted) {
+                                                              setState(() {
+                                                                inputController
+                                                                        .text =
+                                                                    question;
+                                                                _editingIndex =
+                                                                    index;
+                                                              });
+                                                            }
+                                                          },
+                                                          child: Image.asset(
+                                                            'assets/images/edit.png',
+                                                            height: 16,
+                                                            width: 16,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 16),
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        MarkdownBody(
+                                                          data: answer,
+                                                          styleSheet:
+                                                              MarkdownStyleSheet.fromTheme(
+                                                                Theme.of(
+                                                                  context,
+                                                                ),
+                                                              ).copyWith(
+                                                                p:
+                                                                    FTextStyle
+                                                                        .defaultText,
+                                                              ),
+                                                        ),
+                                                        if (index ==
+                                                                _currentResponseIndex &&
+                                                            _audioPath !=
+                                                                null &&
+                                                            !isRecording &&
+                                                            isUserAudio)
+                                                          Align(
+                                                            alignment:
+                                                                Alignment
+                                                                    .centerRight,
+                                                            child: CustomAudioPlayer(
+                                                              audioPath:
+                                                                  _audioPath!,
+                                                              isPlaying:
+                                                                  isPlaying,
+                                                              onPlayPause:
+                                                                  _playRecording,
+                                                            ),
+                                                          ),
+                                                        if (index ==
+                                                                _currentResponseIndex &&
+                                                            _responseAudioPath !=
+                                                                null)
+                                                          Align(
+                                                            alignment:
+                                                                Alignment
+                                                                    .centerLeft,
+                                                            child: CustomAudioPlayer(
+                                                              audioPath:
+                                                                  _responseAudioPath!,
+                                                              isPlaying:
+                                                                  isPlayingResponse,
+                                                              onPlayPause:
+                                                                  _playResponseAudio,
+                                                            ),
+                                                          ),
+                                                        if (index ==
+                                                                _currentResponseIndex &&
+                                                            _apiResponse !=
+                                                                null)
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets.only(
+                                                                  top: 8.0,
+                                                                ),
+                                                            child: Text(
+                                                              _apiResponse!,
+                                                              style:
+                                                                  const TextStyle(
+                                                                    color:
+                                                                        Colors
+                                                                            .red,
+                                                                  ),
+                                                              maxLines: 5,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                          ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 16),
+                                                    Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceBetween,
+                                                      children: [
+                                                        Row(
+                                                          children: [
+                                                            Image.asset(
+                                                              'assets/images/refresh.png',
+                                                              height: 16,
+                                                              width: 16,
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 10,
+                                                            ),
+                                                            Text(
+                                                              AppLocalizations.of(
+                                                                context,
+                                                              )!.translate(
+                                                                'regenerate',
+                                                              ),
+                                                              style:
+                                                                  FTextStyle
+                                                                      .selectedRadioColorText,
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        Row(
+                                                          children: [
+                                                            GestureDetector(
+                                                              onTap: () {
+                                                                if (messageId
+                                                                    .isNotEmpty) {
+                                                                  if (mounted) {
+                                                                    setState(() {
+                                                                      chat['isLiked'] =
+                                                                          !isLiked;
+                                                                      if (chat['isLiked'] ==
+                                                                          true) {
+                                                                        chat['isDisliked'] =
+                                                                            false;
+                                                                      }
+                                                                      PrefUtils.setChatHistory(
+                                                                        chatHistory,
+                                                                      );
+                                                                    });
+                                                                  }
+                                                                  BlocProvider.of<
+                                                                    HomeFlowBloc
+                                                                  >(
+                                                                    context,
+                                                                  ).add(
+                                                                    ReactOnChatEvent(
+                                                                      message_id:
+                                                                          messageId,
+                                                                      is_guest:
+                                                                          PrefUtils.getIsGuest(),
+                                                                      is_like:
+                                                                          !isLiked,
+                                                                      type:
+                                                                          'MESSAGE',
+                                                                    ),
+                                                                  );
+                                                                } else {
+                                                                  CommonUtils.showErrorToast(
+                                                                    'Cannot like: Message ID is missing',
+                                                                  );
+                                                                }
+                                                              },
+                                                              child: Image.asset(
+                                                                isLiked
+                                                                    ? 'assets/images/thumbsuplike.png'
+                                                                    : 'assets/images/thumbsupunlike.png',
+                                                                height: 16,
+                                                                width: 16,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 10,
+                                                            ),
+                                                            GestureDetector(
+                                                              onTap: () {
+                                                                if (messageId
+                                                                    .isNotEmpty) {
+                                                                  if (mounted) {
+                                                                    setState(() {
+                                                                      chat['isDisliked'] =
+                                                                          !isDisliked;
+                                                                      if (chat['isDisliked'] ==
+                                                                          true) {
+                                                                        chat['isLiked'] =
+                                                                            false;
+                                                                      }
+                                                                      PrefUtils.setChatHistory(
+                                                                        chatHistory,
+                                                                      );
+                                                                    });
+                                                                  }
+                                                                  BlocProvider.of<
+                                                                    HomeFlowBloc
+                                                                  >(
+                                                                    context,
+                                                                  ).add(
+                                                                    ReactOnChatEvent(
+                                                                      message_id:
+                                                                          messageId,
+                                                                      is_guest:
+                                                                          PrefUtils.getIsGuest(),
+                                                                      is_like:
+                                                                          isDisliked,
+                                                                      type:
+                                                                          'MESSAGE',
+                                                                    ),
+                                                                  );
+                                                                } else {
+                                                                  CommonUtils.showErrorToast(
+                                                                    'Cannot dislike: Message ID is missing',
+                                                                  );
+                                                                }
+                                                              },
+                                                              child: Image.asset(
+                                                                isDisliked
+                                                                    ? 'assets/images/thumbsdownlike.png'
+                                                                    : 'assets/images/thumbsdownunlike.png',
+                                                                height: 16,
+                                                                width: 16,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 10,
+                                                            ),
+                                                            GestureDetector(
+                                                              onTap: () {
+                                                                Clipboard.setData(
+                                                                  ClipboardData(
+                                                                    text:
+                                                                        answer,
+                                                                  ),
+                                                                );
+                                                                CommonUtils.showSuccessToast(
+                                                                  'Response copied to clipboard!',
+                                                                );
+                                                              },
+                                                              child: Image.asset(
+                                                                'assets/images/unsave.png',
+                                                                height: 16,
+                                                                width: 16,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 10,
+                                                            ),
+                                                            GestureDetector(
+                                                              onTap: () {
+                                                                if (messageId
+                                                                    .isNotEmpty) {
+                                                                  if (mounted) {
+                                                                    setState(() {
+                                                                      chat['isBookmarked'] =
+                                                                          !isBookmarked;
+                                                                      PrefUtils.setChatHistory(
+                                                                        chatHistory,
+                                                                      );
+                                                                    });
+                                                                  }
+                                                                  BlocProvider.of<
+                                                                    HomeFlowBloc
+                                                                  >(
+                                                                    context,
+                                                                  ).add(
+                                                                    isBookmarked
+                                                                        ? UnbookmarkChat(
+                                                                          messageId:
+                                                                              messageId,
+                                                                        )
+                                                                        : BookmarkChat(
+                                                                          messageId:
+                                                                              messageId,
+                                                                        ),
+                                                                  );
+                                                                } else {
+                                                                  CommonUtils.showErrorToast(
+                                                                    'Cannot bookmark: Message ID is missing',
+                                                                  );
+                                                                }
+                                                              },
+                                                              child: Image.asset(
+                                                                isBookmarked
+                                                                    ? 'assets/images/bookmark.png'
+                                                                    : 'assets/images/unbookmark.png',
+                                                                height: 16,
+                                                                width: 16,
+                                                              ),
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 10,
+                                                            ),
+                                                            GestureDetector(
+                                                              onTap: () {
+                                                                if (chatId
+                                                                    .isNotEmpty) {
+                                                                  BlocProvider.of<
+                                                                    HomeFlowBloc
+                                                                  >(
+                                                                    context,
+                                                                  ).add(
+                                                                    ShareChatEvent(
+                                                                      chatId:
+                                                                          chatId,
+                                                                    ),
+                                                                  );
+                                                                } else {
+                                                                  CommonUtils.showErrorToast(
+                                                                    'Cannot share: Chat ID is missing',
+                                                                  );
+                                                                }
+                                                              },
+                                                              child: Image.asset(
+                                                                'assets/images/unshare.png',
+                                                                height: 16,
+                                                                width: 16,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      ),
+                                      if (isSending)
                                         Container(
-                                          width: double.infinity,
                                           padding: const EdgeInsets.all(12),
                                           margin: const EdgeInsets.only(
                                             bottom: 20,
@@ -889,359 +1397,39 @@ class _GptScreenState extends State<GptScreen>
                                               10,
                                             ),
                                           ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                          child: Row(
                                             children: [
-                                              Row(
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      question,
-                                                      style:
-                                                          FTextStyle
-                                                              .defaultTextBold,
+                                              const SizedBox(
+                                                height: 16,
+                                                width: 16,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color:
+                                                          AppColors
+                                                              .gradientStart,
                                                     ),
-                                                  ),
-                                                  const SizedBox(width: 16),
-                                                  GestureDetector(
-                                                    onTap: () {
-                                                      if (mounted) {
-                                                        setState(() {
-                                                          inputController.text =
-                                                              question;
-                                                          _editingIndex = index;
-                                                        });
-                                                      }
-                                                    },
-                                                    child: Image.asset(
-                                                      'assets/images/edit.png',
-                                                      height: 16,
-                                                      width: 16,
-                                                    ),
-                                                  ),
-                                                ],
                                               ),
-                                              const SizedBox(height: 16),
-                                              answer.toString().trim().isEmpty
-                                                  ? Row(
-                                                    children: [
-                                                      const SizedBox(
-                                                        height: 16,
-                                                        width: 16,
-                                                        child: CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                          color:
-                                                              AppColors
-                                                                  .gradientStart,
-                                                        ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Text(
+                                                  'Loading response...',
+                                                  style: FTextStyle.defaultText
+                                                      .copyWith(
+                                                        fontStyle:
+                                                            FontStyle.italic,
+                                                        color: Colors.grey,
                                                       ),
-                                                      const SizedBox(width: 10),
-                                                      Text(
-                                                        'Loading...',
-                                                        style: FTextStyle
-                                                            .defaultText
-                                                            .copyWith(
-                                                              fontStyle:
-                                                                  FontStyle
-                                                                      .italic,
-                                                              color:
-                                                                  Colors.grey,
-                                                            ),
-                                                      ),
-                                                    ],
-                                                  )
-                                                  : Column(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .start,
-                                                    children: [
-                                                      MarkdownBody(
-                                                        data: answer,
-                                                        styleSheet:
-                                                            MarkdownStyleSheet.fromTheme(
-                                                              Theme.of(context),
-                                                            ).copyWith(
-                                                              p:
-                                                                  FTextStyle
-                                                                      .defaultText,
-                                                            ),
-                                                      ),
-                                                      if (index ==
-                                                              _currentResponseIndex &&
-                                                          _audioPath != null &&
-                                                          !isRecording &&
-                                                          isUserAudio)
-                                                        Align(
-                                                          alignment:
-                                                              Alignment
-                                                                  .centerRight,
-                                                          child: CustomAudioPlayer(
-                                                            audioPath:
-                                                                _audioPath!,
-                                                            isPlaying:
-                                                                isPlaying,
-                                                            onPlayPause:
-                                                                _playRecording,
-                                                          ),
-                                                        ),
-                                                      if (index ==
-                                                              _currentResponseIndex &&
-                                                          _responseAudioPath !=
-                                                              null)
-                                                        Align(
-                                                          alignment:
-                                                              Alignment
-                                                                  .centerLeft,
-                                                          child: CustomAudioPlayer(
-                                                            audioPath:
-                                                                _responseAudioPath!,
-                                                            isPlaying:
-                                                                isPlayingResponse,
-                                                            onPlayPause:
-                                                                _playResponseAudio,
-                                                          ),
-                                                        ),
-                                                      if (index ==
-                                                              _currentResponseIndex &&
-                                                          _apiResponse != null)
-                                                        Padding(
-                                                          padding:
-                                                              const EdgeInsets.only(
-                                                                top: 8.0,
-                                                              ),
-                                                          child: Text(
-                                                            _apiResponse!,
-                                                            style:
-                                                                const TextStyle(
-                                                                  color:
-                                                                      Colors
-                                                                          .red,
-                                                                ),
-                                                            maxLines: 5,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                          ),
-                                                        ),
-                                                    ],
-                                                  ),
-                                              const SizedBox(height: 16),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Row(
-                                                    children: [
-                                                      Image.asset(
-                                                        'assets/images/refresh.png',
-                                                        height: 16,
-                                                        width: 16,
-                                                      ),
-                                                      const SizedBox(width: 10),
-                                                      Text(
-                                                        AppLocalizations.of(
-                                                          context,
-                                                        )!.translate(
-                                                          'regenerate',
-                                                        ),
-                                                        style:
-                                                            FTextStyle
-                                                                .selectedRadioColorText,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                  Row(
-                                                    children: [
-                                                      GestureDetector(
-                                                        onTap: () {
-                                                          if (messageId
-                                                              .isNotEmpty) {
-                                                            if (mounted) {
-                                                              setState(() {
-                                                                chatHistory[index]['isLiked'] =
-                                                                    !isLiked;
-                                                                if (chatHistory[index]['isLiked'] ==
-                                                                    true) {
-                                                                  chatHistory[index]['isDisliked'] =
-                                                                      false;
-                                                                }
-                                                                PrefUtils.setChatHistory(
-                                                                  chatHistory,
-                                                                );
-                                                              });
-                                                            }
-                                                            BlocProvider.of<
-                                                              HomeFlowBloc
-                                                            >(context).add(
-                                                              ReactOnChatEvent(
-                                                                message_id:
-                                                                    messageId,
-                                                                is_guest:
-                                                                    PrefUtils.getIsGuest(),
-                                                                is_like:
-                                                                    !isLiked,
-                                                                type: 'MESSAGE',
-                                                              ),
-                                                            );
-                                                          } else {
-                                                            CommonUtils.showErrorToast(
-                                                              'Cannot like: Message ID is missing',
-                                                            );
-                                                          }
-                                                        },
-                                                        child: Image.asset(
-                                                          isLiked
-                                                              ? 'assets/images/thumbsuplike.png'
-                                                              : 'assets/images/thumbsupunlike.png',
-                                                          height: 16,
-                                                          width: 16,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 10),
-                                                      GestureDetector(
-                                                        onTap: () {
-                                                          if (messageId
-                                                              .isNotEmpty) {
-                                                            if (mounted) {
-                                                              setState(() {
-                                                                chatHistory[index]['isDisliked'] =
-                                                                    !isDisliked;
-                                                                if (chatHistory[index]['isDisliked'] ==
-                                                                    true) {
-                                                                  chatHistory[index]['isLiked'] =
-                                                                      false;
-                                                                }
-                                                                PrefUtils.setChatHistory(
-                                                                  chatHistory,
-                                                                );
-                                                              });
-                                                            }
-                                                            BlocProvider.of<
-                                                              HomeFlowBloc
-                                                            >(context).add(
-                                                              ReactOnChatEvent(
-                                                                message_id:
-                                                                    messageId,
-                                                                is_guest:
-                                                                    PrefUtils.getIsGuest(),
-                                                                is_like:
-                                                                    isDisliked,
-                                                                type: 'MESSAGE',
-                                                              ),
-                                                            );
-                                                          } else {
-                                                            CommonUtils.showErrorToast(
-                                                              'Cannot dislike: Message ID is missing',
-                                                            );
-                                                          }
-                                                        },
-                                                        child: Image.asset(
-                                                          isDisliked
-                                                              ? 'assets/images/thumbsdownlike.png'
-                                                              : 'assets/images/thumbsdownunlike.png',
-                                                          height: 16,
-                                                          width: 16,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 10),
-                                                      GestureDetector(
-                                                        onTap: () {
-                                                          Clipboard.setData(
-                                                            ClipboardData(
-                                                              text: answer,
-                                                            ),
-                                                          );
-                                                          CommonUtils.showSuccessToast(
-                                                            'Response copied to clipboard!',
-                                                          );
-                                                        },
-                                                        child: Image.asset(
-                                                          'assets/images/unsave.png',
-                                                          height: 16,
-                                                          width: 16,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 10),
-                                                      GestureDetector(
-                                                        onTap: () {
-                                                          if (messageId
-                                                              .isNotEmpty) {
-                                                            if (mounted) {
-                                                              setState(() {
-                                                                chatHistory[index]['isBookmarked'] =
-                                                                    !isBookmarked;
-                                                                PrefUtils.setChatHistory(
-                                                                  chatHistory,
-                                                                );
-                                                              });
-                                                            }
-                                                            BlocProvider.of<
-                                                              HomeFlowBloc
-                                                            >(context).add(
-                                                              isBookmarked
-                                                                  ? UnbookmarkChat(
-                                                                    messageId:
-                                                                        messageId,
-                                                                  )
-                                                                  : BookmarkChat(
-                                                                    messageId:
-                                                                        messageId,
-                                                                  ),
-                                                            );
-                                                          } else {
-                                                            CommonUtils.showErrorToast(
-                                                              'Cannot bookmark: Message ID is missing',
-                                                            );
-                                                          }
-                                                        },
-                                                        child: Image.asset(
-                                                          isBookmarked
-                                                              ? 'assets/images/bookmark.png'
-                                                              : 'assets/images/unbookmark.png',
-                                                          height: 16,
-                                                          width: 16,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(width: 10),
-                                                      GestureDetector(
-                                                        onTap: () {
-                                                          if (chatId
-                                                              .isNotEmpty) {
-                                                            BlocProvider.of<
-                                                              HomeFlowBloc
-                                                            >(context).add(
-                                                              ShareChatEvent(
-                                                                chatId: chatId,
-                                                              ),
-                                                            );
-                                                          } else {
-                                                            CommonUtils.showErrorToast(
-                                                              'Cannot share: Chat ID is missing',
-                                                            );
-                                                          }
-                                                        },
-                                                        child: Image.asset(
-                                                          'assets/images/unshare.png',
-                                                          height: 16,
-                                                          width: 16,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ],
+                                                ),
                                               ),
                                             ],
                                           ),
                                         ),
-                                      ],
-                                    );
-                                  },
+                                    ],
+                                  ),
                                 ),
-                              ],
-                            ),
-                          ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
@@ -1394,6 +1582,9 @@ class _GptScreenState extends State<GptScreen>
                                       isEdited = false;
                                     }
                                     PrefUtils.setChatHistory(chatHistory);
+                                    _hasApiError = false;
+                                    _apiErrorMessage = '';
+                                    isSending = true;
                                   });
                                 }
 
@@ -1422,7 +1613,6 @@ class _GptScreenState extends State<GptScreen>
                                 inputController.clear();
                                 _editingIndex = null;
 
-                                // Scroll only once when user sends message
                                 _scrollToBottom();
                               }
                             },
@@ -1448,24 +1638,6 @@ class _GptScreenState extends State<GptScreen>
                         ],
                       ),
                     ),
-                    if (isSending)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Column(
-                          children: [
-                            CircularProgressIndicator(
-                              color: AppColors.gradientStart,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Sending to API...',
-                              style: FTextStyle.defaultText.copyWith(
-                                color: AppColors.gradientStart,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     const SizedBox(height: 10),
                   ],
                 ),

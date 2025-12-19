@@ -18,7 +18,7 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
   @override
   void initState() {
     super.initState();
-    developer.log(jsonEncode(PrefUtils.getChatHistory()), name: 'CHAT HISTORY');
+    print("CHAT HISTORY: ${jsonEncode(PrefUtils.getChatHistory())}");
     BlocProvider.of<HomeFlowBloc>(context).add(GetAllBookmarksChat());
   }
 
