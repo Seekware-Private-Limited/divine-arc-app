@@ -89,6 +89,18 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
                 CommonUtils.showSuccessToast('Bookmark removed successfully!');
               } else if (state is UnbookmarkChatFailure) {
                 CommonUtils.showErrorToast(state.failureResponse['message']);
+              } else if (state is SessionExpiredStateHome) {
+                CommonUtils.showErrorToast(state.message);
+                PrefUtils.clearAll();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              } else if (state is CheckNetworkConnectionHomeFlow) {
+                setState(() {
+                  isLoading = false;
+                });
               }
             },
             child: Stack(

@@ -82,6 +82,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           CommonUtils.showErrorToast(
                             state.failureResponse['message'],
                           );
+                        } else if (state is CheckNetworkConnectionHomeFlow) {
+                          setState(() {
+                            isLoading = false;
+                          });
+                        } else if (state is SessionExpiredStateHome) {
+                          CommonUtils.showErrorToast(state.message);
+                          PrefUtils.clearAll();
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LoginScreen(),
+                            ),
+                            (route) => false,
+                          );
                         }
                       },
                       child: Expanded(

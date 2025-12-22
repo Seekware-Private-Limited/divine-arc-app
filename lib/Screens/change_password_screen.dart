@@ -1,3 +1,4 @@
+import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -65,11 +66,25 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                         CommonUtils.showErrorToast(
                           state.failureResponse['message'],
                         );
-                      } else if (state is CheckNetworkConnection) {
+                      } else if (state is CheckNetworkConnectionAuthFlow) {
                         setState(() {
                           isLoading = false;
                         });
-                        CommonUtils.showErrorToast('No Internet Connection!');
+                        CommonUtils.showErrorToast(
+                          AppLocalizations.of(
+                            context,
+                          )!.translate('nointernetConnection'),
+                        );
+                      } else if (state is SessionExpiredStateAuth) {
+                        CommonUtils.showErrorToast(state.message);
+                        PrefUtils.clearAll();
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ),
+                          (route) => false,
+                        );
                       }
                     },
                     child: Padding(

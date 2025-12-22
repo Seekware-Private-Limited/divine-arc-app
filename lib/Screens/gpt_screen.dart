@@ -9,6 +9,8 @@ import 'package:record/record.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'dart:developer' as developer;
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter/services.dart';
 
 class CustomAudioPlayer extends StatelessWidget {
   final String audioPath;
@@ -93,9 +95,11 @@ class _GptScreenState extends State<GptScreen>
   String reactionId = '';
   int? _editingIndex;
   int? _currentResponseIndex;
-  bool _hasApiError = false;
-  String _apiErrorMessage = '';
   List<Map<String, dynamic>> chatHistory = [];
+  Timer? _scrollTimer;
+  Map<int, bool> _responseLoadingStates = {};
+  bool _isInitialLoading = false;
+  Completer<void>? _initialLoadCompleter;
 
   @override
   void initState() {
@@ -109,6 +113,7 @@ class _GptScreenState extends State<GptScreen>
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+
     _playerStateSubscription = _audioPlayer.onPlayerStateChanged.listen((
       state,
     ) {
@@ -128,28 +133,89 @@ class _GptScreenState extends State<GptScreen>
       }
     });
 
-    chatHistory = PrefUtils.getChatHistory();
-    // Filter out empty questions or answers immediately
-    chatHistory =
-        chatHistory.where((chat) {
-          final question = chat['question']?.toString().trim() ?? '';
-          final answer = chat['answer']?.toString().trim() ?? '';
-          return question.isNotEmpty && answer.isNotEmpty;
-        }).toList();
+    _initializeChatHistory();
+  }
 
-    developer.log('Initial chatHistory: $chatHistory', name: 'CHAT_HISTORY');
+  Future<void> _initializeChatHistory() async {
+    try {
+      if (widget.chatId != null && widget.chatId!.isNotEmpty) {
+        _isInitialLoading = true;
+        _initialLoadCompleter = Completer<void>();
 
-    if (widget.chatId != null && widget.chatId!.isNotEmpty) {
-      developer.log(widget.chatId!, name: 'CHATID');
-      BlocProvider.of<HomeFlowBloc>(
-        context,
-      ).add(GetSingleChatHistoryEvent(chatId: widget.chatId!));
+        // Load chat history from preferences first
+        final savedHistory = PrefUtils.getChatHistory();
+        chatHistory =
+            savedHistory
+                .where((chat) => chat['chatId'] == widget.chatId)
+                .toList();
+
+        // Then fetch from API
+        BlocProvider.of<HomeFlowBloc>(
+          context,
+        ).add(GetSingleChatHistoryEvent(chatId: widget.chatId!));
+
+        await _initialLoadCompleter?.future;
+      } else {
+        chatHistory = PrefUtils.getChatHistory();
+      }
+
+      if (widget.searchQueryFromAskAnythingScreen != null &&
+          widget.searchQueryFromAskAnythingScreen!.trim().isNotEmpty) {
+        _handleInitialQuery();
+      }
+    } catch (e) {
+      developer.log('Error initializing chat history: $e', name: 'INIT_ERROR');
+      CommonUtils.showErrorToast('Failed to load chat history');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isInitialLoading = false;
+        });
+      }
     }
+  }
 
-    if (widget.searchQueryFromAskAnythingScreen != null &&
-        widget.searchQueryFromAskAnythingScreen!.trim().isNotEmpty) {
-      callAPI();
+  void _handleInitialQuery() {
+    final query = widget.searchQueryFromAskAnythingScreen!.trim();
+    if (query.isNotEmpty) {
+      // Check if this query already exists in chat history
+      final existingIndex = chatHistory.indexWhere(
+        (chat) =>
+            chat['question'] == query &&
+            chat['answer']?.toString().trim().isEmpty == true,
+      );
+
+      if (existingIndex == -1) {
+        // Add new query
+        final newChatItem = {
+          'question': query,
+          'answer': '',
+          'chatId': _getCurrentChatId(),
+          'messageId': '',
+          'isBookmarked': false,
+          'isLiked': false,
+          'isDisliked': false,
+          'isUserAudio': false,
+        };
+
+        if (mounted) {
+          setState(() {
+            chatHistory.add(newChatItem);
+            _currentResponseIndex = chatHistory.length - 1;
+            _responseLoadingStates[_currentResponseIndex!] = true;
+            PrefUtils.setChatHistory(chatHistory);
+          });
+        }
+
+        _sendMessageToAPI(query);
+      }
     }
+  }
+
+  String _getCurrentChatId() {
+    // Use widget.chatId if it exists (when coming from history),
+    // otherwise use PrefUtils.getChatID() for new chats
+    return widget.chatId ?? PrefUtils.getChatID();
   }
 
   @override
@@ -161,14 +227,31 @@ class _GptScreenState extends State<GptScreen>
     inputController.dispose();
     feedbackTextController.dispose();
     _scrollController.dispose();
+    _scrollTimer?.cancel();
+    _initialLoadCompleter?.complete();
+
     if (isRecording) {
-      _audioRecorder.stop();
+      _audioRecorder.stop().catchError((e) {
+        developer.log(
+          'Error stopping recorder on dispose: $e',
+          name: 'DISPOSE',
+        );
+      });
     }
     _audioRecorder.dispose();
+
     if (isPlaying || isPlayingResponse) {
-      _audioPlayer.stop();
+      _audioPlayer.stop().catchError((e) {
+        developer.log('Error stopping player on dispose: $e', name: 'DISPOSE');
+      });
     }
     _audioPlayer.dispose();
+
+    _cleanupTemporaryFiles();
+    super.dispose();
+  }
+
+  void _cleanupTemporaryFiles() {
     try {
       if (_audioPath != null && File(_audioPath!).existsSync()) {
         File(_audioPath!).deleteSync();
@@ -180,7 +263,6 @@ class _GptScreenState extends State<GptScreen>
     } catch (e) {
       developer.log('Error deleting audio files: $e', name: 'FILE_CLEANUP');
     }
-    super.dispose();
   }
 
   String _generateRandomId() {
@@ -213,17 +295,17 @@ class _GptScreenState extends State<GptScreen>
         const RecordConfig(encoder: AudioEncoder.wav),
         path: _audioPath!,
       );
+
       if (mounted) {
         setState(() {
           isRecording = true;
           _responseAudioPath = null;
           _apiResponse = null;
-          _hasApiError = false;
-          _apiErrorMessage = '';
         });
       }
     } catch (e) {
-      CommonUtils.showErrorToast('Failed to start recording: $e');
+      developer.log('Error starting recording: $e', name: 'RECORDING');
+      CommonUtils.showErrorToast('Failed to start recording');
     }
   }
 
@@ -243,22 +325,44 @@ class _GptScreenState extends State<GptScreen>
         CommonUtils.showErrorToast('No recording file found');
       }
     } catch (e) {
-      CommonUtils.showErrorToast('Failed to stop recording: $e');
+      developer.log('Error stopping recording: $e', name: 'RECORDING');
+      CommonUtils.showErrorToast('Failed to stop recording');
     }
   }
 
   Future<void> _sendAudioToApi() async {
     if (_audioPath == null) return;
+
     if (mounted) {
-      setState(() {
-        isSending = true;
-        _hasApiError = false;
-        _apiErrorMessage = '';
-      });
+      setState(() => isSending = true);
     }
 
     try {
       final audioFile = File(_audioPath!);
+      if (!audioFile.existsSync()) {
+        throw Exception('Audio file not found');
+      }
+
+      final newChatItem = {
+        'question': 'Audio Recording',
+        'answer': '',
+        'chatId': _getCurrentChatId(),
+        'messageId': '',
+        'isBookmarked': false,
+        'isLiked': false,
+        'isDisliked': false,
+        'isUserAudio': true,
+      };
+
+      if (mounted) {
+        setState(() {
+          chatHistory.add(newChatItem);
+          _currentResponseIndex = chatHistory.length - 1;
+          _responseLoadingStates[_currentResponseIndex!] = true;
+          PrefUtils.setChatHistory(chatHistory);
+        });
+      }
+
       BlocProvider.of<HomeFlowBloc>(context).add(
         VoiceConversationEvent(
           audioFile: audioFile,
@@ -266,60 +370,64 @@ class _GptScreenState extends State<GptScreen>
           sessionId: PrefUtils.getSessionID(),
         ),
       );
-      if (mounted) {
-        setState(() {
-          chatHistory.add({
-            'question': 'Audio Recording',
-            'answer': '',
-            'chatId': widget.chatId ?? PrefUtils.getChatID(),
-            'messageId': '',
-            'isBookmarked': false,
-            'isLiked': false,
-            'isDisliked': false,
-            'isUserAudio': true,
-          });
-          _currentResponseIndex = chatHistory.length - 1;
-          PrefUtils.setChatHistory(chatHistory);
-        });
-      }
 
       _scrollToBottom();
     } catch (e) {
-      CommonUtils.showErrorToast('Error sending audio: $e');
-      if (mounted) {
+      developer.log('Error sending audio: $e', name: 'AUDIO_API');
+      CommonUtils.showErrorToast('Error sending audio');
+      // Remove the loading state if there's an error
+      if (mounted && _currentResponseIndex != null) {
         setState(() {
-          isSending = false;
-          // Remove the empty entry if API fails
-          if (_currentResponseIndex != null && chatHistory.isNotEmpty) {
+          _responseLoadingStates.remove(_currentResponseIndex);
+          if (chatHistory.isNotEmpty &&
+              _currentResponseIndex! < chatHistory.length) {
             chatHistory.removeAt(_currentResponseIndex!);
-            _currentResponseIndex = null;
             PrefUtils.setChatHistory(chatHistory);
           }
         });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isSending = false);
       }
     }
   }
 
   Future<void> _playRecording() async {
-    if (_audioPath == null) return;
-    await _audioPlayer.stop();
-    setState(() {
-      _currentPlayingPath = _audioPath;
-      isPlaying = true;
-      isPlayingResponse = false;
-    });
-    await _audioPlayer.play(DeviceFileSource(_audioPath!));
+    if (_audioPath == null || !File(_audioPath!).existsSync()) return;
+    try {
+      await _audioPlayer.stop();
+      if (mounted) {
+        setState(() {
+          _currentPlayingPath = _audioPath;
+          isPlaying = true;
+          isPlayingResponse = false;
+        });
+      }
+      await _audioPlayer.play(DeviceFileSource(_audioPath!));
+    } catch (e) {
+      developer.log('Error playing recording: $e', name: 'PLAYBACK');
+      CommonUtils.showErrorToast('Failed to play recording');
+    }
   }
 
   Future<void> _playResponseAudio() async {
-    if (_responseAudioPath == null) return;
-    await _audioPlayer.stop();
-    setState(() {
-      _currentPlayingPath = _responseAudioPath;
-      isPlayingResponse = true;
-      isPlaying = false;
-    });
-    await _audioPlayer.play(DeviceFileSource(_responseAudioPath!));
+    if (_responseAudioPath == null || !File(_responseAudioPath!).existsSync())
+      return;
+    try {
+      await _audioPlayer.stop();
+      if (mounted) {
+        setState(() {
+          _currentPlayingPath = _responseAudioPath;
+          isPlayingResponse = true;
+          isPlaying = false;
+        });
+      }
+      await _audioPlayer.play(DeviceFileSource(_responseAudioPath!));
+    } catch (e) {
+      developer.log('Error playing response audio: $e', name: 'PLAYBACK');
+      CommonUtils.showErrorToast('Failed to play response');
+    }
   }
 
   Future<String> _writeResponseFile(List<int> bytes) async {
@@ -343,31 +451,12 @@ class _GptScreenState extends State<GptScreen>
     ];
   }
 
-  void callAPI() {
-    if (widget.searchQueryFromAskAnythingScreen!.isNotEmpty) {
-      if (mounted) {
-        setState(() {
-          chatHistory.add({
-            'question': widget.searchQueryFromAskAnythingScreen!,
-            'answer': '',
-            'chatId': widget.chatId ?? '',
-            'messageId': '',
-            'isBookmarked': false,
-            'isLiked': false,
-            'isDisliked': false,
-            'isUserAudio': false,
-          });
-          _currentResponseIndex = chatHistory.length - 1;
-          PrefUtils.setChatHistory(chatHistory);
-          _hasApiError = false;
-          _apiErrorMessage = '';
-        });
-      }
-
+  void _sendMessageToAPI(String message) {
+    try {
       if (PrefUtils.getChatID().isEmpty && widget.chatId == null) {
         BlocProvider.of<HomeFlowBloc>(context).add(
           InitiateChatEvent(
-            message: widget.searchQueryFromAskAnythingScreen!,
+            message: message,
             isGuest: PrefUtils.getIsGuest(),
             modelName: 'Atlas',
             searchEngine: 'Search',
@@ -380,14 +469,93 @@ class _GptScreenState extends State<GptScreen>
 
       BlocProvider.of<HomeFlowBloc>(context).add(
         ChatEvent(
-          message: widget.searchQueryFromAskAnythingScreen!,
+          message: message,
           language: PrefUtils.getLanguage(),
           sessionId: PrefUtils.getSessionID(),
         ),
       );
-      inputController.clear();
 
       _scrollToBottom();
+    } catch (e) {
+      developer.log('Error sending message to API: $e', name: 'API_ERROR');
+      CommonUtils.showErrorToast('Failed to send message');
+      // Clear loading state on error
+      if (_currentResponseIndex != null) {
+        _responseLoadingStates.remove(_currentResponseIndex);
+      }
+    }
+  }
+
+  void _handleUserMessage() {
+    final message = inputController.text.trim();
+    if (message.isEmpty) return;
+
+    try {
+      String chatId = _getCurrentChatId();
+      bool isEdited = false;
+
+      if (mounted) {
+        setState(() {
+          if (_editingIndex != null) {
+            // Editing existing message
+            chatHistory[_editingIndex!]['question'] = message;
+            chatHistory[_editingIndex!]['answer'] = '';
+            _currentResponseIndex = _editingIndex;
+            _responseLoadingStates[_currentResponseIndex!] = true;
+            isEdited = true;
+          } else {
+            // New message
+            final newChatItem = {
+              'question': message,
+              'answer': '',
+              'chatId': chatId,
+              'messageId': '',
+              'isBookmarked': false,
+              'isLiked': false,
+              'isDisliked': false,
+              'isUserAudio': false,
+            };
+            chatHistory.add(newChatItem);
+            _currentResponseIndex = chatHistory.length - 1;
+            _responseLoadingStates[_currentResponseIndex!] = true;
+            isEdited = false;
+          }
+          PrefUtils.setChatHistory(chatHistory);
+        });
+      }
+
+      if (PrefUtils.getChatID().isEmpty && widget.chatId == null) {
+        BlocProvider.of<HomeFlowBloc>(context).add(
+          InitiateChatEvent(
+            message: message,
+            isGuest: PrefUtils.getIsGuest(),
+            modelName: 'Atlas',
+            searchEngine: 'Search',
+            edited: isEdited,
+            sender: 'user',
+            chatId: chatId,
+          ),
+        );
+      }
+
+      BlocProvider.of<HomeFlowBloc>(context).add(
+        ChatEvent(
+          message: message,
+          language: PrefUtils.getLanguage(),
+          sessionId: PrefUtils.getSessionID(),
+        ),
+      );
+
+      inputController.clear();
+      _editingIndex = null;
+      _scrollToBottom();
+    } catch (e) {
+      developer.log('Error handling user message: $e', name: 'USER_INPUT');
+      CommonUtils.showErrorToast('Failed to send message');
+      // Clear loading state on error
+      if (_currentResponseIndex != null) {
+        _responseLoadingStates.remove(_currentResponseIndex);
+      }
     }
   }
 
@@ -432,7 +600,6 @@ class _GptScreenState extends State<GptScreen>
                       ),
                     ],
                   ),
-                  const SizedBox(width: 20),
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.black),
                     onPressed: () => Navigator.of(context).pop(),
@@ -520,7 +687,8 @@ class _GptScreenState extends State<GptScreen>
   }
 
   void _scrollToBottom() {
-    Future.delayed(const Duration(milliseconds: 300), () {
+    _scrollTimer?.cancel();
+    _scrollTimer = Timer(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients && mounted) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
@@ -531,361 +699,370 @@ class _GptScreenState extends State<GptScreen>
     });
   }
 
-  void _handleApiError() {
-    if (mounted) {
-      setState(() {
-        isSending = false;
-        _hasApiError = true;
-        _apiErrorMessage = 'Something went wrong. Please try again.';
+  void _handleChatResponse(Map<String, dynamic> response, int index) {
+    try {
+      if (mounted) {
+        setState(() {
+          chatHistory[index]['answer'] = response.toString();
+          _responseLoadingStates.remove(index);
+          PrefUtils.setChatHistory(chatHistory);
+        });
+      }
+    } catch (e) {
+      developer.log(
+        'Error handling chat response: $e',
+        name: 'RESPONSE_HANDLER',
+      );
+    }
+  }
 
-        // Remove any pending/empty chat entries
-        if (_currentResponseIndex != null && chatHistory.isNotEmpty) {
-          final chat = chatHistory[_currentResponseIndex!];
-          final question = chat['question']?.toString().trim() ?? '';
-          final answer = chat['answer']?.toString().trim() ?? '';
-
-          // Only remove if answer is empty (incomplete response)
-          if (answer.isEmpty) {
-            chatHistory.removeAt(_currentResponseIndex!);
-            _currentResponseIndex = null;
-            PrefUtils.setChatHistory(chatHistory);
-          }
+  void _handleVoiceResponse(dynamic response, int index) {
+    try {
+      if (response is Map<String, dynamic> && response.containsKey('audio')) {
+        final hexString = response['audio'];
+        if (_isValidHex(hexString)) {
+          final bytes = _hexToBytes(hexString);
+          _writeResponseFile(bytes)
+              .then((path) {
+                if (mounted) {
+                  setState(() {
+                    _responseAudioPath = path;
+                    chatHistory[index]['answer'] = 'Audio Response';
+                    _responseLoadingStates.remove(index);
+                    PrefUtils.setChatHistory(chatHistory);
+                  });
+                }
+              })
+              .catchError((e) {
+                developer.log(
+                  'Error writing response file: $e',
+                  name: 'VOICE_RESPONSE',
+                );
+                _handleChatResponse(response, index);
+              });
+        } else {
+          _handleChatResponse(response, index);
         }
-      });
+      } else if (response is List<int>) {
+        _writeResponseFile(response)
+            .then((path) {
+              if (mounted) {
+                setState(() {
+                  _responseAudioPath = path;
+                  chatHistory[index]['answer'] = 'Audio Response';
+                  _responseLoadingStates.remove(index);
+                  PrefUtils.setChatHistory(chatHistory);
+                });
+              }
+            })
+            .catchError((e) {
+              developer.log(
+                'Error writing response file: $e',
+                name: 'VOICE_RESPONSE',
+              );
+              _handleChatResponse({'error': 'Failed to process audio'}, index);
+            });
+      } else {
+        _handleChatResponse(response, index);
+      }
+    } catch (e) {
+      developer.log(
+        'Error handling voice response: $e',
+        name: 'VOICE_RESPONSE',
+      );
+      _handleChatResponse({'error': 'Failed to process response'}, index);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Filter chat history to only show entries with both question and answer
-    final filteredChatHistory =
-        chatHistory.where((chat) {
-          final question = chat['question']?.toString().trim() ?? '';
-          final answer = chat['answer']?.toString().trim() ?? '';
-          return question.isNotEmpty && answer.isNotEmpty;
-        }).toList();
-
     return Scaffold(
       backgroundColor: AppColors.GlobalBG,
       body: SafeArea(
         child: BlocListener<HomeFlowBloc, HomeFlowState>(
           listener: (context, state) {
-            if (state is InitiateChatSuccess) {
-              final response = state.successResponse;
-              final String chatID = response['id'];
-              PrefUtils.setChatID(chatID);
-            } else if (state is InitiateChatFailure) {
-              CommonUtils.showErrorToast(state.failureResponse['message']);
-              _handleApiError();
-            } else if (state is StoreChatSuccess) {
-              final response = state.successResponse;
-              final messageId = response['id'];
-              if (_currentResponseIndex != null &&
-                  _currentResponseIndex! < chatHistory.length &&
-                  mounted) {
-                setState(() {
-                  chatHistory[_currentResponseIndex!]['messageId'] = messageId;
-                  PrefUtils.setChatHistory(chatHistory);
-                });
-              }
-              String? latestAnswer;
-              if (_currentResponseIndex != null && chatHistory.isNotEmpty) {
-                latestAnswer = chatHistory[_currentResponseIndex!]['answer'];
-                final currentMessageId =
-                    chatHistory[_currentResponseIndex!]['messageId'] ?? '';
-                BlocProvider.of<HomeFlowBloc>(context).add(
-                  SendAPIResponseEvent(
-                    messageId: currentMessageId,
-                    apiName: 'Atlas',
-                    apiType: 'Chat',
-                    apiResponse: latestAnswer!,
-                    apiStatus: 'SUCCESS',
-                    apiError: '',
-                  ),
-                );
-              }
-            } else if (state is StoreChatError) {
-              CommonUtils.showErrorToast(state.failureResponse['message']);
-              _handleApiError();
-            } else if (state is SendAPIResponseFailure) {
-              CommonUtils.showErrorToast(state.failureResponse['message']);
-              _handleApiError();
-            } else if (state is ChatStreamingState) {
-              if (mounted) {
-                setState(() {
-                  if (_currentResponseIndex != null &&
-                      _currentResponseIndex! < chatHistory.length) {
-                    String currentAnswer =
-                        chatHistory[_currentResponseIndex!]['answer'] ?? '';
-                    currentAnswer += state.response;
-                    chatHistory[_currentResponseIndex!]['answer'] =
-                        currentAnswer;
-                    PrefUtils.setChatHistory(chatHistory);
-                    _hasApiError = false;
-                    _apiErrorMessage = '';
-                    isSending = false;
-                  }
-                });
-              }
-            } else if (state is ChatLoadedState) {
-              if (mounted) {
-                setState(() {
-                  if (_currentResponseIndex != null &&
-                      _currentResponseIndex! < chatHistory.length) {
-                    chatHistory[_currentResponseIndex!]['answer'] =
-                        state.partialResponse;
-                    PrefUtils.setChatHistory(chatHistory);
-                    _hasApiError = false;
-                    _apiErrorMessage = '';
-                    isSending = false;
-                  }
-                });
-              }
-              if (_currentResponseIndex != null &&
-                  _currentResponseIndex! < chatHistory.length) {
-                if (mounted) {
+            try {
+              if (state is InitiateChatSuccess) {
+                final response = state.successResponse;
+                final String chatID = response['id'];
+                PrefUtils.setChatID(chatID);
+              } else if (state is InitiateChatFailure) {
+                CommonUtils.showErrorToast(state.failureResponse['message']);
+              } else if (state is StoreChatSuccess) {
+                final response = state.successResponse;
+                final messageId = response['id'];
+                if (_currentResponseIndex != null &&
+                    _currentResponseIndex! < chatHistory.length &&
+                    mounted) {
                   setState(() {
-                    chatHistory[_currentResponseIndex!]['chatId'] =
-                        PrefUtils.getChatID();
+                    chatHistory[_currentResponseIndex!]['messageId'] =
+                        messageId;
                     PrefUtils.setChatHistory(chatHistory);
                   });
                 }
-                String? latestQuestion =
-                    chatHistory[_currentResponseIndex!]['question'];
-                BlocProvider.of<HomeFlowBloc>(context).add(
-                  StoreChatEvent(
-                    message: latestQuestion ?? '',
-                    modelName: 'Atlas',
-                    searchEngine: 'Search',
-                    edited: false,
-                    sender: 'user',
-                    chatId: PrefUtils.getChatID(),
-                  ),
-                );
-              }
-            } else if (state is ChatErrorState) {
-              CommonUtils.showErrorToast(state.error['message']);
-              _handleApiError();
-            } else if (state is VoiceConversationSuccess) {
-              final response = state.successResponse;
-              if (mounted) {
-                setState(() {
-                  isSending = false;
-                  _hasApiError = false;
-                  _apiErrorMessage = '';
-
-                  if (_currentResponseIndex != null &&
-                      _currentResponseIndex! < chatHistory.length) {
-                    if (response is Map<String, dynamic> &&
-                        response.containsKey('audio')) {
-                      final hexString = response['audio'];
-                      if (_isValidHex(hexString)) {
-                        final bytes = _hexToBytes(hexString);
-                        _writeResponseFile(bytes).then((path) {
-                          if (mounted) {
-                            setState(() {
-                              _responseAudioPath = path;
-                              chatHistory[_currentResponseIndex!]['answer'] =
-                                  'Audio Response';
-                              PrefUtils.setChatHistory(chatHistory);
-                            });
-                          }
-                        });
-                      }
-                    } else if (response is List<int>) {
-                      _writeResponseFile(response).then((path) {
-                        if (mounted) {
-                          setState(() {
-                            _responseAudioPath = path;
-                            chatHistory[_currentResponseIndex!]['answer'] =
-                                'Audio Response';
-                            PrefUtils.setChatHistory(chatHistory);
-                          });
-                        }
-                      });
-                    } else {
-                      _apiResponse = response.toString();
+                String? latestAnswer;
+                if (_currentResponseIndex != null && chatHistory.isNotEmpty) {
+                  latestAnswer = chatHistory[_currentResponseIndex!]['answer'];
+                  final currentMessageId =
+                      chatHistory[_currentResponseIndex!]['messageId'] ?? '';
+                  if (currentMessageId.isNotEmpty &&
+                      latestAnswer != null &&
+                      latestAnswer.isNotEmpty) {
+                    BlocProvider.of<HomeFlowBloc>(context).add(
+                      SendAPIResponseEvent(
+                        messageId: currentMessageId,
+                        apiName: 'Atlas',
+                        apiType: 'Chat',
+                        apiResponse: latestAnswer,
+                        apiStatus: 'SUCCESS',
+                        apiError: '',
+                      ),
+                    );
+                  }
+                }
+              } else if (state is StoreChatError) {
+                CommonUtils.showErrorToast(state.failureResponse['message']);
+              } else if (state is SendAPIResponseFailure) {
+                CommonUtils.showErrorToast(state.failureResponse['message']);
+              } else if (state is ChatStreamingState) {
+                if (mounted) {
+                  setState(() {
+                    if (_currentResponseIndex != null &&
+                        _currentResponseIndex! < chatHistory.length) {
+                      String currentAnswer =
+                          chatHistory[_currentResponseIndex!]['answer'] ?? '';
+                      currentAnswer += state.response;
                       chatHistory[_currentResponseIndex!]['answer'] =
-                          _apiResponse;
+                          currentAnswer;
                       PrefUtils.setChatHistory(chatHistory);
                     }
+                  });
+                }
+              } else if (state is ChatLoadedState) {
+                if (mounted) {
+                  setState(() {
+                    if (_currentResponseIndex != null &&
+                        _currentResponseIndex! < chatHistory.length) {
+                      chatHistory[_currentResponseIndex!]['answer'] =
+                          state.partialResponse;
+                      _responseLoadingStates.remove(_currentResponseIndex);
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
+                }
+                if (_currentResponseIndex != null &&
+                    _currentResponseIndex! < chatHistory.length) {
+                  if (mounted) {
+                    setState(() {
+                      chatHistory[_currentResponseIndex!]['chatId'] =
+                          _getCurrentChatId();
+                      PrefUtils.setChatHistory(chatHistory);
+                    });
                   }
-                });
-              }
-            } else if (state is VoiceConversationFailure) {
-              CommonUtils.showErrorToast(state.failureResponse);
-              _handleApiError();
-            } else if (state is GetSingleChatHistorySuccess) {
-              final response = state.successResponse;
-              final String chatId = response['chat']['id']?.toString() ?? '';
-              final List<dynamic> messages =
-                  response['messages'] as List<dynamic>;
-              if (mounted) {
-                setState(() {
-                  final Map<String, Map<String, dynamic>> localChatMap = {
-                    for (var chat in chatHistory) chat['messageId']: chat,
-                  };
-                  chatHistory =
-                      messages.map<Map<String, dynamic>>((message) {
-                        final String messageId =
-                            message['id']?.toString() ?? '';
-                        final String question =
-                            message['message']?.toString() ?? '';
-                        final String answer =
-                            message['apiResponses']?.isNotEmpty == true
-                                ? message['apiResponses'][0]['api_response']
-                                        ?.toString() ??
-                                    ''
-                                : '';
-                        final bool isBookmarked =
-                            message['isBookmarked'] ?? false;
-                        final bool isLiked = message['isLiked'] ?? false;
-                        final bool isDisliked = message['isDisliked'] ?? false;
-                        final localChat = localChatMap[messageId] ?? {};
-                        return {
-                          'question': question,
-                          'answer': answer,
-                          'chatId': chatId,
-                          'messageId': messageId,
-                          'isBookmarked':
-                              isBookmarked || localChat['isBookmarked'] == true,
-                          'isLiked': isLiked || localChat['isLiked'] == true,
-                          'isDisliked':
-                              isDisliked || localChat['isDisliked'] == true,
-                          'isUserAudio': localChat['isUserAudio'] ?? false,
-                        };
-                      }).toList();
-                  // Filter out empty questions/answers
-                  chatHistory =
-                      chatHistory.where((chat) {
-                        final q = chat['question']?.toString().trim() ?? '';
-                        final a = chat['answer']?.toString().trim() ?? '';
-                        return q.isNotEmpty && a.isNotEmpty;
-                      }).toList();
-                  PrefUtils.setChatHistory(chatHistory);
-                  _hasApiError = false;
-                  _apiErrorMessage = '';
-                });
-              }
-            } else if (state is GetSingleChatHistoryFailure) {
-              CommonUtils.showErrorToast(state.failureResponse['message']);
-              _handleApiError();
-            } else if (state is ReactOnChatSuccess) {
-              final response = state.successResponse;
-              reactionId = response['data']['id'];
-              final messageId = response['data']['message_id'] ?? '';
-              final bool isLike = response['data']['is_like'] ?? false;
-              if (mounted) {
-                setState(() {
-                  final index = chatHistory.indexWhere(
-                    (chat) => chat['messageId'] == messageId,
-                  );
-                  if (index != -1) {
-                    chatHistory[index]['isLiked'] = isLike;
-                    chatHistory[index]['isDisliked'] = !isLike;
+                  String? latestQuestion =
+                      chatHistory[_currentResponseIndex!]['question'];
+                  if (latestQuestion != null && latestQuestion.isNotEmpty) {
+                    BlocProvider.of<HomeFlowBloc>(context).add(
+                      StoreChatEvent(
+                        message: latestQuestion,
+                        modelName: 'Atlas',
+                        searchEngine: 'Search',
+                        edited: false,
+                        sender: 'user',
+                        chatId: _getCurrentChatId(),
+                      ),
+                    );
+                  }
+                }
+              } else if (state is ChatErrorState) {
+                CommonUtils.showErrorToast(state.error['message']);
+                if (_currentResponseIndex != null) {
+                  _responseLoadingStates.remove(_currentResponseIndex);
+                }
+              } else if (state is VoiceConversationSuccess) {
+                final response = state.successResponse;
+                if (_currentResponseIndex != null &&
+                    _currentResponseIndex! < chatHistory.length) {
+                  _handleVoiceResponse(response, _currentResponseIndex!);
+                }
+              } else if (state is VoiceConversationFailure) {
+                CommonUtils.showErrorToast(state.failureResponse);
+                if (_currentResponseIndex != null) {
+                  _responseLoadingStates.remove(_currentResponseIndex);
+                }
+              } else if (state is GetSingleChatHistorySuccess) {
+                final response = state.successResponse;
+                final String chatId = response['chat']['id']?.toString() ?? '';
+                final List<dynamic> messages =
+                    response['messages'] as List<dynamic>;
+
+                if (mounted) {
+                  setState(() {
+                    final Map<String, Map<String, dynamic>> localChatMap = {
+                      for (var chat in chatHistory) chat['messageId']: chat,
+                    };
+                    chatHistory =
+                        messages.map<Map<String, dynamic>>((message) {
+                          final String messageId =
+                              message['id']?.toString() ?? '';
+                          final String question =
+                              message['message']?.toString() ?? '';
+                          final String answer =
+                              message['apiResponses']?.isNotEmpty == true
+                                  ? message['apiResponses'][0]['api_response']
+                                          ?.toString() ??
+                                      ''
+                                  : '';
+                          final bool isBookmarked =
+                              message['isBookmarked'] ?? false;
+                          final bool isLiked = message['isLiked'] ?? false;
+                          final bool isDisliked =
+                              message['isDisliked'] ?? false;
+                          final localChat = localChatMap[messageId] ?? {};
+                          return {
+                            'question': question,
+                            'answer': answer,
+                            'chatId': chatId,
+                            'messageId': messageId,
+                            'isBookmarked':
+                                isBookmarked ||
+                                localChat['isBookmarked'] == true,
+                            'isLiked': isLiked || localChat['isLiked'] == true,
+                            'isDisliked':
+                                isDisliked || localChat['isDisliked'] == true,
+                            'isUserAudio': localChat['isUserAudio'] ?? false,
+                          };
+                        }).toList();
                     PrefUtils.setChatHistory(chatHistory);
-                  }
-                });
+                  });
+                }
+                _initialLoadCompleter?.complete();
+              } else if (state is GetSingleChatHistoryFailure) {
+                CommonUtils.showErrorToast(state.failureResponse['message']);
+                _initialLoadCompleter?.complete();
+              } else if (state is ReactOnChatSuccess) {
+                final response = state.successResponse;
+                reactionId = response['data']['id'];
+                final messageId = response['data']['message_id'] ?? '';
+                final bool isLike = response['data']['is_like'] ?? false;
+                if (mounted) {
+                  setState(() {
+                    final index = chatHistory.indexWhere(
+                      (chat) => chat['messageId'] == messageId,
+                    );
+                    if (index != -1) {
+                      chatHistory[index]['isLiked'] = isLike;
+                      chatHistory[index]['isDisliked'] = !isLike;
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
+                }
+                _showFeedbackPopup(context);
+                CommonUtils.showSuccessToast(response['message']);
+              } else if (state is ReactOnChatFailure) {
+                final messageId = state.failureResponse['message_id'] ?? '';
+                final bool wasLike = state.failureResponse['is_like'] ?? false;
+                if (mounted) {
+                  setState(() {
+                    final index = chatHistory.indexWhere(
+                      (chat) => chat['messageId'] == messageId,
+                    );
+                    if (index != -1) {
+                      chatHistory[index]['isLiked'] =
+                          wasLike ? false : chatHistory[index]['isLiked'];
+                      chatHistory[index]['isDisliked'] =
+                          !wasLike ? false : chatHistory[index]['isDisliked'];
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
+                }
+                CommonUtils.showErrorToast(state.failureResponse['message']);
+              } else if (state is ChatFeedbackSuccess) {
+                CommonUtils.showSuccessToast(state.successResponse['message']);
+              } else if (state is ChatFeedbackFailure) {
+                Navigator.pop(context);
+                CommonUtils.showErrorToast(state.failureResponse['message']);
+              } else if (state is ShareChatSuccess) {
+                final shareUrl = state.successResponse;
+                if (shareUrl.isNotEmpty) {
+                  Share.share(shareUrl);
+                } else {
+                  CommonUtils.showErrorToast('Failed to share: Invalid URL');
+                }
+              } else if (state is ShareChatFailure) {
+                CommonUtils.showErrorToast(state.failureResponse['message']);
+              } else if (state is CheckNetworkConnectionHomeFlow) {
+                CommonUtils.showErrorToast('No Internet Connection!');
+              } else if (state is BookmarkChatSuccess) {
+                final messageId = state.successResponse['messageId'];
+                if (mounted) {
+                  setState(() {
+                    final index = chatHistory.indexWhere(
+                      (chat) => chat['messageId'] == messageId,
+                    );
+                    if (index != -1) {
+                      chatHistory[index]['isBookmarked'] = true;
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
+                }
+                CommonUtils.showSuccessToast('Chat bookmarked successfully!');
+              } else if (state is BookmarkChatFailure) {
+                final messageId = state.failureResponse['messageId'] ?? '';
+                if (mounted) {
+                  setState(() {
+                    final index = chatHistory.indexWhere(
+                      (chat) => chat['messageId'] == messageId,
+                    );
+                    if (index != -1) {
+                      chatHistory[index]['isBookmarked'] = false;
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
+                }
+                CommonUtils.showErrorToast(state.failureResponse['message']);
+              } else if (state is UnbookmarkChatSuccess) {
+                final messageId = state.successResponse['messageId'];
+                if (mounted) {
+                  setState(() {
+                    final index = chatHistory.indexWhere(
+                      (chat) => chat['messageId'] == messageId,
+                    );
+                    if (index != -1) {
+                      chatHistory[index]['isBookmarked'] = false;
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
+                }
+                CommonUtils.showSuccessToast('Chat unbookmarked successfully!');
+              } else if (state is UnbookmarkChatFailure) {
+                final messageId = state.failureResponse['messageId'] ?? '';
+                if (mounted) {
+                  setState(() {
+                    final index = chatHistory.indexWhere(
+                      (chat) => chat['messageId'] == messageId,
+                    );
+                    if (index != -1) {
+                      chatHistory[index]['isBookmarked'] = true;
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
+                }
+                CommonUtils.showErrorToast(state.failureResponse['message']);
+              } else if (state is SessionExpiredStateHome) {
+                CommonUtils.showErrorToast(state.message);
+                PrefUtils.clearAll();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
               }
-              _showFeedbackPopup(context);
-              CommonUtils.showSuccessToast(response['message']);
-            } else if (state is ReactOnChatFailure) {
-              final messageId = state.failureResponse['message_id'] ?? '';
-              final bool wasLike = state.failureResponse['is_like'] ?? false;
-              if (mounted) {
-                setState(() {
-                  final index = chatHistory.indexWhere(
-                    (chat) => chat['messageId'] == messageId,
-                  );
-                  if (index != -1) {
-                    chatHistory[index]['isLiked'] =
-                        wasLike ? false : chatHistory[index]['isLiked'];
-                    chatHistory[index]['isDisliked'] =
-                        !wasLike ? false : chatHistory[index]['isDisliked'];
-                    PrefUtils.setChatHistory(chatHistory);
-                  }
-                });
-              }
-              CommonUtils.showErrorToast(state.failureResponse['message']);
-            } else if (state is ChatFeedbackSuccess) {
-              CommonUtils.showSuccessToast(state.successResponse['message']);
-            } else if (state is ChatFeedbackFailure) {
-              Navigator.pop(context);
-              CommonUtils.showErrorToast(state.failureResponse['message']);
-            } else if (state is ShareChatSuccess) {
-              final shareUrl = state.successResponse;
-              if (shareUrl.isNotEmpty) {
-                SharePlus.instance.share(ShareParams(text: shareUrl));
-              } else {
-                CommonUtils.showErrorToast('Failed to share: Invalid URL');
-              }
-            } else if (state is ShareChatFailure) {
-              CommonUtils.showErrorToast(state.failureResponse['message']);
-            } else if (state is CheckNetworkConnection) {
-              CommonUtils.showErrorToast('No Internet Connection!');
-              _handleApiError();
-            } else if (state is BookmarkChatSuccess) {
-              final messageId = state.successResponse['messageId'];
-              if (mounted) {
-                setState(() {
-                  final index = chatHistory.indexWhere(
-                    (chat) => chat['messageId'] == messageId,
-                  );
-                  if (index != -1) {
-                    chatHistory[index]['isBookmarked'] = true;
-                    PrefUtils.setChatHistory(chatHistory);
-                  }
-                });
-              }
-              CommonUtils.showSuccessToast('Chat bookmarked successfully!');
-            } else if (state is BookmarkChatFailure) {
-              final messageId = state.failureResponse['messageId'] ?? '';
-              if (mounted) {
-                setState(() {
-                  final index = chatHistory.indexWhere(
-                    (chat) => chat['messageId'] == messageId,
-                  );
-                  if (index != -1) {
-                    chatHistory[index]['isBookmarked'] = false;
-                    PrefUtils.setChatHistory(chatHistory);
-                  }
-                });
-              }
-              CommonUtils.showErrorToast(state.failureResponse['message']);
-            } else if (state is UnbookmarkChatSuccess) {
-              final messageId = state.successResponse['messageId'];
-              if (mounted) {
-                setState(() {
-                  final index = chatHistory.indexWhere(
-                    (chat) => chat['messageId'] == messageId,
-                  );
-                  if (index != -1) {
-                    chatHistory[index]['isBookmarked'] = false;
-                    PrefUtils.setChatHistory(chatHistory);
-                  }
-                });
-              }
-              CommonUtils.showSuccessToast('Chat unbookmarked successfully!');
-            } else if (state is UnbookmarkChatFailure) {
-              final messageId = state.failureResponse['messageId'] ?? '';
-              if (mounted) {
-                setState(() {
-                  final index = chatHistory.indexWhere(
-                    (chat) => chat['messageId'] == messageId,
-                  );
-                  if (index != -1) {
-                    chatHistory[index]['isBookmarked'] = true;
-                    PrefUtils.setChatHistory(chatHistory);
-                  }
-                });
-              }
-              CommonUtils.showErrorToast(state.failureResponse['message']);
-            } else if (state is CommonServerFailureHome) {
-              // Handle common server failure
-              CommonUtils.showErrorToast(
-                'Server error occurred. Please try again.',
+            } catch (e) {
+              developer.log(
+                'Error in bloc listener: $e',
+                name: 'BLOC_LISTENER',
               );
-              _handleApiError();
             }
           },
           child: Stack(
@@ -920,518 +1097,534 @@ class _GptScreenState extends State<GptScreen>
                     ),
                     const SizedBox(height: 10),
                     Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.gradientStart),
-                          color: Colors.white,
-                        ),
-                        child: Column(
-                          children: [
-                            if (_hasApiError)
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                margin: const EdgeInsets.only(bottom: 16),
-                                decoration: BoxDecoration(
-                                  color: Colors.red[50],
-                                  border: Border.all(color: Colors.red),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
+                      child:
+                          _isInitialLoading
+                              ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(
-                                      Icons.error_outline,
-                                      color: Colors.red[700],
+                                    LoadingAnimationWidget.staggeredDotsWave(
+                                      color: AppColors.gradientStart,
+                                      size: 50,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        _apiErrorMessage,
-                                        style: TextStyle(
-                                          color: Colors.red[700],
-                                        ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Loading...',
+                                      style: FTextStyle.defaultText.copyWith(
+                                        color: AppColors.gradientStart,
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            if (filteredChatHistory.isEmpty && !isSending)
-                              Expanded(
-                                child: Center(
+                              )
+                              : Visibility(
+                                visible: chatHistory.isNotEmpty,
+                                replacement: Center(
                                   child: Text(
-                                    'No conversations yet. Start by typing a message or recording audio.',
+                                    'No chat history yet. Start a conversation!',
                                     style: FTextStyle.defaultText.copyWith(
                                       color: Colors.grey,
                                     ),
                                     textAlign: TextAlign.center,
                                   ),
                                 ),
-                              )
-                            else
-                              Expanded(
-                                child: SingleChildScrollView(
-                                  controller: _scrollController,
-                                  child: Column(
-                                    children: [
-                                      ListView.builder(
-                                        shrinkWrap: true,
-                                        physics:
-                                            const NeverScrollableScrollPhysics(),
-                                        itemCount: filteredChatHistory.length,
-                                        itemBuilder: (context, index) {
-                                          final chat =
-                                              filteredChatHistory[index];
-                                          final question =
-                                              chat['question'] ?? '';
-                                          final answer = chat['answer'] ?? '';
-                                          final messageId =
-                                              chat['messageId'] ?? '';
-                                          final chatId = chat['chatId'] ?? '';
-                                          final bool isBookmarked =
-                                              chat['isBookmarked'] ?? false;
-                                          final bool isLiked =
-                                              chat['isLiked'] ?? false;
-                                          final bool isDisliked =
-                                              chat['isDisliked'] ?? false;
-                                          final bool isUserAudio =
-                                              chat['isUserAudio'] ?? false;
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: AppColors.gradientStart,
+                                    ),
+                                    color: Colors.white,
+                                  ),
+                                  child: SingleChildScrollView(
+                                    controller: _scrollController,
+                                    child: Column(
+                                      children: [
+                                        ListView.builder(
+                                          shrinkWrap: true,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          itemCount: chatHistory.length,
+                                          itemBuilder: (context, index) {
+                                            final question =
+                                                chatHistory[index]['question']
+                                                    ?.toString()
+                                                    .trim() ??
+                                                '';
+                                            final answer =
+                                                chatHistory[index]['answer']
+                                                    ?.toString()
+                                                    .trim() ??
+                                                '';
+                                            final messageId =
+                                                chatHistory[index]['messageId']
+                                                    ?.toString()
+                                                    .trim() ??
+                                                '';
+                                            final chatId =
+                                                chatHistory[index]['chatId']
+                                                    ?.toString()
+                                                    .trim() ??
+                                                '';
+                                            final bool isBookmarked =
+                                                chatHistory[index]['isBookmarked'] ??
+                                                false;
+                                            final bool isLiked =
+                                                chatHistory[index]['isLiked'] ??
+                                                false;
+                                            final bool isDisliked =
+                                                chatHistory[index]['isDisliked'] ??
+                                                false;
+                                            final bool isUserAudio =
+                                                chatHistory[index]['isUserAudio'] ??
+                                                false;
+                                            final bool isLoading =
+                                                _responseLoadingStates[index] ??
+                                                false;
 
-                                          // Skip if question or answer is empty
-                                          if (question
-                                                  .toString()
-                                                  .trim()
-                                                  .isEmpty ||
-                                              answer
-                                                  .toString()
-                                                  .trim()
-                                                  .isEmpty) {
-                                            return const SizedBox.shrink();
-                                          }
+                                            // Skip empty questions
+                                            if (question.isEmpty)
+                                              return const SizedBox();
 
-                                          return Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Container(
-                                                width: double.infinity,
-                                                padding: const EdgeInsets.all(
-                                                  12,
-                                                ),
-                                                margin: const EdgeInsets.only(
-                                                  bottom: 20,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.white,
-                                                  border: Border.all(
-                                                    color:
-                                                        AppColors.gradientStart,
+                                            return Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Container(
+                                                  width: double.infinity,
+                                                  padding: const EdgeInsets.all(
+                                                    12,
                                                   ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(10),
-                                                ),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Row(
-                                                      children: [
-                                                        Expanded(
-                                                          child: Text(
-                                                            question,
-                                                            style:
-                                                                FTextStyle
-                                                                    .defaultTextBold,
+                                                  margin: const EdgeInsets.only(
+                                                    bottom: 20,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    border: Border.all(
+                                                      color:
+                                                          AppColors
+                                                              .gradientStart,
+                                                    ),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
+                                                  ),
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Row(
+                                                        children: [
+                                                          Expanded(
+                                                            child: Text(
+                                                              question,
+                                                              style:
+                                                                  FTextStyle
+                                                                      .defaultTextBold,
+                                                            ),
                                                           ),
-                                                        ),
-                                                        const SizedBox(
-                                                          width: 16,
-                                                        ),
-                                                        GestureDetector(
-                                                          onTap: () {
-                                                            if (mounted) {
-                                                              setState(() {
-                                                                inputController
-                                                                        .text =
-                                                                    question;
-                                                                _editingIndex =
-                                                                    index;
-                                                              });
-                                                            }
-                                                          },
-                                                          child: Image.asset(
-                                                            'assets/images/edit.png',
-                                                            height: 16,
+                                                          const SizedBox(
                                                             width: 16,
                                                           ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 16),
-                                                    Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        MarkdownBody(
-                                                          data: answer,
-                                                          styleSheet:
-                                                              MarkdownStyleSheet.fromTheme(
-                                                                Theme.of(
-                                                                  context,
-                                                                ),
-                                                              ).copyWith(
-                                                                p:
-                                                                    FTextStyle
-                                                                        .defaultText,
-                                                              ),
-                                                        ),
-                                                        if (index ==
-                                                                _currentResponseIndex &&
-                                                            _audioPath !=
-                                                                null &&
-                                                            !isRecording &&
-                                                            isUserAudio)
-                                                          Align(
-                                                            alignment:
-                                                                Alignment
-                                                                    .centerRight,
-                                                            child: CustomAudioPlayer(
-                                                              audioPath:
-                                                                  _audioPath!,
-                                                              isPlaying:
-                                                                  isPlaying,
-                                                              onPlayPause:
-                                                                  _playRecording,
-                                                            ),
-                                                          ),
-                                                        if (index ==
-                                                                _currentResponseIndex &&
-                                                            _responseAudioPath !=
-                                                                null)
-                                                          Align(
-                                                            alignment:
-                                                                Alignment
-                                                                    .centerLeft,
-                                                            child: CustomAudioPlayer(
-                                                              audioPath:
-                                                                  _responseAudioPath!,
-                                                              isPlaying:
-                                                                  isPlayingResponse,
-                                                              onPlayPause:
-                                                                  _playResponseAudio,
-                                                            ),
-                                                          ),
-                                                        if (index ==
-                                                                _currentResponseIndex &&
-                                                            _apiResponse !=
-                                                                null)
-                                                          Padding(
-                                                            padding:
-                                                                const EdgeInsets.only(
-                                                                  top: 8.0,
-                                                                ),
-                                                            child: Text(
-                                                              _apiResponse!,
-                                                              style:
-                                                                  const TextStyle(
-                                                                    color:
-                                                                        Colors
-                                                                            .red,
-                                                                  ),
-                                                              maxLines: 5,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                            ),
-                                                          ),
-                                                      ],
-                                                    ),
-                                                    const SizedBox(height: 16),
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      children: [
-                                                        Row(
-                                                          children: [
-                                                            Image.asset(
-                                                              'assets/images/refresh.png',
+                                                          GestureDetector(
+                                                            onTap: () {
+                                                              if (mounted) {
+                                                                setState(() {
+                                                                  inputController
+                                                                          .text =
+                                                                      question;
+                                                                  _editingIndex =
+                                                                      index;
+                                                                });
+                                                              }
+                                                            },
+                                                            child: Image.asset(
+                                                              'assets/images/edit.png',
                                                               height: 16,
                                                               width: 16,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      const SizedBox(
+                                                        height: 16,
+                                                      ),
+                                                      if (isLoading &&
+                                                          answer.isEmpty)
+                                                        Row(
+                                                          children: [
+                                                            SizedBox(
+                                                              height: 16,
+                                                              width: 16,
+                                                              child: CircularProgressIndicator(
+                                                                strokeWidth: 2,
+                                                                color:
+                                                                    AppColors
+                                                                        .gradientStart,
+                                                              ),
                                                             ),
                                                             const SizedBox(
                                                               width: 10,
                                                             ),
                                                             Text(
-                                                              AppLocalizations.of(
-                                                                context,
-                                                              )!.translate(
-                                                                'regenerate',
-                                                              ),
-                                                              style:
-                                                                  FTextStyle
-                                                                      .selectedRadioColorText,
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        Row(
-                                                          children: [
-                                                            GestureDetector(
-                                                              onTap: () {
-                                                                if (messageId
-                                                                    .isNotEmpty) {
-                                                                  if (mounted) {
-                                                                    setState(() {
-                                                                      chat['isLiked'] =
-                                                                          !isLiked;
-                                                                      if (chat['isLiked'] ==
-                                                                          true) {
-                                                                        chat['isDisliked'] =
-                                                                            false;
-                                                                      }
-                                                                      PrefUtils.setChatHistory(
-                                                                        chatHistory,
-                                                                      );
-                                                                    });
-                                                                  }
-                                                                  BlocProvider.of<
-                                                                    HomeFlowBloc
-                                                                  >(
-                                                                    context,
-                                                                  ).add(
-                                                                    ReactOnChatEvent(
-                                                                      message_id:
-                                                                          messageId,
-                                                                      is_guest:
-                                                                          PrefUtils.getIsGuest(),
-                                                                      is_like:
-                                                                          !isLiked,
-                                                                      type:
-                                                                          'MESSAGE',
-                                                                    ),
-                                                                  );
-                                                                } else {
-                                                                  CommonUtils.showErrorToast(
-                                                                    'Cannot like: Message ID is missing',
-                                                                  );
-                                                                }
-                                                              },
-                                                              child: Image.asset(
-                                                                isLiked
-                                                                    ? 'assets/images/thumbsuplike.png'
-                                                                    : 'assets/images/thumbsupunlike.png',
-                                                                height: 16,
-                                                                width: 16,
-                                                              ),
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 10,
-                                                            ),
-                                                            GestureDetector(
-                                                              onTap: () {
-                                                                if (messageId
-                                                                    .isNotEmpty) {
-                                                                  if (mounted) {
-                                                                    setState(() {
-                                                                      chat['isDisliked'] =
-                                                                          !isDisliked;
-                                                                      if (chat['isDisliked'] ==
-                                                                          true) {
-                                                                        chat['isLiked'] =
-                                                                            false;
-                                                                      }
-                                                                      PrefUtils.setChatHistory(
-                                                                        chatHistory,
-                                                                      );
-                                                                    });
-                                                                  }
-                                                                  BlocProvider.of<
-                                                                    HomeFlowBloc
-                                                                  >(
-                                                                    context,
-                                                                  ).add(
-                                                                    ReactOnChatEvent(
-                                                                      message_id:
-                                                                          messageId,
-                                                                      is_guest:
-                                                                          PrefUtils.getIsGuest(),
-                                                                      is_like:
-                                                                          isDisliked,
-                                                                      type:
-                                                                          'MESSAGE',
-                                                                    ),
-                                                                  );
-                                                                } else {
-                                                                  CommonUtils.showErrorToast(
-                                                                    'Cannot dislike: Message ID is missing',
-                                                                  );
-                                                                }
-                                                              },
-                                                              child: Image.asset(
-                                                                isDisliked
-                                                                    ? 'assets/images/thumbsdownlike.png'
-                                                                    : 'assets/images/thumbsdownunlike.png',
-                                                                height: 16,
-                                                                width: 16,
-                                                              ),
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 10,
-                                                            ),
-                                                            GestureDetector(
-                                                              onTap: () {
-                                                                Clipboard.setData(
-                                                                  ClipboardData(
-                                                                    text:
-                                                                        answer,
+                                                              'Loading...',
+                                                              style: FTextStyle
+                                                                  .defaultText
+                                                                  .copyWith(
+                                                                    fontStyle:
+                                                                        FontStyle
+                                                                            .italic,
+                                                                    color:
+                                                                        Colors
+                                                                            .grey,
                                                                   ),
-                                                                );
-                                                                CommonUtils.showSuccessToast(
-                                                                  'Response copied to clipboard!',
-                                                                );
-                                                              },
-                                                              child: Image.asset(
-                                                                'assets/images/unsave.png',
-                                                                height: 16,
-                                                                width: 16,
-                                                              ),
                                                             ),
-                                                            const SizedBox(
-                                                              width: 10,
-                                                            ),
-                                                            GestureDetector(
-                                                              onTap: () {
-                                                                if (messageId
-                                                                    .isNotEmpty) {
-                                                                  if (mounted) {
-                                                                    setState(() {
-                                                                      chat['isBookmarked'] =
-                                                                          !isBookmarked;
-                                                                      PrefUtils.setChatHistory(
-                                                                        chatHistory,
-                                                                      );
-                                                                    });
-                                                                  }
-                                                                  BlocProvider.of<
-                                                                    HomeFlowBloc
-                                                                  >(
-                                                                    context,
-                                                                  ).add(
-                                                                    isBookmarked
-                                                                        ? UnbookmarkChat(
-                                                                          messageId:
-                                                                              messageId,
-                                                                        )
-                                                                        : BookmarkChat(
-                                                                          messageId:
-                                                                              messageId,
-                                                                        ),
-                                                                  );
-                                                                } else {
-                                                                  CommonUtils.showErrorToast(
-                                                                    'Cannot bookmark: Message ID is missing',
-                                                                  );
-                                                                }
-                                                              },
-                                                              child: Image.asset(
-                                                                isBookmarked
-                                                                    ? 'assets/images/bookmark.png'
-                                                                    : 'assets/images/unbookmark.png',
-                                                                height: 16,
-                                                                width: 16,
-                                                              ),
-                                                            ),
-                                                            const SizedBox(
-                                                              width: 10,
-                                                            ),
-                                                            GestureDetector(
-                                                              onTap: () {
-                                                                if (chatId
-                                                                    .isNotEmpty) {
-                                                                  BlocProvider.of<
-                                                                    HomeFlowBloc
-                                                                  >(
-                                                                    context,
-                                                                  ).add(
-                                                                    ShareChatEvent(
-                                                                      chatId:
-                                                                          chatId,
+                                                          ],
+                                                        )
+                                                      else if (answer
+                                                          .isNotEmpty)
+                                                        Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            MarkdownBody(
+                                                              data: answer,
+                                                              styleSheet:
+                                                                  MarkdownStyleSheet.fromTheme(
+                                                                    Theme.of(
+                                                                      context,
                                                                     ),
-                                                                  );
-                                                                } else {
-                                                                  CommonUtils.showErrorToast(
-                                                                    'Cannot share: Chat ID is missing',
-                                                                  );
-                                                                }
-                                                              },
-                                                              child: Image.asset(
-                                                                'assets/images/unshare.png',
-                                                                height: 16,
-                                                                width: 16,
+                                                                  ).copyWith(
+                                                                    p:
+                                                                        FTextStyle
+                                                                            .defaultText,
+                                                                  ),
+                                                            ),
+                                                            if (index ==
+                                                                    _currentResponseIndex &&
+                                                                _audioPath !=
+                                                                    null &&
+                                                                !isRecording &&
+                                                                isUserAudio)
+                                                              Align(
+                                                                alignment:
+                                                                    Alignment
+                                                                        .centerRight,
+                                                                child: CustomAudioPlayer(
+                                                                  audioPath:
+                                                                      _audioPath!,
+                                                                  isPlaying:
+                                                                      isPlaying,
+                                                                  onPlayPause:
+                                                                      _playRecording,
+                                                                ),
                                                               ),
+                                                            if (index ==
+                                                                    _currentResponseIndex &&
+                                                                _responseAudioPath !=
+                                                                    null)
+                                                              Align(
+                                                                alignment:
+                                                                    Alignment
+                                                                        .centerLeft,
+                                                                child: CustomAudioPlayer(
+                                                                  audioPath:
+                                                                      _responseAudioPath!,
+                                                                  isPlaying:
+                                                                      isPlayingResponse,
+                                                                  onPlayPause:
+                                                                      _playResponseAudio,
+                                                                ),
+                                                              ),
+                                                            if (index ==
+                                                                    _currentResponseIndex &&
+                                                                _apiResponse !=
+                                                                    null)
+                                                              Padding(
+                                                                padding:
+                                                                    const EdgeInsets.only(
+                                                                      top: 8.0,
+                                                                    ),
+                                                                child: Text(
+                                                                  _apiResponse!,
+                                                                  style: const TextStyle(
+                                                                    color:
+                                                                        Colors
+                                                                            .red,
+                                                                  ),
+                                                                  maxLines: 5,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                ),
+                                                              ),
+                                                          ],
+                                                        )
+                                                      else if (!isLoading &&
+                                                          answer.isEmpty)
+                                                        Text(
+                                                          'No response received',
+                                                          style: FTextStyle
+                                                              .defaultText
+                                                              .copyWith(
+                                                                fontStyle:
+                                                                    FontStyle
+                                                                        .italic,
+                                                                color:
+                                                                    Colors.grey,
+                                                              ),
+                                                        ),
+                                                      const SizedBox(
+                                                        height: 16,
+                                                      ),
+                                                      if (answer.isNotEmpty ||
+                                                          messageId.isNotEmpty)
+                                                        Row(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .spaceBetween,
+                                                          children: [
+                                                            Row(
+                                                              children: [
+                                                                Image.asset(
+                                                                  'assets/images/refresh.png',
+                                                                  height: 16,
+                                                                  width: 16,
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 10,
+                                                                ),
+                                                                Text(
+                                                                  AppLocalizations.of(
+                                                                    context,
+                                                                  )!.translate(
+                                                                    'regenerate',
+                                                                  ),
+                                                                  style:
+                                                                      FTextStyle
+                                                                          .selectedRadioColorText,
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            Row(
+                                                              children: [
+                                                                GestureDetector(
+                                                                  onTap: () {
+                                                                    if (messageId
+                                                                        .isNotEmpty) {
+                                                                      if (mounted) {
+                                                                        setState(() {
+                                                                          chatHistory[index]['isLiked'] =
+                                                                              !isLiked;
+                                                                          if (chatHistory[index]['isLiked'] ==
+                                                                              true) {
+                                                                            chatHistory[index]['isDisliked'] =
+                                                                                false;
+                                                                          }
+                                                                          PrefUtils.setChatHistory(
+                                                                            chatHistory,
+                                                                          );
+                                                                        });
+                                                                      }
+                                                                      BlocProvider.of<
+                                                                        HomeFlowBloc
+                                                                      >(
+                                                                        context,
+                                                                      ).add(
+                                                                        ReactOnChatEvent(
+                                                                          message_id:
+                                                                              messageId,
+                                                                          is_guest:
+                                                                              PrefUtils.getIsGuest(),
+                                                                          is_like:
+                                                                              !isLiked,
+                                                                          type:
+                                                                              'MESSAGE',
+                                                                        ),
+                                                                      );
+                                                                    } else {
+                                                                      CommonUtils.showErrorToast(
+                                                                        'Cannot like: Message ID is missing',
+                                                                      );
+                                                                    }
+                                                                  },
+                                                                  child: Image.asset(
+                                                                    isLiked
+                                                                        ? 'assets/images/thumbsuplike.png'
+                                                                        : 'assets/images/thumbsupunlike.png',
+                                                                    height: 16,
+                                                                    width: 16,
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 10,
+                                                                ),
+                                                                GestureDetector(
+                                                                  onTap: () {
+                                                                    if (messageId
+                                                                        .isNotEmpty) {
+                                                                      if (mounted) {
+                                                                        setState(() {
+                                                                          chatHistory[index]['isDisliked'] =
+                                                                              !isDisliked;
+                                                                          if (chatHistory[index]['isDisliked'] ==
+                                                                              true) {
+                                                                            chatHistory[index]['isLiked'] =
+                                                                                false;
+                                                                          }
+                                                                          PrefUtils.setChatHistory(
+                                                                            chatHistory,
+                                                                          );
+                                                                        });
+                                                                      }
+                                                                      BlocProvider.of<
+                                                                        HomeFlowBloc
+                                                                      >(
+                                                                        context,
+                                                                      ).add(
+                                                                        ReactOnChatEvent(
+                                                                          message_id:
+                                                                              messageId,
+                                                                          is_guest:
+                                                                              PrefUtils.getIsGuest(),
+                                                                          is_like:
+                                                                              isDisliked,
+                                                                          type:
+                                                                              'MESSAGE',
+                                                                        ),
+                                                                      );
+                                                                    } else {
+                                                                      CommonUtils.showErrorToast(
+                                                                        'Cannot dislike: Message ID is missing',
+                                                                      );
+                                                                    }
+                                                                  },
+                                                                  child: Image.asset(
+                                                                    isDisliked
+                                                                        ? 'assets/images/thumbsdownlike.png'
+                                                                        : 'assets/images/thumbsdownunlike.png',
+                                                                    height: 16,
+                                                                    width: 16,
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 10,
+                                                                ),
+                                                                GestureDetector(
+                                                                  onTap: () {
+                                                                    if (answer
+                                                                        .isNotEmpty) {
+                                                                      Clipboard.setData(
+                                                                        ClipboardData(
+                                                                          text:
+                                                                              answer,
+                                                                        ),
+                                                                      );
+                                                                      CommonUtils.showSuccessToast(
+                                                                        'Response copied to clipboard!',
+                                                                      );
+                                                                    }
+                                                                  },
+                                                                  child: Image.asset(
+                                                                    'assets/images/unsave.png',
+                                                                    height: 16,
+                                                                    width: 16,
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 10,
+                                                                ),
+                                                                GestureDetector(
+                                                                  onTap: () {
+                                                                    if (messageId
+                                                                        .isNotEmpty) {
+                                                                      if (mounted) {
+                                                                        setState(() {
+                                                                          chatHistory[index]['isBookmarked'] =
+                                                                              !isBookmarked;
+                                                                          PrefUtils.setChatHistory(
+                                                                            chatHistory,
+                                                                          );
+                                                                        });
+                                                                      }
+                                                                      BlocProvider.of<
+                                                                        HomeFlowBloc
+                                                                      >(
+                                                                        context,
+                                                                      ).add(
+                                                                        isBookmarked
+                                                                            ? UnbookmarkChat(
+                                                                              messageId:
+                                                                                  messageId,
+                                                                            )
+                                                                            : BookmarkChat(
+                                                                              messageId:
+                                                                                  messageId,
+                                                                            ),
+                                                                      );
+                                                                    } else {
+                                                                      CommonUtils.showErrorToast(
+                                                                        'Cannot bookmark: Message ID is missing',
+                                                                      );
+                                                                    }
+                                                                  },
+                                                                  child: Image.asset(
+                                                                    isBookmarked
+                                                                        ? 'assets/images/bookmark.png'
+                                                                        : 'assets/images/unbookmark.png',
+                                                                    height: 16,
+                                                                    width: 16,
+                                                                  ),
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 10,
+                                                                ),
+                                                                GestureDetector(
+                                                                  onTap: () {
+                                                                    if (chatId
+                                                                        .isNotEmpty) {
+                                                                      BlocProvider.of<
+                                                                        HomeFlowBloc
+                                                                      >(
+                                                                        context,
+                                                                      ).add(
+                                                                        ShareChatEvent(
+                                                                          chatId:
+                                                                              chatId,
+                                                                        ),
+                                                                      );
+                                                                    } else {
+                                                                      CommonUtils.showErrorToast(
+                                                                        'Cannot share: Chat ID is missing',
+                                                                      );
+                                                                    }
+                                                                  },
+                                                                  child: Image.asset(
+                                                                    'assets/images/unshare.png',
+                                                                    height: 16,
+                                                                    width: 16,
+                                                                  ),
+                                                                ),
+                                                              ],
                                                             ),
                                                           ],
                                                         ),
-                                                      ],
-                                                    ),
-                                                  ],
+                                                    ],
+                                                  ),
                                                 ),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      ),
-                                      if (isSending)
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          margin: const EdgeInsets.only(
-                                            bottom: 20,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            border: Border.all(
-                                              color: AppColors.gradientStart,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              10,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              const SizedBox(
-                                                height: 16,
-                                                width: 16,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color:
-                                                          AppColors
-                                                              .gradientStart,
-                                                    ),
-                                              ),
-                                              const SizedBox(width: 10),
-                                              Expanded(
-                                                child: Text(
-                                                  'Loading response...',
-                                                  style: FTextStyle.defaultText
-                                                      .copyWith(
-                                                        fontStyle:
-                                                            FontStyle.italic,
-                                                        color: Colors.grey,
-                                                      ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                              ],
+                                            );
+                                          },
                                         ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
-                          ],
-                        ),
-                      ),
                     ),
                     const SizedBox(height: 10),
                     Container(
@@ -1546,76 +1739,7 @@ class _GptScreenState extends State<GptScreen>
                           ),
                           const SizedBox(width: 8),
                           GestureDetector(
-                            onTap: () {
-                              final message = inputController.text.trim();
-                              if (message.isNotEmpty) {
-                                String chatId = '';
-                                bool isEdited = false;
-                                if (mounted) {
-                                  setState(() {
-                                    if (_editingIndex != null) {
-                                      chatHistory[_editingIndex!]['question'] =
-                                          message;
-                                      chatHistory[_editingIndex!]['answer'] =
-                                          '';
-                                      _currentResponseIndex = _editingIndex;
-                                      chatId =
-                                          chatHistory[_editingIndex!]['chatId'] ??
-                                          '';
-                                      isEdited = true;
-                                    } else {
-                                      chatHistory.add({
-                                        'question': message,
-                                        'answer': '',
-                                        'chatId': widget.chatId ?? '',
-                                        'messageId': '',
-                                        'isBookmarked': false,
-                                        'isLiked': false,
-                                        'isDisliked': false,
-                                        'isUserAudio': false,
-                                      });
-                                      _currentResponseIndex =
-                                          chatHistory.length - 1;
-                                      chatId =
-                                          widget.chatId ??
-                                          PrefUtils.getChatID();
-                                      isEdited = false;
-                                    }
-                                    PrefUtils.setChatHistory(chatHistory);
-                                    _hasApiError = false;
-                                    _apiErrorMessage = '';
-                                    isSending = true;
-                                  });
-                                }
-
-                                if (PrefUtils.getChatID().isEmpty &&
-                                    widget.chatId == null) {
-                                  BlocProvider.of<HomeFlowBloc>(context).add(
-                                    InitiateChatEvent(
-                                      message: message,
-                                      isGuest: PrefUtils.getIsGuest(),
-                                      modelName: 'Atlas',
-                                      searchEngine: 'Search',
-                                      edited: isEdited,
-                                      sender: 'user',
-                                      chatId: chatId,
-                                    ),
-                                  );
-                                }
-
-                                BlocProvider.of<HomeFlowBloc>(context).add(
-                                  ChatEvent(
-                                    message: message,
-                                    language: PrefUtils.getLanguage(),
-                                    sessionId: PrefUtils.getSessionID(),
-                                  ),
-                                );
-                                inputController.clear();
-                                _editingIndex = null;
-
-                                _scrollToBottom();
-                              }
-                            },
+                            onTap: _handleUserMessage,
                             child: Container(
                               height: 35,
                               width: 35,
@@ -1638,6 +1762,24 @@ class _GptScreenState extends State<GptScreen>
                         ],
                       ),
                     ),
+                    if (isSending)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Column(
+                          children: [
+                            CircularProgressIndicator(
+                              color: AppColors.gradientStart,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Sending to API...',
+                              style: FTextStyle.defaultText.copyWith(
+                                color: AppColors.gradientStart,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: 10),
                   ],
                 ),

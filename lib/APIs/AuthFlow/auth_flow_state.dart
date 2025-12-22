@@ -102,6 +102,11 @@ class ChangePasswordFailure extends AuthFlowState {
   ChangePasswordFailure(this.failureResponse);
 }
 
+class SessionExpiredStateAuth extends AuthFlowState {
+  final String message;
+  SessionExpiredStateAuth(this.message);
+}
+
 // Common Server Failure State
 class CommonServerFailure extends AuthFlowState {
   final String error;
@@ -109,4 +114,4 @@ class CommonServerFailure extends AuthFlowState {
 }
 
 // Check Network Connection State
-class CheckNetworkConnection extends AuthFlowState {}
+class CheckNetworkConnectionAuthFlow extends AuthFlowState {}

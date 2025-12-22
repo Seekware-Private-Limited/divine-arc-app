@@ -76,7 +76,7 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
     // SignUp Bloc
     on<SignupEventHandler>((event, emit) async {
       if (!await ConnectivityService.isConnected()) {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionAuthFlow());
         print("No internet connection.");
         return;
       }
@@ -109,6 +109,8 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
 
         if (response.statusCode == 201) {
           emit(SignUpSuccess(responseData));
+        } else if (response.statusCode == 401) {
+          emit(SessionExpiredStateAuth('Session expired. Please login again.'));
         } else {
           emit(SignUpFailure(responseData));
         }
@@ -121,7 +123,7 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
     // Login Bloc
     on<LoginEventHandler>((event, emit) async {
       if (!await ConnectivityService.isConnected()) {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionAuthFlow());
         print("No internet connection.");
         return;
       }
@@ -169,6 +171,8 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
 
         if (response.statusCode == 200) {
           emit(LoginSuccess(responseData));
+        } else if (response.statusCode == 401) {
+          emit(SessionExpiredStateAuth('Session expired. Please login again.'));
         } else {
           emit(LoginFailure(responseData['message']));
         }
@@ -210,20 +214,24 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
             final responseData = jsonDecode(response.body);
             emit(ForgotPasswordSuccess(responseData));
             print("✅ Parsed Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateAuth('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(ForgotPasswordFailure(errorData));
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionAuthFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionAuthFlow());
         print("❗ No internet connection.");
       }
     });
@@ -263,27 +271,31 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
             final responseData = jsonDecode(response.body);
             emit(ChangePasswordSuccess(responseData));
             print("✅ Parsed Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateAuth('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(ChangePasswordFailure(errorData));
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionAuthFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(CommonServerFailure('An error occurred: $e'));
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionAuthFlow());
         print("❗ No internet connection.");
       }
     });
 
     on<SocialLoginEventHandler>((event, emit) async {
       if (!await ConnectivityService.isConnected()) {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionAuthFlow());
         print("No internet connection.");
         return;
       }
@@ -333,6 +345,8 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
 
         if (response.statusCode == 200) {
           emit(SocialLoginSuccess(responseData));
+        } else if (response.statusCode == 401) {
+          emit(SessionExpiredStateAuth('Session expired. Please login again.'));
         } else {
           emit(SocialLoginFailure(responseData['message']));
         }

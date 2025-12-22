@@ -134,6 +134,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       isLoading = false;
                       isPrayersLoading = false;
                     });
+                  } else if (state is SessionExpiredStateHome) {
+                    CommonUtils.showErrorToast(state.message);
+                    PrefUtils.clearAll();
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                      (route) => false,
+                    );
                   }
                 },
                 child: Stack(

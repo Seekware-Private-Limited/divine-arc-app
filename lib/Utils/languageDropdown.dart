@@ -1,3 +1,4 @@
+import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:divine_arc/APIs/HomeFlow/home_flow_bloc.dart';
@@ -126,8 +127,10 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
               PrefUtils.setSessionID(sessionID);
             } else if (state is CreateSessionFailure) {
               CommonUtils.showErrorToast(state.error);
-            } else if (state is CheckNetworkConnection) {
-              CommonUtils.showErrorToast('No Internet Connection!');
+            } else if (state is CheckNetworkConnectionHomeFlow) {
+              CommonUtils.showErrorToast(
+                AppLocalizations.of(context)!.translate('nointernetConnection'),
+              );
             } else if (state is CommonServerFailureHome) {
               CommonUtils.showErrorToast(state.error);
             }

@@ -244,6 +244,11 @@ class GetAllBookmarksChatFailure extends HomeFlowState {
   GetAllBookmarksChatFailure(this.failureResponse);
 }
 
+class SessionExpiredStateHome extends HomeFlowState {
+  final String message;
+  SessionExpiredStateHome(this.message);
+}
+
 // Common Server Failure State
 class CommonServerFailureHome extends HomeFlowState {
   final String error;
@@ -251,4 +256,4 @@ class CommonServerFailureHome extends HomeFlowState {
 }
 
 // Check Network Connection State
-class CheckNetworkConnection extends HomeFlowState {}
+class CheckNetworkConnectionHomeFlow extends HomeFlowState {}

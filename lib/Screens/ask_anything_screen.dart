@@ -87,6 +87,20 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                   setState(() => isLoading = false);
                 }
                 CommonUtils.showErrorToast(state.failureResponse['message']);
+              } else if (state is SessionExpiredStateHome) {
+                CommonUtils.showErrorToast(state.message);
+                PrefUtils.clearAll();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              } else if (state is CheckNetworkConnectionHomeFlow) {
+                if (mounted) {
+                  setState(() {
+                    isLoading = false;
+                  });
+                }
               } else if (state is CommonServerFailureHome) {
                 print('Server failure detected');
                 if (mounted) {

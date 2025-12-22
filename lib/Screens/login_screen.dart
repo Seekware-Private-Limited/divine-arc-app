@@ -1,3 +1,4 @@
+import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Screens/forgot_password.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/common_utils.dart';
@@ -145,6 +146,21 @@ class _LoginScreenState extends State<LoginScreen> {
                         });
                         print(state.failureMessage);
                         CommonUtils.showErrorToast(state.failureMessage);
+                      } else if (state is SessionExpiredStateAuth) {
+                        CommonUtils.showErrorToast(state.message);
+                        PrefUtils.clearAll();
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ),
+                          (route) => false,
+                        );
+                      } else if (state is CheckNetworkConnectionAuthFlow) {
+                        setState(() {
+                          isLoading = false;
+                        });
+                        CommonUtils.showErrorToast('No Internet Connection!');
                       }
                     },
                     child: Padding(

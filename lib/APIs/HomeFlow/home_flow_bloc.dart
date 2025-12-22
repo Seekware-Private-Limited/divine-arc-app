@@ -39,7 +39,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("Error Response: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -136,7 +136,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             }
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("🚫 SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -150,7 +150,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           client?.close();
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("🌐 No internet connection.");
       }
     });
@@ -260,13 +260,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(InitiateChatSuccess(responseData['data']));
             print("Initiate Chat Response Data: ${responseData['data']}");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(InitiateChatFailure(errorData));
             print("Error Response: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -277,7 +281,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("No internet connection.");
       }
     });
@@ -323,13 +327,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(StoreChatSuccess(responseData['data']));
             print("✅ Store Chat Success: ${responseData['data']}");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(StoreChatError(errorData));
             print("❌ Store Chat Error: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("⚠️ SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -340,7 +348,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("💥 Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("🚫 No internet connection.");
       }
     });
@@ -387,13 +395,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print(
               "✅ SEND API RESPONSE API - Response Data: ${responseData['data']}",
             );
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(SendAPIResponseFailure(errorData));
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -404,7 +416,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
     });
@@ -432,13 +444,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             final responseData = jsonDecode(response.body);
             emit(GetChatHistorySuccess(responseData));
             print("Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(GetChatHistoryFailure(errorData));
             print("Error Response: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -449,7 +465,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("No internet connection.");
       }
     });
@@ -492,13 +508,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(ReactOnChatSuccess(responseData));
             print("✅ Parsed Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(ReactOnChatFailure(errorData));
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -509,7 +529,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
     });
@@ -550,13 +570,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(ChatFeedbackSuccess(responseData));
             print("✅ Parsed Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(ChatFeedbackFailure(errorData));
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -567,7 +591,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
     });
@@ -604,13 +628,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             final responseData = jsonDecode(response.body);
             emit(ShareChatSuccess(responseData['shareUrl']));
             print("✅ Parsed Response Data: ${responseData['shareUrl']}");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(ShareChatFailure(errorData));
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -621,7 +649,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
     });
@@ -656,13 +684,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             final responseData = jsonDecode(response.body);
             emit(LogoutSuccess(successRespose: responseData['message']));
             print("✅ Parsed Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(LogoutFailure(errorData));
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -673,7 +705,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
     });
@@ -709,13 +741,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             final responseData = jsonDecode(response.body);
             emit(UpdateProfileLoaded(responseData));
             print("✅ Parsed Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(UpdateProfileError(errorData));
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -726,7 +762,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
     });
@@ -763,13 +799,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             final responseData = jsonDecode(response.body);
             emit(GetSingleChatHistorySuccess(responseData));
             print("✅ Parsed Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(GetSingleChatHistoryFailure(errorData));
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -780,7 +820,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
     });
@@ -819,7 +859,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -830,7 +870,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
     });
@@ -865,13 +905,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           if (response.statusCode == 200) {
             final responseData = jsonDecode(response.body);
             emit(GetAllPrayersLoaded(responseData));
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(GetAllPrayersFailure(errorData));
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -882,7 +926,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
     });
@@ -920,13 +964,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(BookmarkChatSuccess(responseData));
             print("✅ Parsed Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(BookmarkChatFailure(errorData));
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -937,7 +985,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
     });
@@ -975,13 +1023,17 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             final Map<String, dynamic> responseData = jsonDecode(response.body);
             emit(UnbookmarkChatSuccess(responseData));
             print("✅ Parsed Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(UnbookmarkChatFailure(errorData));
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -992,7 +1044,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
     });
@@ -1026,13 +1078,19 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           if (response.statusCode == 200) {
             final responseData = jsonDecode(response.body);
             emit(GetAllBookmarksChatSuccess(responseData));
+          }
+          /// 🚨 TOKEN EXPIRED / INVALID
+          else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
           } else {
             final errorData = jsonDecode(response.body);
             emit(GetAllBookmarksChatFailure(errorData));
             print("❌ Error Response Data: $errorData");
           }
         } on SocketException {
-          emit(CheckNetworkConnection());
+          emit(CheckNetworkConnectionHomeFlow());
           print("❗ SocketException: No internet connection.");
         } catch (e) {
           emit(
@@ -1043,7 +1101,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           print("❗ Exception: $e");
         }
       } else {
-        emit(CheckNetworkConnection());
+        emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
     });

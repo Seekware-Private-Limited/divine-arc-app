@@ -38,7 +38,6 @@ export 'package:crypto/crypto.dart';
 export 'dart:math';
 export 'package:share_plus/share_plus.dart';
 export 'package:divine_arc/Utils/languageDropdown.dart';
-export 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 export 'package:divine_arc/Utils/api_constant.dart';
 export 'package:divine_arc/Utils/connectivity_service.dart';
 export 'package:flutter_facebook_auth/flutter_facebook_auth.dart';

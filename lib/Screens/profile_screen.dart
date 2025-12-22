@@ -1,3 +1,4 @@
+import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/APIs/HomeFlow/home_flow_bloc.dart';
 import 'package:divine_arc/Screens/change_password_screen.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
@@ -191,7 +192,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
                 (Route<dynamic> route) => false,
               );
-              CommonUtils.showSuccessToast("Logged out successfully!");
+              CommonUtils.showSuccessToast(
+                AppLocalizations.of(
+                  context,
+                )!.translate('loggedoutsuccessfully'),
+              );
             } else if (state is LogoutFailure) {
               setState(() {
                 isLoading = false;
@@ -209,12 +214,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
               final response = state.successResponse;
               final name = response['data']['name'];
               PrefUtils.setName(name);
-              CommonUtils.showSuccessToast('Profile Updated Successfully!');
+              CommonUtils.showSuccessToast(
+                AppLocalizations.of(
+                  context,
+                )!.translate('profileUpdatedSuccessfully'),
+              );
             } else if (state is UpdateProfileError) {
               setState(() {
                 isLoading = false;
               });
               CommonUtils.showErrorToast(state.failureResponse['message']);
+            } else if (state is CommonServerFailureHome) {
+              setState(() {
+                isLoading = false;
+              });
+            } else if (state is CheckNetworkConnectionHomeFlow ||
+                state is CheckNetworkConnectionAuthFlow) {
+              setState(() {
+                isLoading = false;
+              });
+            } else if (state is SessionExpiredStateHome) {
+              CommonUtils.showErrorToast(state.message);
+              PrefUtils.clearAll();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+                (route) => false,
+              );
             }
           },
           child: Stack(
