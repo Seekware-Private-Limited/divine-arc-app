@@ -144,6 +144,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       (route) => false,
                     );
+                  } else if (state is CheckNetworkConnectionHomeFlow) {
+                    setState(() {
+                      isLoading = false;
+                      isPrayersLoading = false;
+                    });
+                    CommonUtils.showErrorToast(
+                      AppLocalizations.of(
+                        context,
+                      )!.translate('nointernetConnection'),
+                    );
                   }
                 },
                 child: Stack(
