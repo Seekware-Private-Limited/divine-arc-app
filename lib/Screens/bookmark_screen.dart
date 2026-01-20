@@ -161,7 +161,7 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
                                           context,
                                         )!.translate('noBookmarks'),
                                         textAlign: TextAlign.center,
-                                        style: FTextStyle.defaultText,
+                                        style: FTextStyle.defaultTextBold,
                                       ),
                                     ],
                                   ),

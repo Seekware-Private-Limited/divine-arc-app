@@ -84,5 +84,13 @@
   "invalidPasswordError": "Password must include at least one uppercase letter, one lowercase letter, one number, and one special character.",
   "profileUpdatedSuccessfully":"Profile Updated Successfully!",
   "loggedoutsuccessfully":"Logged out successfully!",
-  "nointernetConnection":"No Internet Connection!"
+  "nointernetConnection":"No Internet Connection!",
+  "feedsubmittedsuccessfully":"Feedback submitted successfully!",
+  "pleaseenterfeedback":"Please enter feedback",
+  "chatbookmarkedsuccessfully":"Chat bookmarked successfully!",
+  "chatunbookmarkedsuccessfully":"Chat unbookmarked successfully!",
+  "nochathistory":"No chat history yet. Start a conversation!",
+  "noresponsereceived":"No response received",
+  "responsecopied":"Response copied to clipboard!"
+
 }

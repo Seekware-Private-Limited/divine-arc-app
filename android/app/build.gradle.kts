@@ -21,7 +21,7 @@ dependencies {
 }
 
 android {
-    namespace = "com.seekware.gitagpt"
+    namespace = "com.divinearc.app"
     compileSdk = 36
     ndkVersion = "27.0.12077973"
 
@@ -35,7 +35,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.seekware.gitagpt"
+        applicationId = "com.divinearc.app"
         minSdk = 24
         targetSdk = 33
         versionCode = flutter.versionCode

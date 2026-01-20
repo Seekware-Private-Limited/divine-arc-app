@@ -7,6 +7,35 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:1072160672117:android:fe2d731e62be2294442b3c",
+        "android_client_info": {
+          "package_name": "com.divinearc.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1072160672117-4j8bo65v3bkphrqpn199lnl7cipqdmo7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUevHav1YFunSntXbZbYc1TSroFb2OLps"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1072160672117-4j8bo65v3bkphrqpn199lnl7cipqdmo7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:1072160672117:android:7947719d8b3c08a6442b3c",
         "android_client_info": {
           "package_name": "com.seekware.gitagpt"

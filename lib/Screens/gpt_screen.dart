@@ -52,7 +52,7 @@ class _GptScreenState extends State<GptScreen>
   Map<int, bool> _responseLoadingStates = {};
   bool _isInitialLoading = false;
   Completer<void>? _initialLoadCompleter;
-  bool _isApiProcessing = false; // New state variable to track API processing
+  bool _isApiProcessing = false;
 
   @override
   void initState() {
@@ -362,7 +362,7 @@ class _GptScreenState extends State<GptScreen>
         setState(() {
           isRecording = false;
           _audioPath = path;
-          _isApiProcessing = true; // Set API processing state
+          _isApiProcessing = true;
         });
       }
       if (_audioPath != null) {
@@ -371,7 +371,7 @@ class _GptScreenState extends State<GptScreen>
         CommonUtils.showErrorToast('No recording file found');
         if (mounted) {
           setState(() {
-            _isApiProcessing = false; // Reset on error
+            _isApiProcessing = false;
           });
         }
       }
@@ -380,7 +380,8 @@ class _GptScreenState extends State<GptScreen>
       CommonUtils.showErrorToast('Failed to stop recording');
       if (mounted) {
         setState(() {
-          _isApiProcessing = false; // Reset on error
+          isRecording = false;
+          _isApiProcessing = false;
         });
       }
     }
@@ -753,10 +754,16 @@ class _GptScreenState extends State<GptScreen>
                         ),
                       );
                       CommonUtils.showSuccessToast(
-                        'Feedback submitted successfully!',
+                        AppLocalizations.of(
+                          context,
+                        )!.translate('feedsubmittedsuccessfully'),
                       );
                     } else {
-                      CommonUtils.showErrorToast('Please enter feedback');
+                      CommonUtils.showErrorToast(
+                        AppLocalizations.of(
+                          context,
+                        )!.translate('pleaseenterfeedback'),
+                      );
                     }
                   },
                   child: Container(
@@ -1168,7 +1175,11 @@ class _GptScreenState extends State<GptScreen>
                       }
                     });
                   }
-                  CommonUtils.showSuccessToast('Chat bookmarked successfully!');
+                  CommonUtils.showSuccessToast(
+                    AppLocalizations.of(
+                      context,
+                    )!.translate('chatbookmarkedsuccessfully'),
+                  );
                 } else if (state is BookmarkChatFailure) {
                   final messageId = state.failureResponse['messageId'] ?? '';
                   if (mounted) {
@@ -1197,7 +1208,9 @@ class _GptScreenState extends State<GptScreen>
                     });
                   }
                   CommonUtils.showSuccessToast(
-                    'Chat unbookmarked successfully!',
+                    AppLocalizations.of(
+                      context,
+                    )!.translate('chatunbookmarkedsuccessfully'),
                   );
                 } else if (state is UnbookmarkChatFailure) {
                   final messageId = state.failureResponse['messageId'] ?? '';
@@ -1292,7 +1305,9 @@ class _GptScreenState extends State<GptScreen>
                                   visible: chatHistory.isNotEmpty,
                                   replacement: Center(
                                     child: Text(
-                                      'No chat history yet. Start a conversation!',
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.translate('nochathistory'),
                                       style: FTextStyle.defaultText.copyWith(
                                         color: Colors.grey,
                                       ),
@@ -1541,7 +1556,11 @@ class _GptScreenState extends State<GptScreen>
                                                         else if (!isLoading &&
                                                             answer.isEmpty)
                                                           Text(
-                                                            'No response received',
+                                                            AppLocalizations.of(
+                                                              context,
+                                                            )!.translate(
+                                                              'noresponsereceived',
+                                                            ),
                                                             style: FTextStyle
                                                                 .defaultText
                                                                 .copyWith(
@@ -1703,7 +1722,11 @@ class _GptScreenState extends State<GptScreen>
                                                                           ),
                                                                         );
                                                                         CommonUtils.showSuccessToast(
-                                                                          'Response copied to clipboard!',
+                                                                          AppLocalizations.of(
+                                                                            context,
+                                                                          )!.translate(
+                                                                            'responsecopied',
+                                                                          ),
                                                                         );
                                                                       }
                                                                     },
@@ -1910,9 +1933,7 @@ class _GptScreenState extends State<GptScreen>
                                                 : AppColors.gradientStart,
                                       ),
                                       onPressed:
-                                          (_isApiProcessing ||
-                                                  isSending ||
-                                                  isRecording)
+                                          (isSending)
                                               ? null
                                               : () async {
                                                 if (isRecording) {
@@ -1929,7 +1950,7 @@ class _GptScreenState extends State<GptScreen>
                             const SizedBox(width: 8),
                             GestureDetector(
                               onTap:
-                                  (_isApiProcessing || isSending)
+                                  (_isApiProcessing || isSending || isRecording)
                                       ? null
                                       : _handleUserMessage,
                               child: Container(
@@ -1947,9 +1968,10 @@ class _GptScreenState extends State<GptScreen>
                                 child: Icon(
                                   Icons.send,
                                   color:
-                                      (_isApiProcessing || isSending)
-                                          ? Colors
-                                              .grey // Grey when disabled
+                                      (_isApiProcessing ||
+                                              isSending ||
+                                              isRecording)
+                                          ? Colors.grey
                                           : Colors.white,
                                   size: 18,
                                 ),

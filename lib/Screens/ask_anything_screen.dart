@@ -365,7 +365,12 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                   Positioned.fill(
                     child: Container(
                       color: Colors.black.withOpacity(0.5),
-                      child: const Center(child: CircularProgressIndicator()),
+                      child: Center(
+                        child: LoadingAnimationWidget.staggeredDotsWave(
+                          color: AppColors.gradientStart,
+                          size: 50,
+                        ),
+                      ),
                     ),
                   ),
               ],

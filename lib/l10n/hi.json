@@ -78,5 +78,12 @@
   "invalidPasswordError": "पासवर्ड में कम से कम एक बड़ा अक्षर, एक छोटा अक्षर, एक संख्या और एक विशेष वर्ण होना चाहिए।",
   "profileUpdatedSuccessfully": "प्रोफ़ाइल सफलतापूर्वक अपडेट हो गई!",
   "loggedoutsuccessfully": "सफलतापूर्वक लॉग आउट हो गए!",
-  "nointernetConnection": "कोई इंटरनेट कनेक्शन नहीं!"
+  "nointernetConnection": "कोई इंटरनेट कनेक्शन नहीं!",
+  "feedsubmittedsuccessfully": "फ़ीडबैक सफलतापूर्वक सबमिट किया गया!",
+  "pleaseenterfeedback": "कृपया फ़ीडबैक दर्ज करें",
+  "chatbookmarkedsuccessfully": "चैट सफलतापूर्वक बुकमार्क किया गया!",
+  "chatunbookmarkedsuccessfully": "चैट सफलतापूर्वक अनबुकमार्क किया गया!",
+  "nochathistory": "अभी कोई चैट इतिहास नहीं है। बातचीत शुरू करें!",
+  "noresponsereceived": "कोई प्रतिक्रिया प्राप्त नहीं हुई",
+  "responsecopied": "उत्तर क्लिपबोर्ड पर कॉपी किया गया!"
 }
