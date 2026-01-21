@@ -14,15 +14,15 @@ class APIEndPoints {
 
   // GitaGPT App APIs
   // static const String baseUrl = 'https://api.divinearc.in'; // Production
-  static const String baseUrl = 'https://gitagptapp.vexoo.ai'; // Staging
-  // static const String baseUrl = 'http://192.168.1.83:3001'; // Local
+  // static const String baseUrl = 'https://gitagptapp.vexoo.ai'; // Staging
+  static const String baseUrl = 'https://ccde1df5ba8c.ngrok-free.app'; // Local
 
   static const String signup = '$baseUrl/auth/register';
   static const String login = '$baseUrl/auth/login';
   static const String socialLogin = '$baseUrl/auth/socialLogin';
   static const String googleLogin = '$baseUrl/auth/google/login';
   static const String initiateChat = '$baseUrl/chat/initiate';
-  static String allPrayers(String lan) => '$baseUrl/chat/${lan}/prayers';
+  static String allPrayers(String lan) => '$baseUrl/chat/$lan/prayers';
   static const String storeChatConversation = '$baseUrl/chat/store';
   static const String sendAPIResponse = '$baseUrl/chat/api-response';
   static const String getChatHistory = '$baseUrl/chat/history';
@@ -39,4 +39,6 @@ class APIEndPoints {
       '$baseUrl/chat/$chatId/history';
   static const String uploadProfilePhoto = '$baseUrl/users/upload';
   static const String viewProfile = '$baseUrl/users/me';
+  static const String viewAllContent = '$baseUrl/content';
+  static const String sendDeviceToken = '$baseUrl/device-token';
 }

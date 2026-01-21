@@ -21,15 +21,31 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   @override
   void initState() {
     super.initState();
+
+    _preloadAudio();
+
     _audioPlayer.onPositionChanged.listen((position) {
       if (mounted) setState(() => _currentPosition = position);
     });
+
     _audioPlayer.onDurationChanged.listen((duration) {
       if (mounted) setState(() => _totalDuration = duration);
     });
+
     _audioPlayer.onPlayerStateChanged.listen((state) {
-      if (mounted) setState(() => _isPlaying = state == PlayerState.playing);
+      if (mounted) {
+        setState(() => _isPlaying = state == PlayerState.playing);
+      }
     });
+  }
+
+  Future<void> _preloadAudio() async {
+    try {
+      await _audioPlayer.setSourceUrl(widget.audioPath);
+      await _audioPlayer.setVolume(1.0);
+    } catch (e) {
+      debugPrint("Error preloading audio: $e");
+    }
   }
 
   @override
@@ -48,9 +64,8 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
         if (_currentPosition.inSeconds > 0) {
           await _audioPlayer.seek(_currentPosition);
         }
-        await _audioPlayer.play(AssetSource(widget.audioPath));
+        await _audioPlayer.play(UrlSource(widget.audioPath));
       }
-      setState(() => _isPlaying = !_isPlaying);
     } catch (e) {
       print("Error playing audio: $e");
     }

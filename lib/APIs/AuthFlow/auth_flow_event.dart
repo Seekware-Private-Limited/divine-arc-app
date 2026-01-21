@@ -57,3 +57,9 @@ class ChangePasswordEventHandler extends AuthFlowEvent {
     required this.newPassword,
   });
 }
+
+// Send Device Token Event
+class SendDeviceTokenEvent extends AuthFlowEvent {
+  final String deviceToken;
+  SendDeviceTokenEvent({required this.deviceToken});
+}

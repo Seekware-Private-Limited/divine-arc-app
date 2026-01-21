@@ -169,3 +169,9 @@ class UploadProfilePhoto extends HomeFlowEvent {
 
 // View User Profile
 class ViewUserProfile extends HomeFlowEvent {}
+
+// View All Content
+class ViewAllContent extends HomeFlowEvent {
+  final String language;
+  ViewAllContent({required this.language});
+}

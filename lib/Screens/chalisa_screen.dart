@@ -2,28 +2,19 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:divine_arc/Utils/AudioPlayerWidget.dart';
 import 'package:divine_arc/Utils/FontSizeDropdown.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
-import 'package:flutter/material.dart';
 
 class ChalisaScreen extends StatefulWidget {
-  final String image;
-  final String titleEn;
-  final String titleHi;
-  final String prayerEn;
-  final String prayerHi;
-  final String descriptionEn;
-  final String descriptionHi;
-  final String audio;
+  final String contentImage;
+  final String contentName;
+  final String contentDescription;
+  final String contentAudio;
 
   const ChalisaScreen({
     super.key,
-    required this.image,
-    required this.titleEn,
-    required this.titleHi,
-    required this.prayerEn,
-    required this.prayerHi,
-    required this.descriptionEn,
-    required this.descriptionHi,
-    required this.audio,
+    required this.contentImage,
+    required this.contentName,
+    required this.contentDescription,
+    required this.contentAudio,
   });
 
   @override
@@ -37,25 +28,6 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
   Duration _currentPosition = Duration.zero;
 
   void _onLanguageChanged() => setState(() {});
-
-  Future<void> _toggleAudio() async {
-    try {
-      if (_isPlaying) {
-        _currentPosition =
-            await _audioPlayer.getCurrentPosition() ?? Duration.zero;
-        await _audioPlayer.pause();
-        setState(() => _isPlaying = false);
-      } else {
-        if (_currentPosition.inSeconds > 0) {
-          await _audioPlayer.seek(_currentPosition);
-        }
-        await _audioPlayer.play(AssetSource(widget.audio));
-        setState(() => _isPlaying = true);
-      }
-    } catch (e) {
-      debugPrint("Error playing audio: $e");
-    }
-  }
 
   @override
   void initState() {
@@ -77,11 +49,8 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final locale = Localizations.localeOf(context).languageCode;
-    final title = locale == 'en' ? widget.titleEn : widget.titleHi;
-    final prayer = locale == 'en' ? widget.prayerEn : widget.prayerHi;
-    final description =
-        locale == 'en' ? widget.descriptionEn : widget.descriptionHi;
+    final title = widget.contentName;
+    final description = widget.contentDescription;
 
     return MediaQuery(
       data: MediaQuery.of(
@@ -105,11 +74,9 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                 ),
                 child: Column(
                   children: [
-                    /// --- HEADER ROW ---
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        /// Back Icon on Left
                         GestureDetector(
                           onTap: () {
                             Navigator.of(context).pop();
@@ -121,7 +88,6 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                           ),
                         ),
 
-                        /// Language + Font Controls on Right
                         Row(
                           children: [
                             LanguageDropdown(
@@ -141,7 +107,6 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
 
                     const SizedBox(height: 10),
 
-                    /// --- MAIN SCROLL CONTENT ---
                     Expanded(
                       child: SingleChildScrollView(
                         padding: const EdgeInsets.only(bottom: 100),
@@ -159,31 +124,23 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                             children: [
                               ClipOval(
                                 child: Image.network(
-                                  widget.image,
+                                  widget.contentImage,
                                   height: 100,
                                   width: 100,
                                   fit: BoxFit.cover,
                                   errorBuilder:
-                                      (
-                                        context,
-                                        error,
-                                        stackTrace,
-                                      ) => Image.asset(
-                                        'assets/images/hanuman_placeholder.png',
-                                        height: 100,
-                                        width: 100,
-                                        fit: BoxFit.cover,
-                                      ),
+                                      (context, error, stackTrace) =>
+                                          Image.asset(
+                                            'assets/images/errorImage.png',
+                                            height: 100,
+                                            width: 100,
+                                            fit: BoxFit.cover,
+                                          ),
                                 ),
                               ),
                               const SizedBox(height: 15),
                               Text(title, style: FTextStyle.boldText),
                               const SizedBox(height: 10),
-                              Text(
-                                prayer,
-                                style: FTextStyle.defaultText,
-                                textAlign: TextAlign.center,
-                              ),
                               if (description.isNotEmpty) ...[
                                 const SizedBox(height: 10),
                                 Text(
@@ -201,12 +158,11 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                 ),
               ),
 
-              /// --- STICKY AUDIO PLAYER AT BOTTOM ---
               Positioned(
                 left: 20,
                 right: 20,
                 bottom: 30,
-                child: AudioPlayerWidget(audioPath: widget.audio),
+                child: AudioPlayerWidget(audioPath: widget.contentAudio),
               ),
             ],
           ),

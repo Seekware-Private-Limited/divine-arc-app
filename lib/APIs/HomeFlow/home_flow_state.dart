@@ -275,6 +275,19 @@ class UserProfileError extends HomeFlowState {
   UserProfileError(this.failureResponse);
 }
 
+// View All Content States
+class ViewAllContentLoading extends HomeFlowState {}
+
+class ViewAllContentLoaded extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  ViewAllContentLoaded(this.successResponse);
+}
+
+class ViewAllContentError extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  ViewAllContentError(this.failureResponse);
+}
+
 // Common Server Failure State
 class CommonServerFailureHome extends HomeFlowState {
   final String error;

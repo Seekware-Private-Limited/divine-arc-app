@@ -356,5 +356,70 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         print("Exception occurred: $e");
       }
     });
+
+    on<SendDeviceTokenEvent>((event, emit) async {
+      // 1️⃣ Check internet
+      final bool isConnected = await ConnectivityService.isConnected();
+      if (!isConnected) {
+        emit(CheckNetworkConnectionAuthFlow());
+        debugPrint("❌ No internet connection");
+        return;
+      }
+
+      emit(DeviceTokenSending());
+
+      try {
+        final Uri requestUrl = Uri.parse(APIEndPoints.sendDeviceToken);
+
+        final Map<String, dynamic> requestBody = {
+          "device-token": event.deviceToken,
+        };
+
+        debugPrint("➡️ Request URL: $requestUrl");
+        debugPrint("➡️ Request Body: $requestBody");
+
+        final response = await http
+            .post(
+              requestUrl,
+              headers: const {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+              },
+              body: jsonEncode(requestBody),
+            )
+            .timeout(const Duration(seconds: 15));
+
+        debugPrint("✅ Status Code: ${response.statusCode}");
+        debugPrint("✅ Response Body: ${response.body}");
+
+        // Safely decode response
+        Map<String, dynamic> responseData = {};
+        try {
+          responseData = jsonDecode(response.body);
+        } catch (_) {
+          debugPrint("⚠️ Response is not valid JSON");
+        }
+
+        if (response.statusCode == 200) {
+          emit(DeviceTokenSentSuccess(responseData));
+        } else if (response.statusCode == 401) {
+          emit(
+            SessionExpiredStateAuth(
+              responseData['message'] ?? 'Session expired. Please login again.',
+            ),
+          );
+        } else {
+          emit(
+            DeviceTokenSendFailure(
+              responseData['message'] ?? 'Something went wrong',
+            ),
+          );
+        }
+      } catch (e, stackTrace) {
+        debugPrint("🔥 Exception: $e");
+        debugPrint("📌 StackTrace: $stackTrace");
+        emit(CommonServerFailure(e.toString()));
+      }
+    });
   }
 }

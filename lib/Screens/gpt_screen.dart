@@ -1146,16 +1146,18 @@ class _GptScreenState extends State<GptScreen>
                 } else if (state is ChatFeedbackFailure) {
                   Navigator.pop(context);
                   CommonUtils.showErrorToast(state.failureResponse['message']);
-                } else if (state is ShareChatSuccess) {
-                  final shareUrl = state.successResponse;
-                  if (shareUrl.isNotEmpty) {
-                    Share.share(shareUrl);
-                  } else {
-                    CommonUtils.showErrorToast('Failed to share: Invalid URL');
-                  }
-                } else if (state is ShareChatFailure) {
-                  CommonUtils.showErrorToast(state.failureResponse['message']);
-                } else if (state is CheckNetworkConnectionHomeFlow) {
+                }
+                // else if (state is ShareChatSuccess) {
+                //   final shareUrl = state.successResponse;
+                //   if (shareUrl.isNotEmpty) {
+                //     Share.share(shareUrl);
+                //   } else {
+                //     CommonUtils.showErrorToast('Failed to share: Invalid URL');
+                //   }
+                // } else if (state is ShareChatFailure) {
+                //   CommonUtils.showErrorToast(state.failureResponse['message']);
+                // }
+                else if (state is CheckNetworkConnectionHomeFlow) {
                   CommonUtils.showErrorToast('No Internet Connection!');
                   if (mounted) {
                     setState(() {
@@ -1788,23 +1790,45 @@ class _GptScreenState extends State<GptScreen>
                                                                   ),
                                                                   GestureDetector(
                                                                     onTap: () {
-                                                                      if (chatId
-                                                                          .isNotEmpty) {
-                                                                        BlocProvider.of<
-                                                                          HomeFlowBloc
-                                                                        >(
-                                                                          context,
-                                                                        ).add(
-                                                                          ShareChatEvent(
-                                                                            chatId:
-                                                                                chatId,
-                                                                          ),
+                                                                      if (question
+                                                                              .isNotEmpty &&
+                                                                          answer
+                                                                              .isNotEmpty) {
+                                                                        // Create formatted text with question and answer
+                                                                        final shareText =
+                                                                            '''Question: $question
+
+Answer: $answer''';
+                                                                        // Share the text
+                                                                        Share.share(
+                                                                          shareText,
+                                                                        );
+
+                                                                        CommonUtils.showSuccessToast(
+                                                                          'Sharing conversation...',
+                                                                        );
+                                                                      } else if (question
+                                                                              .isNotEmpty &&
+                                                                          answer
+                                                                              .isEmpty) {
+                                                                        CommonUtils.showErrorToast(
+                                                                          'Cannot share: No response available yet',
                                                                         );
                                                                       } else {
                                                                         CommonUtils.showErrorToast(
-                                                                          'Cannot share: Chat ID is missing',
+                                                                          'Cannot share: Conversation is incomplete',
                                                                         );
                                                                       }
+
+                                                                      // if (chatId.isNotEmpty) {
+                                                                      //   BlocProvider.of<HomeFlowBloc>(context).add(
+                                                                      //     ShareChatEvent(chatId: chatId),
+                                                                      //   );
+                                                                      // } else {
+                                                                      //   CommonUtils.showErrorToast(
+                                                                      //     'Cannot share: Chat ID is missing',
+                                                                      //   );
+                                                                      // }
                                                                     },
                                                                     child: Image.asset(
                                                                       'assets/images/unshare.png',

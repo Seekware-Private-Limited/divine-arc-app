@@ -230,8 +230,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   profilePictureUrl = newUrl;
                   _imageFile = null;
                 });
-                CommonUtils.showSuccessToast(
-                  'Profile photo updated successfully',
+                BlocProvider.of<HomeFlowBloc>(context).add(
+                  UpdateProfileEvent(
+                    name: nameController.text,
+                    profilePicture: profilePictureUrl ?? '',
+                  ),
                 );
               }
             } else if (state is UploadProfilePhotoFailure) {

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Utils/notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -8,6 +9,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:divine_arc/Screens/customtabbar.dart';
 import 'package:divine_arc/Screens/login_screen.dart';
 import 'package:divine_arc/Utils/pref_utils.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -72,6 +74,9 @@ class _SplashScreenState extends State<SplashScreen> {
       PrefUtils.setDeviceToken(token);
 
       print('✅ FCM Token: $token');
+      BlocProvider.of<AuthFlowBloc>(
+        context,
+      ).add(SendDeviceTokenEvent(deviceToken: token));
       print('✅ Stored Device Token: ${PrefUtils.getDeviceToken()}');
 
       // 🔄 Handle token refresh

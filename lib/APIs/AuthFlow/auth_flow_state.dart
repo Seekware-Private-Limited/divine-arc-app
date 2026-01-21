@@ -102,6 +102,19 @@ class ChangePasswordFailure extends AuthFlowState {
   ChangePasswordFailure(this.failureResponse);
 }
 
+// Send Device Token States
+class DeviceTokenSending extends AuthFlowState {}
+
+class DeviceTokenSentSuccess extends AuthFlowState {
+  final Map<String, dynamic> successResponse;
+  DeviceTokenSentSuccess(this.successResponse);
+}
+
+class DeviceTokenSendFailure extends AuthFlowState {
+  final Map<String, dynamic> failureResponse;
+  DeviceTokenSendFailure(this.failureResponse);
+}
+
 class SessionExpiredStateAuth extends AuthFlowState {
   final String message;
   SessionExpiredStateAuth(this.message);
