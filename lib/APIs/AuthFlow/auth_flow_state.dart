@@ -89,7 +89,7 @@ class ForgotPasswordFailure extends AuthFlowState {
   ForgotPasswordFailure(this.failureResponse);
 }
 
-// Change Password StateStreamable
+// Change Password States
 class ChangePasswordLoading extends AuthFlowState {}
 
 class ChangePasswordSuccess extends AuthFlowState {

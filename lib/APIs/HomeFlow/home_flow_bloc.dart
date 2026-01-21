@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:developer' as developer;
 import 'package:bloc/bloc.dart';
 import 'package:divine_arc/Utils/api_constant.dart';
 import 'package:divine_arc/Utils/connectivity_service.dart';
 import 'package:divine_arc/Utils/pref_utils.dart';
-import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
+import 'package:http_parser/http_parser.dart';
 part 'home_flow_event.dart';
 part 'home_flow_state.dart';
 
@@ -219,8 +222,8 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
               ),
             );
           }
-        } catch (e, stackTrace) {
-          print("Voice conversation error");
+        } catch (e) {
+          if (kDebugMode) ("Voice conversation error");
           emit(VoiceConversationFailure("Exception: $e"));
         }
       } else {
@@ -712,12 +715,14 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
 
     // Update Profile Bloc
     on<UpdateProfileEvent>((event, emit) async {
-      // Check for internet connectivity
       if (await ConnectivityService.isConnected()) {
         emit(UpdateProfileLoading());
 
         final Uri requestUrl = Uri.parse(APIEndPoints.updateProfile);
-        final requestBody = jsonEncode({'name': event.name});
+        final requestBody = jsonEncode({
+          'name': event.name,
+          'profile_picture': event.profilePicture,
+        });
         print("🔵 Request URL: $requestUrl");
         print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
@@ -1057,10 +1062,14 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
 
         final Uri requestUrl = Uri.parse(APIEndPoints.bookmarkChatList);
 
-        print("🔵 Request URL: $requestUrl");
-        print(
-          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
-        );
+        if (kDebugMode) {
+          print("🔵 Request URL: $requestUrl");
+        }
+        if (kDebugMode) {
+          print(
+            "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+          );
+        }
 
         try {
           final response = await http.get(
@@ -1072,8 +1081,12 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             },
           );
 
-          print("🟣 Response Status Code: ${response.statusCode}");
-          print("🟤 Raw Response Body: ${response.body}");
+          if (kDebugMode) {
+            print("🟣 Response Status Code: ${response.statusCode}");
+          }
+          if (kDebugMode) {
+            print("🟤 Raw Response Body: ${response.body}");
+          }
 
           if (response.statusCode == 200) {
             final responseData = jsonDecode(response.body);
@@ -1087,22 +1100,145 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           } else {
             final errorData = jsonDecode(response.body);
             emit(GetAllBookmarksChatFailure(errorData));
-            print("❌ Error Response Data: $errorData");
+            if (kDebugMode) {
+              print("❌ Error Response Data: $errorData");
+            }
           }
         } on SocketException {
           emit(CheckNetworkConnectionHomeFlow());
-          print("❗ SocketException: No internet connection.");
+          if (kDebugMode) {
+            print("❗ SocketException: No internet connection.");
+          }
         } catch (e) {
           emit(
             CommonServerFailureHome(
               'Something went wrong, Please try again later',
             ),
           );
-          print("❗ Exception: $e");
+          if (kDebugMode) {
+            print("❗ Exception: $e");
+          }
         }
       } else {
         emit(CheckNetworkConnectionHomeFlow());
-        print("❗ No internet connection.");
+        if (kDebugMode) {
+          print("❗ No internet connection.");
+        }
+      }
+    });
+
+    on<UploadProfilePhoto>((event, emit) async {
+      if (!await ConnectivityService.isConnected()) {
+        emit(CheckNetworkConnectionHomeFlow());
+        return;
+      }
+
+      emit(UploadProfilephotoLoading());
+
+      try {
+        final uri = Uri.parse(APIEndPoints.uploadProfilePhoto);
+        final request = http.MultipartRequest('POST', uri);
+
+        // Add authorization
+        final token = PrefUtils.getToken();
+        request.headers['Cookie'] = token;
+        request.headers['accept'] = 'application/json';
+
+        // Add file
+        final file = File(event.file);
+        if (await file.exists()) {
+          final fileStream = http.ByteStream(file.openRead());
+          final fileLength = await file.length();
+
+          final multipartFile = http.MultipartFile(
+            'file',
+            fileStream,
+            fileLength,
+            filename: path.basename(file.path),
+            contentType: MediaType('image', 'png'),
+          );
+          request.files.add(multipartFile);
+        }
+
+        final streamedResponse = await request.send();
+        final response = await http.Response.fromStream(streamedResponse);
+
+        print("🟣 Upload Profile Photo Status: ${response.statusCode}");
+        print("🟤 Response Body: ${response.body}");
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          emit(UploadProfilePhotoSuccess(data));
+
+          // Save the new profile picture URL from response
+          if (data['url'] != null) {
+            PrefUtils.setProfilePicture(data['url']);
+          }
+        } else if (response.statusCode == 401) {
+          emit(SessionExpiredStateHome('Session expired. Please login again.'));
+        } else {
+          Map<String, dynamic> errorData = {};
+          try {
+            errorData = jsonDecode(response.body);
+          } catch (_) {
+            errorData = {'message': 'Failed to upload profile photo'};
+          }
+          emit(UploadProfilePhotoFailure(errorData));
+        }
+      } on SocketException {
+        emit(CheckNetworkConnectionHomeFlow());
+      } catch (e, stack) {
+        print("Upload photo error");
+        emit(UploadProfilePhotoFailure({'message': e.toString()}));
+      }
+    });
+
+    // View User Profile Bloc
+    on<ViewUserProfile>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(UserProfileLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.viewProfile);
+        print("Request URL: $requestUrl");
+
+        try {
+          final response = await http.get(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+          );
+
+          if (response.statusCode == 200) {
+            final responseData = jsonDecode(response.body);
+            emit(UserProfileLoaded(responseData));
+            print("Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(UserProfileError(errorData));
+            print("Error Response: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnectionHomeFlow());
+          print("SocketException: No internet connection.");
+        } catch (e) {
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
+          print("Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnectionHomeFlow());
+        print("No internet connection.");
       }
     });
   }

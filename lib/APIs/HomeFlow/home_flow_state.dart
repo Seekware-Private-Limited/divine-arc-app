@@ -249,6 +249,32 @@ class SessionExpiredStateHome extends HomeFlowState {
   SessionExpiredStateHome(this.message);
 }
 
+// Upload Profile Photo States
+class UploadProfilephotoLoading extends HomeFlowState {}
+
+class UploadProfilePhotoSuccess extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  UploadProfilePhotoSuccess(this.successResponse);
+}
+
+class UploadProfilePhotoFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  UploadProfilePhotoFailure(this.failureResponse);
+}
+
+// View User Profile States
+class UserProfileLoading extends HomeFlowState {}
+
+class UserProfileLoaded extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  UserProfileLoaded(this.successResponse);
+}
+
+class UserProfileError extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  UserProfileError(this.failureResponse);
+}
+
 // Common Server Failure State
 class CommonServerFailureHome extends HomeFlowState {
   final String error;

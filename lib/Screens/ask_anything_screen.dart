@@ -70,7 +70,7 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                 }
                 final response = state.successResponse;
                 final chatId = response['id'];
-                PrefUtils.setChatID(chatId);
+                PrefUtils.setstoredChatID(chatId);
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
@@ -261,7 +261,7 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                             }
 
                                             final existingChatId =
-                                                PrefUtils.getChatID();
+                                                PrefUtils.getstoredChatID();
 
                                             if (existingChatId.isNotEmpty) {
                                               Navigator.push(

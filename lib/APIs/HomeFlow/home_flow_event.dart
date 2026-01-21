@@ -133,7 +133,8 @@ class ChatFeedbackEvent extends HomeFlowEvent {
 // Update Profile Name Event
 class UpdateProfileEvent extends HomeFlowEvent {
   final String name;
-  UpdateProfileEvent({required this.name});
+  final String profilePicture;
+  UpdateProfileEvent({required this.name, required this.profilePicture});
 }
 
 // Get Single Chat History
@@ -159,3 +160,12 @@ class UnbookmarkChat extends HomeFlowEvent {
 
 // Get All Bookmarks Chat
 class GetAllBookmarksChat extends HomeFlowEvent {}
+
+// Upload Profile Photo
+class UploadProfilePhoto extends HomeFlowEvent {
+  final String file;
+  UploadProfilePhoto({required this.file});
+}
+
+// View User Profile
+class ViewUserProfile extends HomeFlowEvent {}

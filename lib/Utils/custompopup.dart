@@ -1,8 +1,4 @@
-import 'dart:io';
 import 'package:divine_arc/Utils/app_imports.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:flutter/services.dart';
 
 class CustomPopup extends StatelessWidget {
   final String title;

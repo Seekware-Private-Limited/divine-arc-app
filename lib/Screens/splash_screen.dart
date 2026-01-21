@@ -1,5 +1,10 @@
 import 'dart:async';
+import 'dart:developer' as developer;
+
+import 'package:divine_arc/Utils/notification_service.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
 import 'package:divine_arc/Screens/customtabbar.dart';
 import 'package:divine_arc/Screens/login_screen.dart';
 import 'package:divine_arc/Utils/pref_utils.dart';
@@ -12,10 +17,90 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  static const _splashDelay = Duration(seconds: 3);
+
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 3), () => navigateUser(context));
+    _setupForegroundNotification();
+    _initApp();
+  }
+
+  Future<void> _initApp() async {
+    await _registerFcmToken();
+    Timer(_splashDelay, _navigateUser);
+  }
+
+  void _setupForegroundNotification() {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      final notification = message.notification;
+
+      if (notification != null) {
+        NotificationService.showNotification(
+          title: notification.title ?? 'Notification',
+          body: notification.body ?? '',
+        );
+      }
+    });
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    final messaging = FirebaseMessaging.instance;
+
+    final settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    developer.log(
+      '🔔 Notification permission: ${settings.authorizationStatus}',
+    );
+  }
+
+  Future<void> _registerFcmToken() async {
+    try {
+      await _requestNotificationPermission();
+
+      final token = await FirebaseMessaging.instance.getToken();
+
+      if (token == null || token.isEmpty) {
+        developer.log('❌ FCM Token is null or empty');
+        return;
+      }
+
+      PrefUtils.setDeviceToken(token);
+
+      print('✅ FCM Token: $token');
+      print('✅ Stored Device Token: ${PrefUtils.getDeviceToken()}');
+
+      // 🔄 Handle token refresh
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+        PrefUtils.setDeviceToken(newToken);
+        print('🔄 FCM Token refreshed: $newToken');
+      });
+    } catch (e, stackTrace) {
+      developer.log(
+        '❌ Error while registering FCM token',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  void _navigateUser() {
+    if (!mounted) return;
+
+    final isLoggedIn = PrefUtils.getIsLogin();
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder:
+            (_) =>
+                isLoggedIn ? const CustomBottomNavBar() : const LoginScreen(),
+      ),
+      (_) => false,
+    );
   }
 
   @override
@@ -24,32 +109,16 @@ class _SplashScreenState extends State<SplashScreen> {
       data: MediaQuery.of(
         context,
       ).copyWith(textScaler: const TextScaler.linear(1)),
-      child: Scaffold(
+      child: const Scaffold(
         body: Center(
-          child: Image.asset(
-            'assets/images/DivineArcLogo.png',
+          child: Image(
+            image: AssetImage('assets/images/DivineArcLogo.png'),
             height: 200,
             width: 200,
-            fit: BoxFit.cover, // Makes the image fill the screen
+            fit: BoxFit.cover,
           ),
         ),
       ),
-    );
-  }
-
-  void navigateUser(BuildContext context) {
-    // Navigate based on the condition
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (BuildContext context) {
-          if (PrefUtils.getIsLogin() == true) {
-            return const CustomBottomNavBar();
-          } else {
-            return const LoginScreen();
-          }
-        },
-      ),
-      (route) => false, // Remove all routes from the stack
     );
   }
 }

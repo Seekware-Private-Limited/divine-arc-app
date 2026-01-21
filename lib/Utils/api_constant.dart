@@ -13,9 +13,9 @@ class APIEndPoints {
   static const String healthCheck = '$streamingBaseUrl/api/health';
 
   // GitaGPT App APIs
-  static const String baseUrl = 'https://api.divinearc.in'; // Production
-  // static const String baseUrl = 'https://gitagptapp.vexoo.ai'; // Staging
-  // static const String baseUrl = 'http://192.168.0.119:3001';   // Local
+  // static const String baseUrl = 'https://api.divinearc.in'; // Production
+  static const String baseUrl = 'https://gitagptapp.vexoo.ai'; // Staging
+  // static const String baseUrl = 'http://192.168.1.83:3001'; // Local
 
   static const String signup = '$baseUrl/auth/register';
   static const String login = '$baseUrl/auth/login';
@@ -37,4 +37,6 @@ class APIEndPoints {
   static const String forgotPassword = '$baseUrl/auth/forgot-password';
   static String singleChatHistory(String chatId) =>
       '$baseUrl/chat/$chatId/history';
+  static const String uploadProfilePhoto = '$baseUrl/users/upload';
+  static const String viewProfile = '$baseUrl/users/me';
 }

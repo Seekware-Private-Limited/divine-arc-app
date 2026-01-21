@@ -2,7 +2,7 @@ import 'package:divine_arc/Utils/shared_preference.dart';
 import 'dart:convert'; // Import for JSON encoding/decoding
 
 class PrefUtils {
-  static setToken(String value) {
+  static void setToken(String value) {
     Prefs.prefs?.setString(SharedPrefsKeys.token, value);
   }
 
@@ -11,7 +11,7 @@ class PrefUtils {
     return value ?? '';
   }
 
-  static setName(String value) {
+  static void setName(String value) {
     Prefs.prefs?.setString(SharedPrefsKeys.name, value);
   }
 
@@ -20,7 +20,16 @@ class PrefUtils {
     return value ?? '';
   }
 
-  static setProfilePicture(String value) {
+  static void setDeviceToken(String value) {
+    Prefs.prefs?.setString(SharedPrefsKeys.deviceToken, value);
+  }
+
+  static String getDeviceToken() {
+    final String? value = Prefs.prefs?.getString(SharedPrefsKeys.deviceToken);
+    return value ?? '';
+  }
+
+  static void setProfilePicture(String value) {
     Prefs.prefs?.setString(SharedPrefsKeys.profilePicture, value);
   }
 
@@ -31,7 +40,7 @@ class PrefUtils {
     return value ?? '';
   }
 
-  static setEmail(String value) {
+  static void setEmail(String value) {
     Prefs.prefs?.setString(SharedPrefsKeys.email, value);
   }
 
@@ -40,7 +49,7 @@ class PrefUtils {
     return value ?? '';
   }
 
-  static setLanguage(String value) {
+  static void setLanguage(String value) {
     Prefs.prefs?.setString(SharedPrefsKeys.lang, value);
   }
 
@@ -49,7 +58,7 @@ class PrefUtils {
     return value ?? '';
   }
 
-  static setSessionID(String value) {
+  static void setSessionID(String value) {
     Prefs.prefs?.setString(SharedPrefsKeys.sessionID, value);
   }
 
@@ -58,12 +67,12 @@ class PrefUtils {
     return value ?? '';
   }
 
-  static setChatID(String value) {
-    Prefs.prefs?.setString(SharedPrefsKeys.ChatID, value);
+  static void setstoredChatID(String value) {
+    Prefs.prefs?.setString(SharedPrefsKeys.storedChatID, value);
   }
 
-  static String getChatID() {
-    final String? value = Prefs.prefs?.getString(SharedPrefsKeys.ChatID);
+  static String getstoredChatID() {
+    final String? value = Prefs.prefs?.getString(SharedPrefsKeys.storedChatID);
     return value ?? '';
   }
 
@@ -140,13 +149,14 @@ class PrefUtils {
 class SharedPrefsKeys {
   static const token = 'token';
   static const name = 'name';
+  static const deviceToken = 'deviceToken';
   static const profilePicture = 'profilePicture';
   static const email = 'email';
   static const lang = 'lang';
   static const sessionID = 'sessionID';
   static const onboardingVisible = 'onboardingVisible';
   static const isLogin = 'isLogin';
-  static const ChatID = 'ChatID';
+  static const storedChatID = 'ChatID';
   static const isGuest = 'isGuest';
   static const isSocialLogin = 'isSocialLogin';
   static const unreadNotificationCount = 'unreadNotificationCount';

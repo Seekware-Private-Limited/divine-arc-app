@@ -169,8 +169,8 @@ class _GptScreenState extends State<GptScreen>
 
   String _getCurrentChatId() {
     // Use widget.chatId if it exists (when coming from history),
-    // otherwise use PrefUtils.getChatID() for new chats
-    return widget.chatId ?? PrefUtils.getChatID();
+    // otherwise use PrefUtils.getstoredChatID() for new chats
+    return widget.chatId ?? PrefUtils.getstoredChatID();
   }
 
   @override
@@ -544,7 +544,7 @@ class _GptScreenState extends State<GptScreen>
         });
       }
 
-      if (PrefUtils.getChatID().isEmpty && widget.chatId == null) {
+      if (PrefUtils.getstoredChatID().isEmpty && widget.chatId == null) {
         BlocProvider.of<HomeFlowBloc>(context).add(
           InitiateChatEvent(
             message: message,
@@ -622,7 +622,7 @@ class _GptScreenState extends State<GptScreen>
         });
       }
 
-      if (PrefUtils.getChatID().isEmpty && widget.chatId == null) {
+      if (PrefUtils.getstoredChatID().isEmpty && widget.chatId == null) {
         BlocProvider.of<HomeFlowBloc>(context).add(
           InitiateChatEvent(
             message: message,
@@ -916,7 +916,7 @@ class _GptScreenState extends State<GptScreen>
                 if (state is InitiateChatSuccess) {
                   final response = state.successResponse;
                   final String chatID = response['id'];
-                  PrefUtils.setChatID(chatID);
+                  PrefUtils.setstoredChatID(chatID);
                 } else if (state is InitiateChatFailure) {
                   CommonUtils.showErrorToast(state.failureResponse['message']);
                   if (mounted) {

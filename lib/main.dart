@@ -1,18 +1,21 @@
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Screens/splash_screen.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/notification_service.dart';
 
 Future<void> main() async {
   ErrorWidget.builder = (FlutterErrorDetails details) {
     return ErrorScreen(errorDetails: details);
   };
+
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  await Prefs.init(); // Initialize SharedPreferences
+  await Prefs.init();
+  await NotificationService.init();
+
   runApp(
-    // Use ChangeNotifierProvider to manage language state
     ChangeNotifierProvider(
-      create: (context) => LanguageProvider(),
+      create: (_) => LanguageProvider(),
       child: const MyApp(),
     ),
   );
@@ -27,15 +30,13 @@ class MyApp extends StatelessWidget {
       builder: (context, languageProvider, child) {
         return MultiBlocProvider(
           providers: [
-            BlocProvider(create: (context) => AuthFlowBloc()),
-            BlocProvider(create: (context) => HomeFlowBloc()),
+            BlocProvider(create: (_) => AuthFlowBloc()),
+            BlocProvider(create: (_) => HomeFlowBloc()),
           ],
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
-            supportedLocales: const [
-              Locale('hi'), // Hindi
-              Locale('en'), // English
-            ],
+            title: 'Divine Arc',
+            supportedLocales: const [Locale('hi'), Locale('en')],
             locale: languageProvider.locale,
             localizationsDelegates: const [
               AppLocalizationsDelegate(),
@@ -43,11 +44,11 @@ class MyApp extends StatelessWidget {
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            title: 'Divine Arc',
             theme: ThemeData(
               colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+              useMaterial3: true,
             ),
-            home: SplashScreen(),
+            home: const SplashScreen(),
           ),
         );
       },

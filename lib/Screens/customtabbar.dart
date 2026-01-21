@@ -1,14 +1,11 @@
-import 'dart:io';
-import 'package:divine_arc/Utils/CustomPopup.dart';
+import 'package:divine_arc/Utils/custompopup.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:flutter/services.dart';
 
 class CustomBottomNavBar extends StatefulWidget {
   const CustomBottomNavBar({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _CustomBottomNavBarState createState() => _CustomBottomNavBarState();
 }
 
@@ -69,12 +66,13 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
     ];
 
     return PopScope(
-      canPop: false, // Prevents default back navigation
-      onPopInvoked: (didPop) async {
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
+
         final shouldExit = await _onWillPop();
         if (shouldExit) {
-          // Handle exit if confirmed
+          Navigator.of(context).pop();
         }
       },
       child: MediaQuery(
