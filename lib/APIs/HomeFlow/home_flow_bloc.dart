@@ -1155,12 +1155,28 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           final fileStream = http.ByteStream(file.openRead());
           final fileLength = await file.length();
 
+          // Determine content type based on file extension
+          final extension = path.extension(file.path).toLowerCase();
+          MediaType contentType;
+
+          if (extension == '.mp3') {
+            contentType = MediaType('audio', 'mpeg');
+          } else if (extension == '.wav') {
+            contentType = MediaType('audio', 'wav');
+          } else if (extension == '.png') {
+            contentType = MediaType('image', 'png');
+          } else if (extension == '.jpg' || extension == '.jpeg') {
+            contentType = MediaType('image', 'jpeg');
+          } else {
+            contentType = MediaType('application', 'octet-stream');
+          }
+
           final multipartFile = http.MultipartFile(
             'file',
             fileStream,
             fileLength,
             filename: path.basename(file.path),
-            contentType: MediaType('image', 'png'),
+            contentType: contentType,
           );
           request.files.add(multipartFile);
         }
@@ -1168,15 +1184,15 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         final streamedResponse = await request.send();
         final response = await http.Response.fromStream(streamedResponse);
 
-        print("🟣 Upload Profile Photo Status: ${response.statusCode}");
+        print("🟣 Upload File Status: ${response.statusCode}");
         print("🟤 Response Body: ${response.body}");
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
-          emit(UploadFileSuccess(data));
+          emit(UploadFileSuccess(data, isResponseAudio: event.isResponseAudio));
 
-          // Save the new profile picture URL from response
-          if (data['url'] != null) {
+          // Only save as profile picture if it's not a response audio file
+          if (data['url'] != null && event.isResponseAudio != true) {
             PrefUtils.setProfilePicture(data['url']);
           }
         } else if (response.statusCode == 401) {
@@ -1186,18 +1202,26 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           try {
             errorData = jsonDecode(response.body);
           } catch (_) {
-            errorData = {'message': 'Failed to upload profile photo'};
+            errorData = {'message': 'Failed to upload file'};
           }
-          emit(UploadFileFailure(errorData));
+          emit(
+            UploadFileFailure(
+              errorData,
+              isResponseAudio: event.isResponseAudio,
+            ),
+          );
         }
       } on SocketException {
         emit(CheckNetworkConnectionHomeFlow());
       } catch (e, stack) {
-        print("Upload photo error");
-        emit(UploadFileFailure({'message': e.toString()}));
+        print("Upload file error: $e");
+        emit(
+          UploadFileFailure({
+            'message': e.toString(),
+          }, isResponseAudio: event.isResponseAudio),
+        );
       }
     });
-
     // View User Profile Bloc
     on<ViewUserProfile>((event, emit) async {
       // Check for internet connectivity

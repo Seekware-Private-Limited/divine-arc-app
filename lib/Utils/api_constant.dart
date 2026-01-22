@@ -13,9 +13,9 @@ class APIEndPoints {
   static const String healthCheck = '$streamingBaseUrl/api/health';
 
   // GitaGPT App APIs
-  // static const String baseUrl = 'https://api.divinearc.in'; // Production
+  static const String baseUrl = 'https://api.divinearc.in'; // Production
   // static const String baseUrl = 'https://gitagptapp.vexoo.ai'; // Staging
-  static const String baseUrl = 'https://9b731a839f81.ngrok-free.app'; // Local
+  // static const String baseUrl = 'http://192.168.0.117:3001'; // Local
 
   static const String signup = '$baseUrl/auth/register';
   static const String login = '$baseUrl/auth/login';

@@ -24,7 +24,8 @@ class _GptScreenState extends State<GptScreen>
   final TextEditingController inputController = TextEditingController();
   final TextEditingController feedbackTextController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  String? audioUrlForCurrentChat;
+
+  // Audio state variables
   late final AudioRecorder _audioRecorder;
   late final AudioPlayer _audioPlayer;
   late final AnimationController _animationController;
@@ -37,23 +38,31 @@ class _GptScreenState extends State<GptScreen>
   bool isSending = false;
   bool _isInitialLoading = false;
   bool _isApiProcessing = false;
+  bool _isConvertingAudio = false;
 
+  // File paths
   String? _audioPath;
   String? _responseAudioPath;
   String? _apiResponse;
   String? _currentPlayingPath;
   String reactionId = '';
 
+  // Chat state
   int? _editingIndex;
   int? _currentResponseIndex;
-
   List<Map<String, dynamic>> chatHistory = [];
   Timer? _scrollTimer;
   Map<int, bool> _responseLoadingStates = {};
   Completer<void>? _initialLoadCompleter;
 
-  // Add this map to track audio URLs for each chat item
-  Map<String, String> _audioUrlMap = {};
+  // Audio URL tracking
+  Map<int, String> _userAudioUrlMap = {}; // Track user audio URLs by index
+  Map<int, String> _responseAudioUrlMap =
+      {}; // Track response audio URLs by index
+
+  // For tracking current voice conversation
+  String? _currentUserAudioUrl;
+  String? _currentResponseAudioUrl;
 
   @override
   void initState() {
@@ -113,6 +122,8 @@ class _GptScreenState extends State<GptScreen>
         await _initialLoadCompleter?.future;
       } else {
         chatHistory = PrefUtils.getChatHistory();
+        // Load audio URLs from saved history
+        _loadAudioUrlsFromHistory();
       }
 
       if (widget.searchQueryFromAskAnythingScreen?.trim().isNotEmpty == true) {
@@ -123,6 +134,28 @@ class _GptScreenState extends State<GptScreen>
     } finally {
       if (mounted) {
         setState(() => _isInitialLoading = false);
+      }
+    }
+  }
+
+  void _loadAudioUrlsFromHistory() {
+    for (int i = 0; i < chatHistory.length; i++) {
+      final chat = chatHistory[i];
+      if (chat['audio_url'] != null &&
+          chat['audio_url'].toString().isNotEmpty) {
+        _userAudioUrlMap[i] = chat['audio_url'];
+      }
+
+      // Load response audio URLs from API responses
+      if (chat['apiResponses'] != null && chat['apiResponses'] is List) {
+        final apiResponses = chat['apiResponses'] as List;
+        if (apiResponses.isNotEmpty) {
+          final response = apiResponses[0];
+          if (response['audio_url'] != null &&
+              response['audio_url'].toString().isNotEmpty) {
+            _responseAudioUrlMap[i] = response['audio_url'];
+          }
+        }
       }
     }
   }
@@ -281,7 +314,8 @@ class _GptScreenState extends State<GptScreen>
           isRecording = true;
           _responseAudioPath = null;
           _apiResponse = null;
-          audioUrlForCurrentChat = null; // Reset audio URL for new recording
+          _currentUserAudioUrl = null;
+          _currentResponseAudioUrl = null;
         });
       }
     } catch (e) {
@@ -347,14 +381,10 @@ class _GptScreenState extends State<GptScreen>
         PrefUtils.setChatHistory(chatHistory);
       });
 
-      BlocProvider.of<HomeFlowBloc>(context).add(
-        VoiceConversationEvent(
-          audioFile: audioFile,
-          language: PrefUtils.getLanguage(),
-          sessionId: PrefUtils.getSessionID(),
-        ),
-      );
-      BlocProvider.of<HomeFlowBloc>(context).add(UploadFile(file: _audioPath!));
+      // STEP 1: First upload the user's recording to get userinputurl
+      BlocProvider.of<HomeFlowBloc>(
+        context,
+      ).add(UploadFile(file: _audioPath!, isResponseAudio: false));
 
       _scrollToBottom();
     } catch (e) {
@@ -460,6 +490,26 @@ class _GptScreenState extends State<GptScreen>
     ];
   }
 
+  Future<String?> _convertWavToMp3(File wavFile) async {
+    try {
+      // Note: In a real app, you would use a proper audio conversion library like ffmpeg
+      // This is a placeholder - implement proper conversion in production
+      final dir = await getTemporaryDirectory();
+      final mp3Path = '${dir.path}/${_generateRandomId()}_converted.mp3';
+
+      // For now, copy the file with mp3 extension
+      // In production, implement proper WAV to MP3 conversion
+      final bytes = await wavFile.readAsBytes();
+      final mp3File = File(mp3Path);
+      await mp3File.writeAsBytes(bytes);
+
+      return mp3Path;
+    } catch (e) {
+      debugPrint('Error converting WAV to MP3: $e');
+      return null;
+    }
+  }
+
   void _sendMessageToAPI(String message) {
     try {
       setState(() => _isApiProcessing = true);
@@ -528,7 +578,8 @@ class _GptScreenState extends State<GptScreen>
           isEdited = false;
         }
         _isApiProcessing = true;
-        audioUrlForCurrentChat = null;
+        _currentUserAudioUrl = null;
+        _currentResponseAudioUrl = null;
         PrefUtils.setChatHistory(chatHistory);
       });
 
@@ -572,6 +623,13 @@ class _GptScreenState extends State<GptScreen>
 
     if (question.isEmpty) {
       CommonUtils.showErrorToast('Cannot regenerate: No question found');
+      return;
+    }
+
+    // Don't allow regenerating audio chats
+    final bool isUserAudio = chatItem['isUserAudio'] == true;
+    if (isUserAudio) {
+      CommonUtils.showErrorToast('Cannot regenerate audio messages');
       return;
     }
 
@@ -759,47 +817,99 @@ class _GptScreenState extends State<GptScreen>
     });
   }
 
-  void _handleVoiceResponse(dynamic response, int index) {
+  Future<void> _handleVoiceResponse(dynamic response, int index) async {
     try {
       if (response is Map<String, dynamic> && response.containsKey('audio')) {
         final hexString = response['audio'];
         if (_isValidHex(hexString)) {
           final bytes = _hexToBytes(hexString);
-          _writeResponseFile(bytes)
-              .then((path) {
-                setState(() {
-                  _responseAudioPath = path;
-                  chatHistory[index]['answer'] = 'Audio Response';
-                  _responseLoadingStates.remove(index);
-                  _isApiProcessing = false;
-                  PrefUtils.setChatHistory(chatHistory);
+
+          // Write WAV file
+          final wavPath = await _writeResponseFile(bytes);
+          final wavFile = File(wavPath);
+
+          // Convert WAV to MP3
+          setState(() => _isConvertingAudio = true);
+          final mp3Path = await _convertWavToMp3(wavFile);
+
+          if (mp3Path != null) {
+            final mp3File = File(mp3Path);
+
+            // STEP 4: Upload that MP3 to get useroutputurl
+            BlocProvider.of<HomeFlowBloc>(
+              context,
+            ).add(UploadFile(file: mp3Path, isResponseAudio: true));
+
+            // Store the WAV path for local playback
+            setState(() {
+              _responseAudioPath = wavPath;
+              chatHistory[index]['answer'] = 'Audio Response';
+              PrefUtils.setChatHistory(chatHistory);
+            });
+          } else {
+            // Fallback to WAV if conversion fails
+            _writeResponseFile(bytes)
+                .then((path) {
+                  setState(() {
+                    _responseAudioPath = path;
+                    chatHistory[index]['answer'] = 'Audio Response';
+                    _responseLoadingStates.remove(index);
+                    _isApiProcessing = false;
+                    _isConvertingAudio = false;
+                    PrefUtils.setChatHistory(chatHistory);
+                  });
+                })
+                .catchError((e) {
+                  _handleChatResponse(response, index);
+                  setState(() => _isConvertingAudio = false);
                 });
-              })
-              .catchError((e) {
-                _handleChatResponse(response, index);
-              });
+          }
         } else {
           _handleChatResponse(response, index);
+          setState(() => _isConvertingAudio = false);
         }
       } else if (response is List<int>) {
-        _writeResponseFile(response)
-            .then((path) {
-              setState(() {
-                _responseAudioPath = path;
-                chatHistory[index]['answer'] = 'Audio Response';
-                _responseLoadingStates.remove(index);
-                _isApiProcessing = false;
-                PrefUtils.setChatHistory(chatHistory);
-              });
-            })
-            .catchError((e) {
-              _handleChatResponse({'error': 'Failed to process audio'}, index);
-            });
+        // Handle direct byte array response
+        final wavPath = await _writeResponseFile(response);
+        final wavFile = File(wavPath);
+
+        // Convert WAV to MP3
+        setState(() => _isConvertingAudio = true);
+        final mp3Path = await _convertWavToMp3(wavFile);
+
+        if (mp3Path != null) {
+          final mp3File = File(mp3Path);
+
+          // STEP 4: Upload that MP3 to get useroutputurl
+          BlocProvider.of<HomeFlowBloc>(
+            context,
+          ).add(UploadFile(file: mp3Path, isResponseAudio: true));
+
+          // Store the WAV path for local playback
+          setState(() {
+            _responseAudioPath = wavPath;
+            chatHistory[index]['answer'] = 'Audio Response';
+            PrefUtils.setChatHistory(chatHistory);
+          });
+        } else {
+          // Fallback to WAV if conversion fails
+          setState(() {
+            _responseAudioPath = wavPath;
+            chatHistory[index]['answer'] = 'Audio Response';
+            _responseLoadingStates.remove(index);
+            _isApiProcessing = false;
+            _isConvertingAudio = false;
+            PrefUtils.setChatHistory(chatHistory);
+          });
+        }
       } else {
         _handleChatResponse(response, index);
+        setState(() => _isConvertingAudio = false);
       }
     } catch (e) {
+      debugPrint('Error handling voice response: $e');
       _handleChatResponse({'error': 'Failed to process response'}, index);
+      setState(() => _isConvertingAudio = false);
     }
   }
 
@@ -818,7 +928,7 @@ class _GptScreenState extends State<GptScreen>
         backgroundColor: AppColors.GlobalBG,
         body: SafeArea(
           child: BlocListener<HomeFlowBloc, HomeFlowState>(
-            listener: (context, state) {
+            listener: (context, state) async {
               try {
                 if (state is InitiateChatSuccess) {
                   final response = state.successResponse;
@@ -848,6 +958,14 @@ class _GptScreenState extends State<GptScreen>
                         PrefUtils.setEdittedMessageID(newMessageId);
                       }
 
+                      // Store user audio URL if available
+                      if (_currentUserAudioUrl != null) {
+                        chatHistory[_currentResponseIndex!]['audio_url'] =
+                            _currentUserAudioUrl;
+                        _userAudioUrlMap[_currentResponseIndex!] =
+                            _currentUserAudioUrl!;
+                      }
+
                       PrefUtils.setChatHistory(chatHistory);
                     });
                   }
@@ -874,11 +992,10 @@ class _GptScreenState extends State<GptScreen>
 
                     if (messageIdToUse.isNotEmpty) {
                       // Get the audio URL if it's an audio chat
-                      final audioUrl =
-                          isUserAudio
-                              ? audioUrlForCurrentChat ??
-                                  '' // Use the stored audio URL
-                              : ''; // Empty string for text chats
+                      final String audioUrl =
+                          isUserAudio && _currentUserAudioUrl != null
+                              ? _currentUserAudioUrl!
+                              : '';
 
                       BlocProvider.of<HomeFlowBloc>(context).add(
                         SendAPIResponseEvent(
@@ -970,31 +1087,125 @@ class _GptScreenState extends State<GptScreen>
                     _responseLoadingStates.remove(_currentResponseIndex);
                   }
                   setState(() => _isApiProcessing = false);
+                } else if (state is UploadFileSuccess) {
+                  final newUrl = state.successResponse['url'];
+                  final bool isResponseAudio = state.isResponseAudio ?? false;
+
+                  if (isResponseAudio) {
+                    // This is the response audio URL (useroutputurl)
+                    _currentResponseAudioUrl = newUrl;
+
+                    // Update chat history with response audio URL
+                    if (_currentResponseIndex != null &&
+                        _currentResponseIndex! < chatHistory.length) {
+                      setState(() {
+                        chatHistory[_currentResponseIndex!]['hasAudioUrl'] =
+                            true;
+                        // Store response audio URL
+                        _responseAudioUrlMap[_currentResponseIndex!] = newUrl;
+
+                        // Add to apiResponses structure to match API format
+                        if (chatHistory[_currentResponseIndex!]['apiResponses'] ==
+                            null) {
+                          chatHistory[_currentResponseIndex!]['apiResponses'] =
+                              [];
+                        }
+
+                        final apiResponses =
+                            chatHistory[_currentResponseIndex!]['apiResponses']
+                                as List;
+                        if (apiResponses.isEmpty) {
+                          apiResponses.add({
+                            'audio_url': newUrl,
+                            'api_response': 'Audio Response',
+                          });
+                        } else {
+                          apiResponses[0]['audio_url'] = newUrl;
+                        }
+
+                        _responseLoadingStates.remove(_currentResponseIndex);
+                        _isApiProcessing = false;
+                        _isConvertingAudio = false;
+                        PrefUtils.setChatHistory(chatHistory);
+                      });
+
+                      // STEP 6: Use useroutputurl in SendAPIResponseEvent
+                      final messageId =
+                          chatHistory[_currentResponseIndex!]['messageId']
+                              ?.toString() ??
+                          '';
+                      final latestAnswer =
+                          chatHistory[_currentResponseIndex!]['answer']
+                              ?.toString() ??
+                          '';
+
+                      if (messageId.isNotEmpty) {
+                        BlocProvider.of<HomeFlowBloc>(context).add(
+                          SendAPIResponseEvent(
+                            messageId: messageId,
+                            apiName: 'Atlas',
+                            apiType: 'Chat',
+                            apiResponse: latestAnswer,
+                            apiStatus: 'SUCCESS',
+                            apiError: '',
+                            audioUrl: newUrl, // Send response audio URL
+                          ),
+                        );
+                      }
+                    }
+                  } else {
+                    // This is the user audio URL (userinputurl)
+                    _currentUserAudioUrl = newUrl;
+
+                    // STEP 2: When that's done, send the VoiceConversationEvent
+                    BlocProvider.of<HomeFlowBloc>(context).add(
+                      VoiceConversationEvent(
+                        audioFile: File(_audioPath!),
+                        language: PrefUtils.getLanguage(),
+                        sessionId: PrefUtils.getSessionID(),
+                      ),
+                    );
+                  }
+                } else if (state is UploadFileFailure) {
+                  CommonUtils.showErrorToast(state.failureResponse['message']);
+                  if (state.isResponseAudio == true) {
+                    setState(() {
+                      _isConvertingAudio = false;
+                      if (_currentResponseIndex != null) {
+                        _responseLoadingStates.remove(_currentResponseIndex);
+                        _isApiProcessing = false;
+                      }
+                    });
+                  }
                 } else if (state is VoiceConversationSuccess) {
                   final response = state.successResponse;
                   if (kDebugMode) {
                     debugPrint("AUDIO RESPONSE RECEIVED :${response}");
                   }
+
+                  // STEP 3: When VoiceConversationSuccess is received, convert the response to MP3
                   if (_currentResponseIndex != null &&
                       _currentResponseIndex! < chatHistory.length) {
-                    _handleVoiceResponse(response, _currentResponseIndex!);
+                    await _handleVoiceResponse(
+                      response,
+                      _currentResponseIndex!,
+                    );
+
+                    // STEP 5: Use userinputurl in StoreChatEvent
+                    if (_currentUserAudioUrl != null) {
+                      BlocProvider.of<HomeFlowBloc>(context).add(
+                        StoreChatEvent(
+                          message: 'Audio Recording',
+                          modelName: 'Atlas',
+                          searchEngine: 'Search',
+                          edited: false,
+                          sender: 'user',
+                          audioUrl: _currentUserAudioUrl!, // Use userinputurl
+                          chatId: _getCurrentChatId(),
+                        ),
+                      );
+                    }
                   }
-                } else if (state is UploadFileSuccess) {
-                  final newUrl = state.successResponse['url'];
-                  audioUrlForCurrentChat = newUrl;
-                  BlocProvider.of<HomeFlowBloc>(context).add(
-                    StoreChatEvent(
-                      message: 'Audio Response',
-                      modelName: 'Atlas',
-                      searchEngine: 'Search',
-                      edited: false,
-                      sender: 'user',
-                      audioUrl: newUrl,
-                      chatId: _getCurrentChatId(),
-                    ),
-                  );
-                } else if (state is UploadFileFailure) {
-                  CommonUtils.showErrorToast(state.failureResponse['message']);
                 } else if (state is StoreEdittedChatSuccess) {
                   final response = state.successResponse;
                   final newMessageId = response['id']?.toString() ?? '';
@@ -1034,7 +1245,10 @@ class _GptScreenState extends State<GptScreen>
                   if (_currentResponseIndex != null) {
                     _responseLoadingStates.remove(_currentResponseIndex);
                   }
-                  setState(() => _isApiProcessing = false);
+                  setState(() {
+                    _isApiProcessing = false;
+                    _isConvertingAudio = false;
+                  });
                 } else if (state is GetSingleChatHistorySuccess) {
                   final response = state.successResponse;
                   final String chatId =
@@ -1066,6 +1280,8 @@ class _GptScreenState extends State<GptScreen>
                                   ? apiResponses[0]['audio_url']?.toString() ??
                                       ''
                                   : '';
+                          final String userAudioUrl =
+                              message['audio_url']?.toString() ?? '';
                           final bool isBookmarked =
                               message['isBookmarked'] ?? false;
                           final bool isLiked = message['isLiked'] ?? false;
@@ -1073,12 +1289,13 @@ class _GptScreenState extends State<GptScreen>
                               message['isDisliked'] ?? false;
                           final localChat = localChatMap[messageId] ?? {};
 
-                          // Store audio URL in the map
-                          if (audioUrl.isNotEmpty) {
-                            _audioUrlMap[messageId] = audioUrl;
-                          }
+                          // Check if this is a user audio message
+                          final bool isUserAudio =
+                              question == 'Audio Recording' &&
+                              (userAudioUrl.isNotEmpty ||
+                                  localChat['isUserAudio'] == true);
 
-                          return {
+                          final Map<String, dynamic> chatItem = {
                             'question': question,
                             'answer': answer,
                             'chatId': chatId,
@@ -1089,9 +1306,22 @@ class _GptScreenState extends State<GptScreen>
                             'isLiked': isLiked || localChat['isLiked'] == true,
                             'isDisliked':
                                 isDisliked || localChat['isDisliked'] == true,
-                            'isUserAudio': localChat['isUserAudio'] ?? false,
+                            'isUserAudio': isUserAudio,
                             'hasAudioUrl': audioUrl.isNotEmpty,
+                            'audio_url': userAudioUrl,
+                            'apiResponses': apiResponses,
                           };
+
+                          // Store audio URLs
+                          final index = chatHistory.length;
+                          if (userAudioUrl.isNotEmpty) {
+                            _userAudioUrlMap[index] = userAudioUrl;
+                          }
+                          if (audioUrl.isNotEmpty) {
+                            _responseAudioUrlMap[index] = audioUrl;
+                          }
+
+                          return chatItem;
                         }).toList();
 
                     PrefUtils.setChatHistory(chatHistory);
@@ -1217,7 +1447,11 @@ class _GptScreenState extends State<GptScreen>
                   );
                 }
               } catch (e) {
-                setState(() => _isApiProcessing = false);
+                debugPrint('Error in bloc listener: $e');
+                setState(() {
+                  _isApiProcessing = false;
+                  _isConvertingAudio = false;
+                });
               }
             },
             child: Stack(
@@ -1337,8 +1571,30 @@ class _GptScreenState extends State<GptScreen>
                                               final bool hasAudioUrl =
                                                   chatHistory[index]['hasAudioUrl'] ??
                                                   false;
-                                              final String audioUrl =
-                                                  _audioUrlMap[messageId] ?? '';
+
+                                              // Get user audio URL
+                                              final String userAudioUrl =
+                                                  _userAudioUrlMap[index] ??
+                                                  chatHistory[index]['audio_url']
+                                                      ?.toString() ??
+                                                  '';
+
+                                              // Get response audio URL
+                                              final String
+                                              responseAudioUrl =
+                                                  _responseAudioUrlMap[index] ??
+                                                  ((chatHistory[index]['apiResponses'] !=
+                                                              null &&
+                                                          chatHistory[index]['apiResponses']
+                                                              is List &&
+                                                          (chatHistory[index]['apiResponses']
+                                                                  as List)
+                                                              .isNotEmpty)
+                                                      ? (chatHistory[index]['apiResponses']
+                                                                  as List)[0]['audio_url']
+                                                              ?.toString() ??
+                                                          ''
+                                                      : '');
 
                                               if (question.isEmpty)
                                                 return const SizedBox();
@@ -1384,25 +1640,28 @@ class _GptScreenState extends State<GptScreen>
                                                                         .defaultTextBold,
                                                               ),
                                                             ),
-                                                            const SizedBox(
-                                                              width: 16,
-                                                            ),
-                                                            GestureDetector(
-                                                              onTap: () {
-                                                                setState(() {
-                                                                  inputController
-                                                                          .text =
-                                                                      question;
-                                                                  _editingIndex =
-                                                                      index;
-                                                                });
-                                                              },
-                                                              child: Image.asset(
-                                                                'assets/images/edit.png',
-                                                                height: 16,
+                                                            // Show edit icon only for non-audio chats
+                                                            if (!isUserAudio)
+                                                              const SizedBox(
                                                                 width: 16,
                                                               ),
-                                                            ),
+                                                            if (!isUserAudio)
+                                                              GestureDetector(
+                                                                onTap: () {
+                                                                  setState(() {
+                                                                    inputController
+                                                                            .text =
+                                                                        question;
+                                                                    _editingIndex =
+                                                                        index;
+                                                                  });
+                                                                },
+                                                                child: Image.asset(
+                                                                  'assets/images/edit.png',
+                                                                  height: 16,
+                                                                  width: 16,
+                                                                ),
+                                                              ),
                                                           ],
                                                         ),
                                                         const SizedBox(
@@ -1448,7 +1707,9 @@ class _GptScreenState extends State<GptScreen>
                                                           )
                                                         else if (answer
                                                                 .isNotEmpty ||
-                                                            hasAudioUrl)
+                                                            hasAudioUrl ||
+                                                            userAudioUrl
+                                                                .isNotEmpty)
                                                           Column(
                                                             crossAxisAlignment:
                                                                 CrossAxisAlignment
@@ -1471,10 +1732,57 @@ class _GptScreenState extends State<GptScreen>
                                                                             .defaultText,
                                                                   ),
                                                                 ),
-                                                              // Show audio player for API audio responses
-                                                              if (hasAudioUrl &&
-                                                                  audioUrl
+                                                              // Show user audio player for user's recording
+                                                              if (isUserAudio &&
+                                                                  userAudioUrl
                                                                       .isNotEmpty)
+                                                                Align(
+                                                                  alignment:
+                                                                      Alignment
+                                                                          .centerRight,
+                                                                  child: Padding(
+                                                                    padding: const EdgeInsets.only(
+                                                                      top: 8.0,
+                                                                      bottom:
+                                                                          8.0,
+                                                                    ),
+                                                                    child: Column(
+                                                                      crossAxisAlignment:
+                                                                          CrossAxisAlignment
+                                                                              .end,
+                                                                      children: [
+                                                                        Text(
+                                                                          'Your Recording:',
+                                                                          style: FTextStyle.defaultText.copyWith(
+                                                                            fontSize:
+                                                                                12,
+                                                                            color:
+                                                                                Colors.grey,
+                                                                          ),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                          height:
+                                                                              4,
+                                                                        ),
+                                                                        CustomAudioPlayer(
+                                                                          audioPath:
+                                                                              userAudioUrl,
+                                                                          isPlaying:
+                                                                              _currentPlayingPath ==
+                                                                                  userAudioUrl &&
+                                                                              isPlaying,
+                                                                          onPlayPause:
+                                                                              () => _playResponseAudioFromUrl(
+                                                                                userAudioUrl,
+                                                                              ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              // Show AI response audio player
+                                                              if (responseAudioUrl
+                                                                  .isNotEmpty)
                                                                 Align(
                                                                   alignment:
                                                                       Alignment
@@ -1485,54 +1793,119 @@ class _GptScreenState extends State<GptScreen>
                                                                           top:
                                                                               8.0,
                                                                         ),
-                                                                    child: CustomAudioPlayer(
-                                                                      audioPath:
-                                                                          audioUrl,
-                                                                      isPlaying:
-                                                                          _currentPlayingPath ==
-                                                                              audioUrl &&
-                                                                          isPlayingResponse,
-                                                                      onPlayPause:
-                                                                          () => _playResponseAudioFromUrl(
-                                                                            audioUrl,
+                                                                    child: Column(
+                                                                      crossAxisAlignment:
+                                                                          CrossAxisAlignment
+                                                                              .start,
+                                                                      children: [
+                                                                        Text(
+                                                                          'AI Response:',
+                                                                          style: FTextStyle.defaultText.copyWith(
+                                                                            fontSize:
+                                                                                12,
+                                                                            color:
+                                                                                Colors.grey,
                                                                           ),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                          height:
+                                                                              4,
+                                                                        ),
+                                                                        CustomAudioPlayer(
+                                                                          audioPath:
+                                                                              responseAudioUrl,
+                                                                          isPlaying:
+                                                                              _currentPlayingPath ==
+                                                                                  responseAudioUrl &&
+                                                                              isPlayingResponse,
+                                                                          onPlayPause:
+                                                                              () => _playResponseAudioFromUrl(
+                                                                                responseAudioUrl,
+                                                                              ),
+                                                                        ),
+                                                                      ],
                                                                     ),
                                                                   ),
                                                                 ),
+                                                              // Show local audio players for current recording/response
                                                               if (index ==
                                                                       _currentResponseIndex &&
                                                                   _audioPath !=
                                                                       null &&
                                                                   !isRecording &&
-                                                                  isUserAudio)
+                                                                  isUserAudio &&
+                                                                  userAudioUrl
+                                                                      .isEmpty)
                                                                 Align(
                                                                   alignment:
                                                                       Alignment
                                                                           .centerRight,
-                                                                  child: CustomAudioPlayer(
-                                                                    audioPath:
-                                                                        _audioPath!,
-                                                                    isPlaying:
-                                                                        isPlaying,
-                                                                    onPlayPause:
-                                                                        _playRecording,
+                                                                  child: Column(
+                                                                    crossAxisAlignment:
+                                                                        CrossAxisAlignment
+                                                                            .end,
+                                                                    children: [
+                                                                      Text(
+                                                                        'Your Recording:',
+                                                                        style: FTextStyle.defaultText.copyWith(
+                                                                          fontSize:
+                                                                              12,
+                                                                          color:
+                                                                              Colors.grey,
+                                                                        ),
+                                                                      ),
+                                                                      const SizedBox(
+                                                                        height:
+                                                                            4,
+                                                                      ),
+                                                                      CustomAudioPlayer(
+                                                                        audioPath:
+                                                                            _audioPath!,
+                                                                        isPlaying:
+                                                                            isPlaying,
+                                                                        onPlayPause:
+                                                                            _playRecording,
+                                                                      ),
+                                                                    ],
                                                                   ),
                                                                 ),
                                                               if (index ==
                                                                       _currentResponseIndex &&
                                                                   _responseAudioPath !=
-                                                                      null)
+                                                                      null &&
+                                                                  responseAudioUrl
+                                                                      .isEmpty)
                                                                 Align(
                                                                   alignment:
                                                                       Alignment
                                                                           .centerLeft,
-                                                                  child: CustomAudioPlayer(
-                                                                    audioPath:
-                                                                        _responseAudioPath!,
-                                                                    isPlaying:
-                                                                        isPlayingResponse,
-                                                                    onPlayPause:
-                                                                        _playResponseAudio,
+                                                                  child: Column(
+                                                                    crossAxisAlignment:
+                                                                        CrossAxisAlignment
+                                                                            .start,
+                                                                    children: [
+                                                                      Text(
+                                                                        'AI Response:',
+                                                                        style: FTextStyle.defaultText.copyWith(
+                                                                          fontSize:
+                                                                              12,
+                                                                          color:
+                                                                              Colors.grey,
+                                                                        ),
+                                                                      ),
+                                                                      const SizedBox(
+                                                                        height:
+                                                                            4,
+                                                                      ),
+                                                                      CustomAudioPlayer(
+                                                                        audioPath:
+                                                                            _responseAudioPath!,
+                                                                        isPlaying:
+                                                                            isPlayingResponse,
+                                                                        onPlayPause:
+                                                                            _playResponseAudio,
+                                                                      ),
+                                                                    ],
                                                                   ),
                                                                 ),
                                                               if (index ==
@@ -1562,7 +1935,8 @@ class _GptScreenState extends State<GptScreen>
                                                           )
                                                         else if (!isLoading &&
                                                             answer.isEmpty &&
-                                                            !hasAudioUrl)
+                                                            !hasAudioUrl &&
+                                                            !isUserAudio)
                                                           Text(
                                                             AppLocalizations.of(
                                                               context,
@@ -1583,9 +1957,12 @@ class _GptScreenState extends State<GptScreen>
                                                         const SizedBox(
                                                           height: 16,
                                                         ),
-                                                        if (answer.isNotEmpty ||
-                                                            messageId
-                                                                .isNotEmpty)
+                                                        // Show action buttons only for non-audio chats
+                                                        if (!isUserAudio &&
+                                                            (answer.isNotEmpty ||
+                                                                messageId
+                                                                    .isNotEmpty ||
+                                                                isUserAudio))
                                                           Row(
                                                             mainAxisAlignment:
                                                                 MainAxisAlignment
@@ -1850,6 +2227,30 @@ Answer: $answer''';
                                 ),
                       ),
                       const SizedBox(height: 10),
+                      // if (_isConvertingAudio)
+                      //   Padding(
+                      //     padding: const EdgeInsets.only(bottom: 8.0),
+                      //     child: Row(
+                      //       mainAxisAlignment: MainAxisAlignment.center,
+                      //       children: [
+                      //         SizedBox(
+                      //           height: 16,
+                      //           width: 16,
+                      //           child: CircularProgressIndicator(
+                      //             strokeWidth: 2,
+                      //             color: AppColors.gradientStart,
+                      //           ),
+                      //         ),
+                      //         const SizedBox(width: 10),
+                      //         Text(
+                      //           'Converting audio to MP3...',
+                      //           style: FTextStyle.defaultText.copyWith(
+                      //             color: AppColors.gradientStart,
+                      //           ),
+                      //         ),
+                      //       ],
+                      //     ),
+                      //   ),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -1969,7 +2370,10 @@ Answer: $answer''';
                             const SizedBox(width: 8),
                             GestureDetector(
                               onTap:
-                                  (_isApiProcessing || isSending || isRecording)
+                                  (_isApiProcessing ||
+                                          isSending ||
+                                          isRecording ||
+                                          _isConvertingAudio)
                                       ? null
                                       : _handleUserMessage,
                               child: Container(
@@ -1989,7 +2393,8 @@ Answer: $answer''';
                                   color:
                                       (_isApiProcessing ||
                                               isSending ||
-                                              isRecording)
+                                              isRecording ||
+                                              _isConvertingAudio)
                                           ? Colors.grey
                                           : Colors.white,
                                   size: 18,

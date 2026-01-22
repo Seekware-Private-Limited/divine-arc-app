@@ -267,12 +267,14 @@ class UploadFileLoading extends HomeFlowState {}
 
 class UploadFileSuccess extends HomeFlowState {
   final Map<String, dynamic> successResponse;
-  UploadFileSuccess(this.successResponse);
+  final bool? isResponseAudio;
+  UploadFileSuccess(this.successResponse, {this.isResponseAudio});
 }
 
 class UploadFileFailure extends HomeFlowState {
   final Map<String, dynamic> failureResponse;
-  UploadFileFailure(this.failureResponse);
+  final bool? isResponseAudio;
+  UploadFileFailure(this.failureResponse, {this.isResponseAudio});
 }
 
 // View User Profile States

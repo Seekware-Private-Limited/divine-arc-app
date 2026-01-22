@@ -189,7 +189,8 @@ class GetAllBookmarksChat extends HomeFlowEvent {}
 // Upload Profile Photo
 class UploadFile extends HomeFlowEvent {
   final String file;
-  UploadFile({required this.file});
+  final bool? isResponseAudio;
+  UploadFile({required this.file, this.isResponseAudio});
 }
 
 // View User Profile
