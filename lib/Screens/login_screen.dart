@@ -1,7 +1,6 @@
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Screens/forgot_password.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
-import 'package:divine_arc/Utils/common_utils.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -112,6 +111,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         final response = state.successResponse['data'];
                         final name = response['name'];
                         final email = response['email'];
+                        final id = response['id'];
+                        PrefUtils.setID(id);
                         PrefUtils.setName(name);
                         PrefUtils.setEmail(email);
                         CommonUtils.showSuccessToast('Logged in successfully.');
@@ -128,6 +129,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         print(response);
                         final name = response['name'];
                         final email = response['email'];
+                        final id = response['id'];
+                        PrefUtils.setID(id);
                         PrefUtils.setName(name);
                         PrefUtils.setEmail(email);
                         PrefUtils.setIsLogin(true);
@@ -428,7 +431,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                     }
 
                                     if (!hasError) {
-                                      // Everything is valid, call the SignIn API
                                       BlocProvider.of<AuthFlowBloc>(
                                         context,
                                       ).add(

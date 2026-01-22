@@ -11,6 +11,15 @@ class PrefUtils {
     return value ?? '';
   }
 
+  static void setID(String value) {
+    Prefs.prefs?.setString(SharedPrefsKeys.id, value);
+  }
+
+  static String getID() {
+    final String? value = Prefs.prefs?.getString(SharedPrefsKeys.id);
+    return value ?? '';
+  }
+
   static void setName(String value) {
     Prefs.prefs?.setString(SharedPrefsKeys.name, value);
   }
@@ -64,6 +73,17 @@ class PrefUtils {
 
   static String getSessionID() {
     final String? value = Prefs.prefs?.getString(SharedPrefsKeys.sessionID);
+    return value ?? '';
+  }
+
+  static void setEdittedMessageID(String value) {
+    Prefs.prefs?.setString(SharedPrefsKeys.edittedmessageID, value);
+  }
+
+  static String getEdittedMessageID() {
+    final String? value = Prefs.prefs?.getString(
+      SharedPrefsKeys.edittedmessageID,
+    );
     return value ?? '';
   }
 
@@ -149,6 +169,8 @@ class PrefUtils {
 class SharedPrefsKeys {
   static const token = 'token';
   static const name = 'name';
+  static const id = 'id';
+  static const edittedmessageID = 'edittedmessageID';
   static const deviceToken = 'deviceToken';
   static const profilePicture = 'profilePicture';
   static const email = 'email';

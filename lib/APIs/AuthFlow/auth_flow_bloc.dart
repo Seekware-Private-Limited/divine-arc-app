@@ -371,9 +371,15 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
       try {
         final Uri requestUrl = Uri.parse(APIEndPoints.sendDeviceToken);
 
+        /// ✅ Build request body safely
         final Map<String, dynamic> requestBody = {
           "device-token": event.deviceToken,
         };
+
+        /// ✅ Add userId only if valid
+        if (event.userID != null && event.userID!.trim().isNotEmpty) {
+          requestBody["userId"] = event.userID;
+        }
 
         debugPrint("➡️ Request URL: $requestUrl");
         debugPrint("➡️ Request Body: $requestBody");
@@ -392,7 +398,6 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         debugPrint("✅ Status Code: ${response.statusCode}");
         debugPrint("✅ Response Body: ${response.body}");
 
-        // Safely decode response
         Map<String, dynamic> responseData = {};
         try {
           responseData = jsonDecode(response.body);

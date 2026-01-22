@@ -74,9 +74,9 @@ class _SplashScreenState extends State<SplashScreen> {
       PrefUtils.setDeviceToken(token);
 
       print('✅ FCM Token: $token');
-      BlocProvider.of<AuthFlowBloc>(
-        context,
-      ).add(SendDeviceTokenEvent(deviceToken: token));
+      BlocProvider.of<AuthFlowBloc>(context).add(
+        SendDeviceTokenEvent(deviceToken: token, userID: PrefUtils.getID()),
+      );
       print('✅ Stored Device Token: ${PrefUtils.getDeviceToken()}');
 
       // 🔄 Handle token refresh

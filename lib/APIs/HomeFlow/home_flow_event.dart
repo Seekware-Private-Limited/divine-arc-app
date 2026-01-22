@@ -38,6 +38,7 @@ class StoreChatEvent extends HomeFlowEvent {
   final bool edited;
   final String sender;
   final String chatId;
+  final String? audioUrl;
 
   StoreChatEvent({
     required this.message,
@@ -46,6 +47,28 @@ class StoreChatEvent extends HomeFlowEvent {
     required this.edited,
     required this.sender,
     required this.chatId,
+    this.audioUrl,
+  });
+}
+
+// Store Editted / Regenerated Chat Event
+class StoreEdittedChatEvent extends HomeFlowEvent {
+  final String message;
+  final String modelName;
+  final String searchEngine;
+  final bool edited;
+  final String sender;
+  final String chatId;
+  final String messageId;
+
+  StoreEdittedChatEvent({
+    required this.message,
+    required this.modelName,
+    required this.searchEngine,
+    required this.edited,
+    required this.sender,
+    required this.chatId,
+    required this.messageId,
   });
 }
 
@@ -54,6 +77,7 @@ class SendAPIResponseEvent extends HomeFlowEvent {
   final String messageId;
   final String apiName;
   final String apiType;
+  final String? audioUrl;
   final String apiResponse;
   final String apiStatus;
   final String apiError;
@@ -61,6 +85,7 @@ class SendAPIResponseEvent extends HomeFlowEvent {
   SendAPIResponseEvent({
     required this.messageId,
     required this.apiName,
+    this.audioUrl,
     required this.apiType,
     required this.apiResponse,
     required this.apiStatus,
@@ -162,9 +187,9 @@ class UnbookmarkChat extends HomeFlowEvent {
 class GetAllBookmarksChat extends HomeFlowEvent {}
 
 // Upload Profile Photo
-class UploadProfilePhoto extends HomeFlowEvent {
+class UploadFile extends HomeFlowEvent {
   final String file;
-  UploadProfilePhoto({required this.file});
+  UploadFile({required this.file});
 }
 
 // View User Profile
@@ -174,4 +199,23 @@ class ViewUserProfile extends HomeFlowEvent {}
 class ViewAllContent extends HomeFlowEvent {
   final String language;
   ViewAllContent({required this.language});
+}
+
+// Send Regenerate Chat API Response Event
+class SendRegenerateAPIResponseEvent extends HomeFlowEvent {
+  final String messageId;
+  final String apiName;
+  final String apiType;
+  final String apiResponse;
+  final String apiStatus;
+  final String apiError;
+
+  SendRegenerateAPIResponseEvent({
+    required this.messageId,
+    required this.apiName,
+    required this.apiType,
+    required this.apiResponse,
+    required this.apiStatus,
+    required this.apiError,
+  });
 }

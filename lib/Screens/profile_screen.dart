@@ -61,7 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       BlocProvider.of<HomeFlowBloc>(
         context,
-      ).add(UploadProfilePhoto(file: imageFile.path));
+      ).add(UploadFile(file: imageFile.path));
     }
   }
 
@@ -223,7 +223,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               CommonUtils.showErrorToast(
                 state.failureResponse['message'] ?? 'Update failed',
               );
-            } else if (state is UploadProfilePhotoSuccess) {
+            } else if (state is UploadFileSuccess) {
               final newUrl = state.successResponse['url'];
               if (newUrl != null) {
                 setState(() {
@@ -237,7 +237,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 );
               }
-            } else if (state is UploadProfilePhotoFailure) {
+            } else if (state is UploadFileFailure) {
               setState(() => _imageFile = null);
               CommonUtils.showErrorToast(
                 state.failureResponse['message'] ?? 'Upload failed',
@@ -276,7 +276,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           },
           child: BlocBuilder<HomeFlowBloc, HomeFlowState>(
             builder: (context, state) {
-              final isUploading = state is UploadProfilephotoLoading;
+              final isUploading = state is UploadFile;
               final isProfileLoading =
                   state is UserProfileLoading && userName == null;
 

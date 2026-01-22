@@ -15,7 +15,7 @@ class APIEndPoints {
   // GitaGPT App APIs
   // static const String baseUrl = 'https://api.divinearc.in'; // Production
   // static const String baseUrl = 'https://gitagptapp.vexoo.ai'; // Staging
-  static const String baseUrl = 'https://ccde1df5ba8c.ngrok-free.app'; // Local
+  static const String baseUrl = 'https://9b731a839f81.ngrok-free.app'; // Local
 
   static const String signup = '$baseUrl/auth/register';
   static const String login = '$baseUrl/auth/login';
@@ -24,7 +24,10 @@ class APIEndPoints {
   static const String initiateChat = '$baseUrl/chat/initiate';
   static String allPrayers(String lan) => '$baseUrl/chat/$lan/prayers';
   static const String storeChatConversation = '$baseUrl/chat/store';
+  static const String storeEdittedChatConversation = '$baseUrl/chat/store/edit';
   static const String sendAPIResponse = '$baseUrl/chat/api-response';
+  static const String sendregenerateAPIResponse =
+      '$baseUrl/chat/api-response/update';
   static const String getChatHistory = '$baseUrl/chat/history';
   static const String reactOnChat = '$baseUrl/chat/react';
   static const String chatFeedback = '$baseUrl/chat/feedback';
@@ -37,7 +40,7 @@ class APIEndPoints {
   static const String forgotPassword = '$baseUrl/auth/forgot-password';
   static String singleChatHistory(String chatId) =>
       '$baseUrl/chat/$chatId/history';
-  static const String uploadProfilePhoto = '$baseUrl/users/upload';
+  static const String uploadfile = '$baseUrl/users/upload';
   static const String viewProfile = '$baseUrl/users/me';
   static const String viewAllContent = '$baseUrl/content';
   static const String sendDeviceToken = '$baseUrl/device-token';

@@ -1,21 +1,14 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:divine_arc/Screens/CustomAudioPlayer.dart';
-import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
-import 'dart:developer' as developer;
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:flutter/services.dart';
 
 class GptScreen extends StatefulWidget {
   final String? searchQueryFromAskAnythingScreen;
   final String? chatId;
+
   const GptScreen({
     super.key,
     this.searchQueryFromAskAnythingScreen,
@@ -31,39 +24,50 @@ class _GptScreenState extends State<GptScreen>
   final TextEditingController inputController = TextEditingController();
   final TextEditingController feedbackTextController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  String? audioUrlForCurrentChat;
   late final AudioRecorder _audioRecorder;
   late final AudioPlayer _audioPlayer;
   late final AnimationController _animationController;
   late final Animation<double> _scaleAnimation;
+
   StreamSubscription<PlayerState>? _playerStateSubscription;
   bool isRecording = false;
   bool isPlaying = false;
   bool isPlayingResponse = false;
   bool isSending = false;
+  bool _isInitialLoading = false;
+  bool _isApiProcessing = false;
+
   String? _audioPath;
   String? _responseAudioPath;
   String? _apiResponse;
   String? _currentPlayingPath;
   String reactionId = '';
+
   int? _editingIndex;
   int? _currentResponseIndex;
+
   List<Map<String, dynamic>> chatHistory = [];
   Timer? _scrollTimer;
   Map<int, bool> _responseLoadingStates = {};
-  bool _isInitialLoading = false;
   Completer<void>? _initialLoadCompleter;
-  bool _isApiProcessing = false;
+
+  // Add this map to track audio URLs for each chat item
+  Map<String, String> _audioUrlMap = {};
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
     _audioRecorder = AudioRecorder();
     _audioPlayer = AudioPlayer();
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
+
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
@@ -71,20 +75,20 @@ class _GptScreenState extends State<GptScreen>
     _playerStateSubscription = _audioPlayer.onPlayerStateChanged.listen((
       state,
     ) {
-      if (mounted) {
-        setState(() {
-          if (_currentPlayingPath == _audioPath) {
-            isPlaying = state == PlayerState.playing;
-            isPlayingResponse = false;
-          } else if (_currentPlayingPath == _responseAudioPath) {
-            isPlayingResponse = state == PlayerState.playing;
-            isPlaying = false;
-          } else {
-            isPlaying = false;
-            isPlayingResponse = false;
-          }
-        });
-      }
+      if (!mounted) return;
+
+      setState(() {
+        if (_currentPlayingPath == _audioPath) {
+          isPlaying = state == PlayerState.playing;
+          isPlayingResponse = false;
+        } else if (_currentPlayingPath == _responseAudioPath) {
+          isPlayingResponse = state == PlayerState.playing;
+          isPlaying = false;
+        } else {
+          isPlaying = false;
+          isPlayingResponse = false;
+        }
+      });
     });
 
     _initializeChatHistory();
@@ -96,14 +100,12 @@ class _GptScreenState extends State<GptScreen>
         _isInitialLoading = true;
         _initialLoadCompleter = Completer<void>();
 
-        // Load chat history from preferences first
         final savedHistory = PrefUtils.getChatHistory();
         chatHistory =
             savedHistory
                 .where((chat) => chat['chatId'] == widget.chatId)
                 .toList();
 
-        // Then fetch from API
         BlocProvider.of<HomeFlowBloc>(
           context,
         ).add(GetSingleChatHistoryEvent(chatId: widget.chatId!));
@@ -113,114 +115,85 @@ class _GptScreenState extends State<GptScreen>
         chatHistory = PrefUtils.getChatHistory();
       }
 
-      if (widget.searchQueryFromAskAnythingScreen != null &&
-          widget.searchQueryFromAskAnythingScreen!.trim().isNotEmpty) {
+      if (widget.searchQueryFromAskAnythingScreen?.trim().isNotEmpty == true) {
         _handleInitialQuery();
       }
     } catch (e) {
-      developer.log('Error initializing chat history: $e', name: 'INIT_ERROR');
       CommonUtils.showErrorToast('Failed to load chat history');
     } finally {
       if (mounted) {
-        setState(() {
-          _isInitialLoading = false;
-        });
+        setState(() => _isInitialLoading = false);
       }
     }
   }
 
   void _handleInitialQuery() {
     final query = widget.searchQueryFromAskAnythingScreen!.trim();
-    if (query.isNotEmpty) {
-      // Check if this query already exists in chat history
-      final existingIndex = chatHistory.indexWhere(
-        (chat) =>
-            chat['question'] == query &&
-            chat['answer']?.toString().trim().isEmpty == true,
-      );
+    if (query.isEmpty) return;
 
-      if (existingIndex == -1) {
-        // Add new query
-        final newChatItem = {
-          'question': query,
-          'answer': '',
-          'chatId': _getCurrentChatId(),
-          'messageId': '',
-          'isBookmarked': false,
-          'isLiked': false,
-          'isDisliked': false,
-          'isUserAudio': false,
-        };
+    final existingIndex = chatHistory.indexWhere(
+      (chat) =>
+          chat['question'] == query &&
+          chat['answer']?.toString().trim().isEmpty == true,
+    );
 
-        if (mounted) {
-          setState(() {
-            chatHistory.add(newChatItem);
-            _currentResponseIndex = chatHistory.length - 1;
-            _responseLoadingStates[_currentResponseIndex!] = true;
-            _isApiProcessing = true; // Set API processing state
-            PrefUtils.setChatHistory(chatHistory);
-          });
-        }
+    if (existingIndex == -1) {
+      final newChatItem = {
+        'question': query,
+        'answer': '',
+        'chatId': _getCurrentChatId(),
+        'messageId': '',
+        'isBookmarked': false,
+        'isLiked': false,
+        'isDisliked': false,
+        'isUserAudio': false,
+      };
 
-        _sendMessageToAPI(query);
-      }
+      setState(() {
+        chatHistory.add(newChatItem);
+        _currentResponseIndex = chatHistory.length - 1;
+        _responseLoadingStates[_currentResponseIndex!] = true;
+        _isApiProcessing = true;
+        PrefUtils.setChatHistory(chatHistory);
+      });
+
+      _sendMessageToAPI(query);
     }
   }
 
   String _getCurrentChatId() {
-    // Use widget.chatId if it exists (when coming from history),
-    // otherwise use PrefUtils.getstoredChatID() for new chats
     return widget.chatId ?? PrefUtils.getstoredChatID();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    developer.log('Disposing GptScreen', name: 'DISPOSE');
 
-    // Stop animations
     _animationController.stop();
     _animationController.dispose();
 
-    // Cancel subscription
     _playerStateSubscription?.cancel();
-
-    // Cancel timers
     _scrollTimer?.cancel();
 
-    // Complete completer ONLY if it hasn't been completed yet
-    if (_initialLoadCompleter != null && !_initialLoadCompleter!.isCompleted) {
-      _initialLoadCompleter!.complete();
+    if (_initialLoadCompleter?.isCompleted == false) {
+      _initialLoadCompleter?.complete();
     }
-    _initialLoadCompleter = null;
 
-    // Stop audio if playing
     if (isPlaying || isPlayingResponse) {
-      _audioPlayer.stop().catchError((e) {
-        developer.log('Error stopping player on dispose: $e', name: 'DISPOSE');
-      });
+      _audioPlayer.stop();
     }
 
-    // Stop recorder if recording
     if (isRecording) {
-      _audioRecorder.stop().catchError((e) {
-        developer.log(
-          'Error stopping recorder on dispose: $e',
-          name: 'DISPOSE',
-        );
-      });
+      _audioRecorder.stop();
     }
 
-    // Dispose controllers
     inputController.dispose();
     feedbackTextController.dispose();
     _scrollController.dispose();
 
-    // Dispose audio objects
     _audioRecorder.dispose();
     _audioPlayer.dispose();
 
-    // Clean up temporary files
     _cleanupTemporaryFiles();
 
     super.dispose();
@@ -236,13 +209,8 @@ class _GptScreenState extends State<GptScreen>
 
   Future<void> _stopAllAudio() async {
     try {
-      // Stop any ongoing playback
       await _audioPlayer.stop();
-
-      // Also pause in case stop doesn't work
       await _audioPlayer.pause();
-
-      // Release resources
       await _audioPlayer.release();
 
       if (mounted) {
@@ -253,45 +221,12 @@ class _GptScreenState extends State<GptScreen>
         });
       }
     } catch (e) {
-      developer.log('Error stopping audio: $e', name: 'AUDIO_STOP');
-
-      // Force reset state even if there's an error
       if (mounted) {
         setState(() {
           isPlaying = false;
           isPlayingResponse = false;
           _currentPlayingPath = null;
         });
-      }
-    }
-  }
-
-  void _stopAllAudioSync() {
-    try {
-      // Stop the player synchronously
-      _audioPlayer.stop();
-      if (mounted) {
-        setState(() {
-          isPlaying = false;
-          isPlayingResponse = false;
-          _currentPlayingPath = null;
-        });
-      }
-    } catch (e) {
-      developer.log('Error in synchronous audio stop: $e', name: 'AUDIO_STOP');
-    }
-  }
-
-  void _onWillPop(bool didPop, Object? result) async {
-    if (!didPop) {
-      // Stop audio immediately when back is pressed
-      await _stopAllAudio();
-
-      // Add a small delay to ensure audio stops completely
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      if (mounted) {
-        Navigator.of(context).pop(result);
       }
     }
   }
@@ -306,7 +241,7 @@ class _GptScreenState extends State<GptScreen>
         File(_responseAudioPath!).deleteSync();
       }
     } catch (e) {
-      developer.log('Error deleting audio files: $e', name: 'FILE_CLEANUP');
+      // Silent cleanup failure
     }
   }
 
@@ -346,56 +281,47 @@ class _GptScreenState extends State<GptScreen>
           isRecording = true;
           _responseAudioPath = null;
           _apiResponse = null;
+          audioUrlForCurrentChat = null; // Reset audio URL for new recording
         });
       }
     } catch (e) {
-      developer.log('Error starting recording: $e', name: 'RECORDING');
       CommonUtils.showErrorToast('Failed to start recording');
     }
   }
 
   Future<void> stopRecording() async {
     if (!isRecording) return;
+
     try {
       final path = await _audioRecorder.stop();
-      if (mounted) {
-        setState(() {
-          isRecording = false;
-          _audioPath = path;
-          _isApiProcessing = true;
-        });
-      }
+      setState(() {
+        isRecording = false;
+        _audioPath = path;
+        _isApiProcessing = true;
+      });
+
       if (_audioPath != null) {
         await _sendAudioToApi();
       } else {
         CommonUtils.showErrorToast('No recording file found');
-        if (mounted) {
-          setState(() {
-            _isApiProcessing = false;
-          });
-        }
+        setState(() => _isApiProcessing = false);
       }
     } catch (e) {
-      developer.log('Error stopping recording: $e', name: 'RECORDING');
       CommonUtils.showErrorToast('Failed to stop recording');
-      if (mounted) {
-        setState(() {
-          isRecording = false;
-          _isApiProcessing = false;
-        });
-      }
+      setState(() {
+        isRecording = false;
+        _isApiProcessing = false;
+      });
     }
   }
 
   Future<void> _sendAudioToApi() async {
     if (_audioPath == null) return;
 
-    if (mounted) {
-      setState(() {
-        isSending = true;
-        _isApiProcessing = true; // Set API processing state
-      });
-    }
+    setState(() {
+      isSending = true;
+      _isApiProcessing = true;
+    });
 
     try {
       final audioFile = File(_audioPath!);
@@ -414,14 +340,12 @@ class _GptScreenState extends State<GptScreen>
         'isUserAudio': true,
       };
 
-      if (mounted) {
-        setState(() {
-          chatHistory.add(newChatItem);
-          _currentResponseIndex = chatHistory.length - 1;
-          _responseLoadingStates[_currentResponseIndex!] = true;
-          PrefUtils.setChatHistory(chatHistory);
-        });
-      }
+      setState(() {
+        chatHistory.add(newChatItem);
+        _currentResponseIndex = chatHistory.length - 1;
+        _responseLoadingStates[_currentResponseIndex!] = true;
+        PrefUtils.setChatHistory(chatHistory);
+      });
 
       BlocProvider.of<HomeFlowBloc>(context).add(
         VoiceConversationEvent(
@@ -430,16 +354,15 @@ class _GptScreenState extends State<GptScreen>
           sessionId: PrefUtils.getSessionID(),
         ),
       );
+      BlocProvider.of<HomeFlowBloc>(context).add(UploadFile(file: _audioPath!));
 
       _scrollToBottom();
     } catch (e) {
-      developer.log('Error sending audio: $e', name: 'AUDIO_API');
       CommonUtils.showErrorToast('Error sending audio');
-      // Remove the loading state if there's an error
-      if (mounted && _currentResponseIndex != null) {
+      if (_currentResponseIndex != null) {
         setState(() {
           _responseLoadingStates.remove(_currentResponseIndex);
-          _isApiProcessing = false; // Reset on error
+          _isApiProcessing = false;
           if (chatHistory.isNotEmpty &&
               _currentResponseIndex! < chatHistory.length) {
             chatHistory.removeAt(_currentResponseIndex!);
@@ -448,9 +371,7 @@ class _GptScreenState extends State<GptScreen>
         });
       }
     } finally {
-      if (mounted) {
-        setState(() => isSending = false);
-      }
+      setState(() => isSending = false);
     }
   }
 
@@ -459,28 +380,40 @@ class _GptScreenState extends State<GptScreen>
 
     try {
       if (_currentPlayingPath == _audioPath && isPlaying) {
-        // Currently playing this recording → pause it
         await _audioPlayer.pause();
-        if (mounted) {
-          setState(() {
-            isPlaying = false;
-          });
-        }
+        setState(() => isPlaying = false);
       } else {
-        // Either not playing, or playing something else → start this one
-        await _audioPlayer.stop(); // Stop any current playback
-        if (mounted) {
-          setState(() {
-            _currentPlayingPath = _audioPath;
-            isPlaying = true;
-            isPlayingResponse = false;
-          });
-        }
+        await _audioPlayer.stop();
+        setState(() {
+          _currentPlayingPath = _audioPath;
+          isPlaying = true;
+          isPlayingResponse = false;
+        });
         await _audioPlayer.play(DeviceFileSource(_audioPath!));
       }
     } catch (e) {
-      developer.log('Error playing recording: $e', name: 'PLAYBACK');
       CommonUtils.showErrorToast('Failed to play recording');
+    }
+  }
+
+  Future<void> _playResponseAudioFromUrl(String audioUrl) async {
+    if (audioUrl.isEmpty) return;
+
+    try {
+      if (_currentPlayingPath == audioUrl && isPlayingResponse) {
+        await _audioPlayer.pause();
+        setState(() => isPlayingResponse = false);
+      } else {
+        await _audioPlayer.stop();
+        setState(() {
+          _currentPlayingPath = audioUrl;
+          isPlayingResponse = true;
+          isPlaying = false;
+        });
+        await _audioPlayer.play(UrlSource(audioUrl));
+      }
+    } catch (e) {
+      CommonUtils.showErrorToast('Failed to play audio response');
     }
   }
 
@@ -490,27 +423,18 @@ class _GptScreenState extends State<GptScreen>
 
     try {
       if (_currentPlayingPath == _responseAudioPath && isPlayingResponse) {
-        // Currently playing response audio → pause it
         await _audioPlayer.pause();
-        if (mounted) {
-          setState(() {
-            isPlayingResponse = false;
-          });
-        }
+        setState(() => isPlayingResponse = false);
       } else {
-        // Start playing response audio
         await _audioPlayer.stop();
-        if (mounted) {
-          setState(() {
-            _currentPlayingPath = _responseAudioPath;
-            isPlayingResponse = true;
-            isPlaying = false;
-          });
-        }
+        setState(() {
+          _currentPlayingPath = _responseAudioPath;
+          isPlayingResponse = true;
+          isPlaying = false;
+        });
         await _audioPlayer.play(DeviceFileSource(_responseAudioPath!));
       }
     } catch (e) {
-      developer.log('Error playing response audio: $e', name: 'PLAYBACK');
       CommonUtils.showErrorToast('Failed to play response');
     }
   }
@@ -538,11 +462,7 @@ class _GptScreenState extends State<GptScreen>
 
   void _sendMessageToAPI(String message) {
     try {
-      if (mounted) {
-        setState(() {
-          _isApiProcessing = true; // Set API processing state
-        });
-      }
+      setState(() => _isApiProcessing = true);
 
       if (PrefUtils.getstoredChatID().isEmpty && widget.chatId == null) {
         BlocProvider.of<HomeFlowBloc>(context).add(
@@ -568,18 +488,11 @@ class _GptScreenState extends State<GptScreen>
 
       _scrollToBottom();
     } catch (e) {
-      developer.log('Error sending message to API: $e', name: 'API_ERROR');
       CommonUtils.showErrorToast('Failed to send message');
-      // Clear loading state on error
       if (_currentResponseIndex != null) {
         _responseLoadingStates.remove(_currentResponseIndex);
       }
-
-      if (mounted) {
-        setState(() {
-          _isApiProcessing = false; // Reset on error
-        });
-      }
+      setState(() => _isApiProcessing = false);
     }
   }
 
@@ -588,39 +501,36 @@ class _GptScreenState extends State<GptScreen>
     if (message.isEmpty) return;
 
     try {
-      String chatId = _getCurrentChatId();
+      final chatId = _getCurrentChatId();
       bool isEdited = false;
 
-      if (mounted) {
-        setState(() {
-          if (_editingIndex != null) {
-            // Editing existing message
-            chatHistory[_editingIndex!]['question'] = message;
-            chatHistory[_editingIndex!]['answer'] = '';
-            _currentResponseIndex = _editingIndex;
-            _responseLoadingStates[_currentResponseIndex!] = true;
-            isEdited = true;
-          } else {
-            // New message
-            final newChatItem = {
-              'question': message,
-              'answer': '',
-              'chatId': chatId,
-              'messageId': '',
-              'isBookmarked': false,
-              'isLiked': false,
-              'isDisliked': false,
-              'isUserAudio': false,
-            };
-            chatHistory.add(newChatItem);
-            _currentResponseIndex = chatHistory.length - 1;
-            _responseLoadingStates[_currentResponseIndex!] = true;
-            isEdited = false;
-          }
-          _isApiProcessing = true; // Set API processing state
-          PrefUtils.setChatHistory(chatHistory);
-        });
-      }
+      setState(() {
+        if (_editingIndex != null) {
+          chatHistory[_editingIndex!]['question'] = message;
+          chatHistory[_editingIndex!]['answer'] = '';
+          _currentResponseIndex = _editingIndex;
+          _responseLoadingStates[_currentResponseIndex!] = true;
+          isEdited = true;
+        } else {
+          final newChatItem = {
+            'question': message,
+            'answer': '',
+            'chatId': chatId,
+            'messageId': '',
+            'isBookmarked': false,
+            'isLiked': false,
+            'isDisliked': false,
+            'isUserAudio': false,
+          };
+          chatHistory.add(newChatItem);
+          _currentResponseIndex = chatHistory.length - 1;
+          _responseLoadingStates[_currentResponseIndex!] = true;
+          isEdited = false;
+        }
+        _isApiProcessing = true;
+        audioUrlForCurrentChat = null;
+        PrefUtils.setChatHistory(chatHistory);
+      });
 
       if (PrefUtils.getstoredChatID().isEmpty && widget.chatId == null) {
         BlocProvider.of<HomeFlowBloc>(context).add(
@@ -648,18 +558,49 @@ class _GptScreenState extends State<GptScreen>
       _editingIndex = null;
       _scrollToBottom();
     } catch (e) {
-      developer.log('Error handling user message: $e', name: 'USER_INPUT');
       CommonUtils.showErrorToast('Failed to send message');
-      // Clear loading state on error
       if (_currentResponseIndex != null) {
         _responseLoadingStates.remove(_currentResponseIndex);
       }
+      setState(() => _isApiProcessing = false);
+    }
+  }
 
-      if (mounted) {
-        setState(() {
-          _isApiProcessing = false; // Reset on error
-        });
-      }
+  void _handleRegenerate(int index) {
+    final chatItem = chatHistory[index];
+    final String question = chatItem['question']?.trim() ?? '';
+
+    if (question.isEmpty) {
+      CommonUtils.showErrorToast('Cannot regenerate: No question found');
+      return;
+    }
+
+    setState(() {
+      chatHistory[index]['answer'] = '';
+      chatHistory[index]['isRegenerating'] = true;
+      _responseLoadingStates[index] = true;
+      _currentResponseIndex = index;
+      _isApiProcessing = true;
+      PrefUtils.setChatHistory(chatHistory);
+    });
+
+    _scrollToBottom();
+
+    try {
+      BlocProvider.of<HomeFlowBloc>(context).add(
+        ChatEvent(
+          message: question,
+          language: PrefUtils.getLanguage(),
+          sessionId: PrefUtils.getSessionID(),
+        ),
+      );
+    } catch (e) {
+      CommonUtils.showErrorToast('Failed to regenerate');
+      setState(() {
+        chatHistory[index]['isRegenerating'] = false;
+        _responseLoadingStates.remove(index);
+        _isApiProcessing = false;
+      });
     }
   }
 
@@ -810,26 +751,12 @@ class _GptScreenState extends State<GptScreen>
   }
 
   void _handleChatResponse(Map<String, dynamic> response, int index) {
-    try {
-      if (mounted) {
-        setState(() {
-          chatHistory[index]['answer'] = response.toString();
-          _responseLoadingStates.remove(index);
-          _isApiProcessing = false; // Reset API processing state
-          PrefUtils.setChatHistory(chatHistory);
-        });
-      }
-    } catch (e) {
-      developer.log(
-        'Error handling chat response: $e',
-        name: 'RESPONSE_HANDLER',
-      );
-      if (mounted) {
-        setState(() {
-          _isApiProcessing = false; // Reset on error
-        });
-      }
-    }
+    setState(() {
+      chatHistory[index]['answer'] = response.toString();
+      _responseLoadingStates.remove(index);
+      _isApiProcessing = false;
+      PrefUtils.setChatHistory(chatHistory);
+    });
   }
 
   void _handleVoiceResponse(dynamic response, int index) {
@@ -840,21 +767,15 @@ class _GptScreenState extends State<GptScreen>
           final bytes = _hexToBytes(hexString);
           _writeResponseFile(bytes)
               .then((path) {
-                if (mounted) {
-                  setState(() {
-                    _responseAudioPath = path;
-                    chatHistory[index]['answer'] = 'Audio Response';
-                    _responseLoadingStates.remove(index);
-                    _isApiProcessing = false; // Reset API processing state
-                    PrefUtils.setChatHistory(chatHistory);
-                  });
-                }
+                setState(() {
+                  _responseAudioPath = path;
+                  chatHistory[index]['answer'] = 'Audio Response';
+                  _responseLoadingStates.remove(index);
+                  _isApiProcessing = false;
+                  PrefUtils.setChatHistory(chatHistory);
+                });
               })
               .catchError((e) {
-                developer.log(
-                  'Error writing response file: $e',
-                  name: 'VOICE_RESPONSE',
-                );
                 _handleChatResponse(response, index);
               });
         } else {
@@ -863,31 +784,21 @@ class _GptScreenState extends State<GptScreen>
       } else if (response is List<int>) {
         _writeResponseFile(response)
             .then((path) {
-              if (mounted) {
-                setState(() {
-                  _responseAudioPath = path;
-                  chatHistory[index]['answer'] = 'Audio Response';
-                  _responseLoadingStates.remove(index);
-                  _isApiProcessing = false; // Reset API processing state
-                  PrefUtils.setChatHistory(chatHistory);
-                });
-              }
+              setState(() {
+                _responseAudioPath = path;
+                chatHistory[index]['answer'] = 'Audio Response';
+                _responseLoadingStates.remove(index);
+                _isApiProcessing = false;
+                PrefUtils.setChatHistory(chatHistory);
+              });
             })
             .catchError((e) {
-              developer.log(
-                'Error writing response file: $e',
-                name: 'VOICE_RESPONSE',
-              );
               _handleChatResponse({'error': 'Failed to process audio'}, index);
             });
       } else {
         _handleChatResponse(response, index);
       }
     } catch (e) {
-      developer.log(
-        'Error handling voice response: $e',
-        name: 'VOICE_RESPONSE',
-      );
       _handleChatResponse({'error': 'Failed to process response'}, index);
     }
   }
@@ -900,11 +811,7 @@ class _GptScreenState extends State<GptScreen>
         if (!didPop) {
           await _stopAllAudio();
           await Future.delayed(const Duration(milliseconds: 50));
-
-          if (mounted) {
-            // Clear the route
-            Navigator.of(context).pop();
-          }
+          if (mounted) Navigator.of(context).pop();
         }
       },
       child: Scaffold(
@@ -919,35 +826,200 @@ class _GptScreenState extends State<GptScreen>
                   PrefUtils.setstoredChatID(chatID);
                 } else if (state is InitiateChatFailure) {
                   CommonUtils.showErrorToast(state.failureResponse['message']);
-                  if (mounted) {
-                    setState(() {
-                      _isApiProcessing = false; // Reset on error
-                    });
-                  }
+                  setState(() => _isApiProcessing = false);
                 } else if (state is StoreChatSuccess) {
                   final response = state.successResponse;
-                  final messageId = response['id'];
+                  final newMessageId = response['id']?.toString() ?? '';
+
                   if (_currentResponseIndex != null &&
-                      _currentResponseIndex! < chatHistory.length &&
-                      mounted) {
+                      _currentResponseIndex! < chatHistory.length) {
                     setState(() {
-                      chatHistory[_currentResponseIndex!]['messageId'] =
-                          messageId;
+                      final existingMessageId =
+                          chatHistory[_currentResponseIndex!]['messageId']
+                              ?.toString() ??
+                          '';
+                      final bool isRegeneration =
+                          chatHistory[_currentResponseIndex!]['isRegenerating'] ==
+                          true;
+
+                      if (!isRegeneration && existingMessageId.isEmpty) {
+                        chatHistory[_currentResponseIndex!]['messageId'] =
+                            newMessageId;
+                        PrefUtils.setEdittedMessageID(newMessageId);
+                      }
+
                       PrefUtils.setChatHistory(chatHistory);
                     });
                   }
-                  String? latestAnswer;
+
                   if (_currentResponseIndex != null && chatHistory.isNotEmpty) {
-                    latestAnswer =
+                    final latestAnswer =
                         chatHistory[_currentResponseIndex!]['answer'];
-                    final currentMessageId =
-                        chatHistory[_currentResponseIndex!]['messageId'] ?? '';
-                    if (currentMessageId.isNotEmpty &&
+                    final existingMessageId =
+                        chatHistory[_currentResponseIndex!]['messageId']
+                            ?.toString() ??
+                        '';
+                    final bool isRegeneration =
+                        chatHistory[_currentResponseIndex!]['isRegenerating'] ==
+                        true;
+                    final messageIdToUse =
+                        isRegeneration && existingMessageId.isNotEmpty
+                            ? existingMessageId
+                            : newMessageId;
+
+                    // Check if this is an audio chat (user audio message)
+                    final bool isUserAudio =
+                        chatHistory[_currentResponseIndex!]['isUserAudio'] ==
+                        true;
+
+                    if (messageIdToUse.isNotEmpty) {
+                      // Get the audio URL if it's an audio chat
+                      final audioUrl =
+                          isUserAudio
+                              ? audioUrlForCurrentChat ??
+                                  '' // Use the stored audio URL
+                              : ''; // Empty string for text chats
+
+                      BlocProvider.of<HomeFlowBloc>(context).add(
+                        SendAPIResponseEvent(
+                          messageId: messageIdToUse,
+                          apiName: 'Atlas',
+                          apiType: 'Chat',
+                          apiResponse: latestAnswer,
+                          apiStatus: 'SUCCESS',
+                          apiError: '',
+                          audioUrl: audioUrl, // Send audio URL for audio chats
+                        ),
+                      );
+                    }
+                  }
+                } else if (state is StoreChatError) {
+                  CommonUtils.showErrorToast(state.failureResponse['message']);
+                  setState(() => _isApiProcessing = false);
+                } else if (state is SendAPIResponseFailure) {
+                  CommonUtils.showErrorToast(state.failureResponse['message']);
+                  setState(() => _isApiProcessing = false);
+                } else if (state is SendRegenerateAPIResponseSuccess) {
+                  chatHistory[_currentResponseIndex!]['isRegenerating'] = false;
+                } else if (state is ChatStreamingState) {
+                  setState(() {
+                    if (_currentResponseIndex != null &&
+                        _currentResponseIndex! < chatHistory.length) {
+                      String currentAnswer =
+                          chatHistory[_currentResponseIndex!]['answer'] ?? '';
+                      currentAnswer += state.response;
+                      chatHistory[_currentResponseIndex!]['answer'] =
+                          currentAnswer;
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
+                } else if (state is ChatLoadedState) {
+                  setState(() {
+                    if (_currentResponseIndex != null &&
+                        _currentResponseIndex! < chatHistory.length) {
+                      chatHistory[_currentResponseIndex!]['answer'] =
+                          state.partialResponse;
+                      _responseLoadingStates.remove(_currentResponseIndex);
+                      _isApiProcessing = false;
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
+
+                  if (_currentResponseIndex != null &&
+                      _currentResponseIndex! < chatHistory.length) {
+                    setState(() {
+                      chatHistory[_currentResponseIndex!]['chatId'] =
+                          _getCurrentChatId();
+                      PrefUtils.setChatHistory(chatHistory);
+                    });
+
+                    final latestQuestion =
+                        chatHistory[_currentResponseIndex!]['question'];
+                    final bool isRegeneration =
+                        chatHistory[_currentResponseIndex!]['isRegenerating'] ==
+                        true;
+
+                    if (latestQuestion != null && latestQuestion.isNotEmpty) {
+                      isRegeneration
+                          ? BlocProvider.of<HomeFlowBloc>(context).add(
+                            StoreEdittedChatEvent(
+                              message: latestQuestion,
+                              modelName: 'Atlas',
+                              searchEngine: 'Search',
+                              edited: true,
+                              sender: 'user',
+                              chatId: _getCurrentChatId(),
+                              messageId: PrefUtils.getEdittedMessageID(),
+                            ),
+                          )
+                          : BlocProvider.of<HomeFlowBloc>(context).add(
+                            StoreChatEvent(
+                              message: latestQuestion,
+                              modelName: 'Atlas',
+                              searchEngine: 'Search',
+                              edited: false,
+                              sender: 'user',
+                              chatId: _getCurrentChatId(),
+                            ),
+                          );
+                    }
+                  }
+                } else if (state is ChatErrorState) {
+                  CommonUtils.showErrorToast(state.error['message']);
+                  if (_currentResponseIndex != null) {
+                    _responseLoadingStates.remove(_currentResponseIndex);
+                  }
+                  setState(() => _isApiProcessing = false);
+                } else if (state is VoiceConversationSuccess) {
+                  final response = state.successResponse;
+                  if (kDebugMode) {
+                    debugPrint("AUDIO RESPONSE RECEIVED :${response}");
+                  }
+                  if (_currentResponseIndex != null &&
+                      _currentResponseIndex! < chatHistory.length) {
+                    _handleVoiceResponse(response, _currentResponseIndex!);
+                  }
+                } else if (state is UploadFileSuccess) {
+                  final newUrl = state.successResponse['url'];
+                  audioUrlForCurrentChat = newUrl;
+                  BlocProvider.of<HomeFlowBloc>(context).add(
+                    StoreChatEvent(
+                      message: 'Audio Response',
+                      modelName: 'Atlas',
+                      searchEngine: 'Search',
+                      edited: false,
+                      sender: 'user',
+                      audioUrl: newUrl,
+                      chatId: _getCurrentChatId(),
+                    ),
+                  );
+                } else if (state is UploadFileFailure) {
+                  CommonUtils.showErrorToast(state.failureResponse['message']);
+                } else if (state is StoreEdittedChatSuccess) {
+                  final response = state.successResponse;
+                  final newMessageId = response['id']?.toString() ?? '';
+
+                  if (_currentResponseIndex != null && chatHistory.isNotEmpty) {
+                    final latestAnswer =
+                        chatHistory[_currentResponseIndex!]['answer'];
+                    final existingMessageId =
+                        chatHistory[_currentResponseIndex!]['messageId']
+                            ?.toString() ??
+                        '';
+                    final bool isRegeneration =
+                        chatHistory[_currentResponseIndex!]['isRegenerating'] ==
+                        true;
+                    final messageIdToUse =
+                        isRegeneration && existingMessageId.isNotEmpty
+                            ? existingMessageId
+                            : newMessageId;
+
+                    if (messageIdToUse.isNotEmpty &&
                         latestAnswer != null &&
                         latestAnswer.isNotEmpty) {
                       BlocProvider.of<HomeFlowBloc>(context).add(
-                        SendAPIResponseEvent(
-                          messageId: currentMessageId,
+                        SendRegenerateAPIResponseEvent(
+                          messageId: messageIdToUse,
                           apiName: 'Atlas',
                           apiType: 'Chat',
                           apiResponse: latestAnswer,
@@ -957,98 +1029,12 @@ class _GptScreenState extends State<GptScreen>
                       );
                     }
                   }
-                } else if (state is StoreChatError) {
-                  CommonUtils.showErrorToast(state.failureResponse['message']);
-                  if (mounted) {
-                    setState(() {
-                      _isApiProcessing = false; // Reset on error
-                    });
-                  }
-                } else if (state is SendAPIResponseFailure) {
-                  CommonUtils.showErrorToast(state.failureResponse['message']);
-                  if (mounted) {
-                    setState(() {
-                      _isApiProcessing = false; // Reset on error
-                    });
-                  }
-                } else if (state is ChatStreamingState) {
-                  if (mounted) {
-                    setState(() {
-                      if (_currentResponseIndex != null &&
-                          _currentResponseIndex! < chatHistory.length) {
-                        String currentAnswer =
-                            chatHistory[_currentResponseIndex!]['answer'] ?? '';
-                        currentAnswer += state.response;
-                        chatHistory[_currentResponseIndex!]['answer'] =
-                            currentAnswer;
-                        PrefUtils.setChatHistory(chatHistory);
-                      }
-                    });
-                  }
-                } else if (state is ChatLoadedState) {
-                  if (mounted) {
-                    setState(() {
-                      if (_currentResponseIndex != null &&
-                          _currentResponseIndex! < chatHistory.length) {
-                        chatHistory[_currentResponseIndex!]['answer'] =
-                            state.partialResponse;
-                        _responseLoadingStates.remove(_currentResponseIndex);
-                        _isApiProcessing =
-                            false; // Reset when response is loaded
-                        PrefUtils.setChatHistory(chatHistory);
-                      }
-                    });
-                  }
-                  if (_currentResponseIndex != null &&
-                      _currentResponseIndex! < chatHistory.length) {
-                    if (mounted) {
-                      setState(() {
-                        chatHistory[_currentResponseIndex!]['chatId'] =
-                            _getCurrentChatId();
-                        PrefUtils.setChatHistory(chatHistory);
-                      });
-                    }
-                    String? latestQuestion =
-                        chatHistory[_currentResponseIndex!]['question'];
-                    if (latestQuestion != null && latestQuestion.isNotEmpty) {
-                      BlocProvider.of<HomeFlowBloc>(context).add(
-                        StoreChatEvent(
-                          message: latestQuestion,
-                          modelName: 'Atlas',
-                          searchEngine: 'Search',
-                          edited: false,
-                          sender: 'user',
-                          chatId: _getCurrentChatId(),
-                        ),
-                      );
-                    }
-                  }
-                } else if (state is ChatErrorState) {
-                  CommonUtils.showErrorToast(state.error['message']);
-                  if (_currentResponseIndex != null) {
-                    _responseLoadingStates.remove(_currentResponseIndex);
-                  }
-                  if (mounted) {
-                    setState(() {
-                      _isApiProcessing = false; // Reset on error
-                    });
-                  }
-                } else if (state is VoiceConversationSuccess) {
-                  final response = state.successResponse;
-                  if (_currentResponseIndex != null &&
-                      _currentResponseIndex! < chatHistory.length) {
-                    _handleVoiceResponse(response, _currentResponseIndex!);
-                  }
                 } else if (state is VoiceConversationFailure) {
                   CommonUtils.showErrorToast(state.failureResponse);
                   if (_currentResponseIndex != null) {
                     _responseLoadingStates.remove(_currentResponseIndex);
                   }
-                  if (mounted) {
-                    setState(() {
-                      _isApiProcessing = false; // Reset on error
-                    });
-                  }
+                  setState(() => _isApiProcessing = false);
                 } else if (state is GetSingleChatHistorySuccess) {
                   final response = state.successResponse;
                   final String chatId =
@@ -1056,47 +1042,61 @@ class _GptScreenState extends State<GptScreen>
                   final List<dynamic> messages =
                       response['messages'] as List<dynamic>;
 
-                  if (mounted) {
-                    setState(() {
-                      final Map<String, Map<String, dynamic>> localChatMap = {
-                        for (var chat in chatHistory) chat['messageId']: chat,
-                      };
-                      chatHistory =
-                          messages.map<Map<String, dynamic>>((message) {
-                            final String messageId =
-                                message['id']?.toString() ?? '';
-                            final String question =
-                                message['message']?.toString() ?? '';
-                            final String answer =
-                                message['apiResponses']?.isNotEmpty == true
-                                    ? message['apiResponses'][0]['api_response']
-                                            ?.toString() ??
-                                        ''
-                                    : '';
-                            final bool isBookmarked =
-                                message['isBookmarked'] ?? false;
-                            final bool isLiked = message['isLiked'] ?? false;
-                            final bool isDisliked =
-                                message['isDisliked'] ?? false;
-                            final localChat = localChatMap[messageId] ?? {};
-                            return {
-                              'question': question,
-                              'answer': answer,
-                              'chatId': chatId,
-                              'messageId': messageId,
-                              'isBookmarked':
-                                  isBookmarked ||
-                                  localChat['isBookmarked'] == true,
-                              'isLiked':
-                                  isLiked || localChat['isLiked'] == true,
-                              'isDisliked':
-                                  isDisliked || localChat['isDisliked'] == true,
-                              'isUserAudio': localChat['isUserAudio'] ?? false,
-                            };
-                          }).toList();
-                      PrefUtils.setChatHistory(chatHistory);
-                    });
-                  }
+                  setState(() {
+                    final Map<String, Map<String, dynamic>> localChatMap = {
+                      for (var chat in chatHistory) chat['messageId']: chat,
+                    };
+
+                    chatHistory =
+                        messages.map<Map<String, dynamic>>((message) {
+                          final String messageId =
+                              message['id']?.toString() ?? '';
+                          final String question =
+                              message['message']?.toString() ?? '';
+                          final List<dynamic> apiResponses =
+                              message['apiResponses'] as List<dynamic>? ?? [];
+                          final String answer =
+                              apiResponses.isNotEmpty
+                                  ? apiResponses[0]['api_response']
+                                          ?.toString() ??
+                                      ''
+                                  : '';
+                          final String audioUrl =
+                              apiResponses.isNotEmpty
+                                  ? apiResponses[0]['audio_url']?.toString() ??
+                                      ''
+                                  : '';
+                          final bool isBookmarked =
+                              message['isBookmarked'] ?? false;
+                          final bool isLiked = message['isLiked'] ?? false;
+                          final bool isDisliked =
+                              message['isDisliked'] ?? false;
+                          final localChat = localChatMap[messageId] ?? {};
+
+                          // Store audio URL in the map
+                          if (audioUrl.isNotEmpty) {
+                            _audioUrlMap[messageId] = audioUrl;
+                          }
+
+                          return {
+                            'question': question,
+                            'answer': answer,
+                            'chatId': chatId,
+                            'messageId': messageId,
+                            'isBookmarked':
+                                isBookmarked ||
+                                localChat['isBookmarked'] == true,
+                            'isLiked': isLiked || localChat['isLiked'] == true,
+                            'isDisliked':
+                                isDisliked || localChat['isDisliked'] == true,
+                            'isUserAudio': localChat['isUserAudio'] ?? false,
+                            'hasAudioUrl': audioUrl.isNotEmpty,
+                          };
+                        }).toList();
+
+                    PrefUtils.setChatHistory(chatHistory);
+                  });
+
                   _initialLoadCompleter?.complete();
                 } else if (state is GetSingleChatHistoryFailure) {
                   CommonUtils.showErrorToast(state.failureResponse['message']);
@@ -1106,38 +1106,38 @@ class _GptScreenState extends State<GptScreen>
                   reactionId = response['data']['id'];
                   final messageId = response['data']['message_id'] ?? '';
                   final bool isLike = response['data']['is_like'] ?? false;
-                  if (mounted) {
-                    setState(() {
-                      final index = chatHistory.indexWhere(
-                        (chat) => chat['messageId'] == messageId,
-                      );
-                      if (index != -1) {
-                        chatHistory[index]['isLiked'] = isLike;
-                        chatHistory[index]['isDisliked'] = !isLike;
-                        PrefUtils.setChatHistory(chatHistory);
-                      }
-                    });
-                  }
+
+                  setState(() {
+                    final index = chatHistory.indexWhere(
+                      (chat) => chat['messageId'] == messageId,
+                    );
+                    if (index != -1) {
+                      chatHistory[index]['isLiked'] = isLike;
+                      chatHistory[index]['isDisliked'] = !isLike;
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
+
                   _showFeedbackPopup(context);
                   CommonUtils.showSuccessToast(response['message']);
                 } else if (state is ReactOnChatFailure) {
                   final messageId = state.failureResponse['message_id'] ?? '';
                   final bool wasLike =
                       state.failureResponse['is_like'] ?? false;
-                  if (mounted) {
-                    setState(() {
-                      final index = chatHistory.indexWhere(
-                        (chat) => chat['messageId'] == messageId,
-                      );
-                      if (index != -1) {
-                        chatHistory[index]['isLiked'] =
-                            wasLike ? false : chatHistory[index]['isLiked'];
-                        chatHistory[index]['isDisliked'] =
-                            !wasLike ? false : chatHistory[index]['isDisliked'];
-                        PrefUtils.setChatHistory(chatHistory);
-                      }
-                    });
-                  }
+
+                  setState(() {
+                    final index = chatHistory.indexWhere(
+                      (chat) => chat['messageId'] == messageId,
+                    );
+                    if (index != -1) {
+                      chatHistory[index]['isLiked'] =
+                          wasLike ? false : chatHistory[index]['isLiked'];
+                      chatHistory[index]['isDisliked'] =
+                          !wasLike ? false : chatHistory[index]['isDisliked'];
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
+
                   CommonUtils.showErrorToast(state.failureResponse['message']);
                 } else if (state is ChatFeedbackSuccess) {
                   CommonUtils.showSuccessToast(
@@ -1146,37 +1146,20 @@ class _GptScreenState extends State<GptScreen>
                 } else if (state is ChatFeedbackFailure) {
                   Navigator.pop(context);
                   CommonUtils.showErrorToast(state.failureResponse['message']);
-                }
-                // else if (state is ShareChatSuccess) {
-                //   final shareUrl = state.successResponse;
-                //   if (shareUrl.isNotEmpty) {
-                //     Share.share(shareUrl);
-                //   } else {
-                //     CommonUtils.showErrorToast('Failed to share: Invalid URL');
-                //   }
-                // } else if (state is ShareChatFailure) {
-                //   CommonUtils.showErrorToast(state.failureResponse['message']);
-                // }
-                else if (state is CheckNetworkConnectionHomeFlow) {
+                } else if (state is CheckNetworkConnectionHomeFlow) {
                   CommonUtils.showErrorToast('No Internet Connection!');
-                  if (mounted) {
-                    setState(() {
-                      _isApiProcessing = false; // Reset on network error
-                    });
-                  }
+                  setState(() => _isApiProcessing = false);
                 } else if (state is BookmarkChatSuccess) {
                   final messageId = state.successResponse['messageId'];
-                  if (mounted) {
-                    setState(() {
-                      final index = chatHistory.indexWhere(
-                        (chat) => chat['messageId'] == messageId,
-                      );
-                      if (index != -1) {
-                        chatHistory[index]['isBookmarked'] = true;
-                        PrefUtils.setChatHistory(chatHistory);
-                      }
-                    });
-                  }
+                  setState(() {
+                    final index = chatHistory.indexWhere(
+                      (chat) => chat['messageId'] == messageId,
+                    );
+                    if (index != -1) {
+                      chatHistory[index]['isBookmarked'] = true;
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
                   CommonUtils.showSuccessToast(
                     AppLocalizations.of(
                       context,
@@ -1184,31 +1167,27 @@ class _GptScreenState extends State<GptScreen>
                   );
                 } else if (state is BookmarkChatFailure) {
                   final messageId = state.failureResponse['messageId'] ?? '';
-                  if (mounted) {
-                    setState(() {
-                      final index = chatHistory.indexWhere(
-                        (chat) => chat['messageId'] == messageId,
-                      );
-                      if (index != -1) {
-                        chatHistory[index]['isBookmarked'] = false;
-                        PrefUtils.setChatHistory(chatHistory);
-                      }
-                    });
-                  }
+                  setState(() {
+                    final index = chatHistory.indexWhere(
+                      (chat) => chat['messageId'] == messageId,
+                    );
+                    if (index != -1) {
+                      chatHistory[index]['isBookmarked'] = false;
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
                   CommonUtils.showErrorToast(state.failureResponse['message']);
                 } else if (state is UnbookmarkChatSuccess) {
                   final messageId = state.successResponse['messageId'];
-                  if (mounted) {
-                    setState(() {
-                      final index = chatHistory.indexWhere(
-                        (chat) => chat['messageId'] == messageId,
-                      );
-                      if (index != -1) {
-                        chatHistory[index]['isBookmarked'] = false;
-                        PrefUtils.setChatHistory(chatHistory);
-                      }
-                    });
-                  }
+                  setState(() {
+                    final index = chatHistory.indexWhere(
+                      (chat) => chat['messageId'] == messageId,
+                    );
+                    if (index != -1) {
+                      chatHistory[index]['isBookmarked'] = false;
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
                   CommonUtils.showSuccessToast(
                     AppLocalizations.of(
                       context,
@@ -1216,17 +1195,15 @@ class _GptScreenState extends State<GptScreen>
                   );
                 } else if (state is UnbookmarkChatFailure) {
                   final messageId = state.failureResponse['messageId'] ?? '';
-                  if (mounted) {
-                    setState(() {
-                      final index = chatHistory.indexWhere(
-                        (chat) => chat['messageId'] == messageId,
-                      );
-                      if (index != -1) {
-                        chatHistory[index]['isBookmarked'] = true;
-                        PrefUtils.setChatHistory(chatHistory);
-                      }
-                    });
-                  }
+                  setState(() {
+                    final index = chatHistory.indexWhere(
+                      (chat) => chat['messageId'] == messageId,
+                    );
+                    if (index != -1) {
+                      chatHistory[index]['isBookmarked'] = true;
+                      PrefUtils.setChatHistory(chatHistory);
+                    }
+                  });
                   CommonUtils.showErrorToast(state.failureResponse['message']);
                 } else if (state is SessionExpiredStateHome) {
                   CommonUtils.showErrorToast(state.message);
@@ -1240,15 +1217,7 @@ class _GptScreenState extends State<GptScreen>
                   );
                 }
               } catch (e) {
-                developer.log(
-                  'Error in bloc listener: $e',
-                  name: 'BLOC_LISTENER',
-                );
-                if (mounted) {
-                  setState(() {
-                    _isApiProcessing = false; // Reset on any error
-                  });
-                }
+                setState(() => _isApiProcessing = false);
               }
             },
             child: Stack(
@@ -1350,11 +1319,6 @@ class _GptScreenState extends State<GptScreen>
                                                       ?.toString()
                                                       .trim() ??
                                                   '';
-                                              final chatId =
-                                                  chatHistory[index]['chatId']
-                                                      ?.toString()
-                                                      .trim() ??
-                                                  '';
                                               final bool isBookmarked =
                                                   chatHistory[index]['isBookmarked'] ??
                                                   false;
@@ -1370,8 +1334,12 @@ class _GptScreenState extends State<GptScreen>
                                               final bool isLoading =
                                                   _responseLoadingStates[index] ??
                                                   false;
+                                              final bool hasAudioUrl =
+                                                  chatHistory[index]['hasAudioUrl'] ??
+                                                  false;
+                                              final String audioUrl =
+                                                  _audioUrlMap[messageId] ?? '';
 
-                                              // Skip empty questions
                                               if (question.isEmpty)
                                                 return const SizedBox();
 
@@ -1421,15 +1389,13 @@ class _GptScreenState extends State<GptScreen>
                                                             ),
                                                             GestureDetector(
                                                               onTap: () {
-                                                                if (mounted) {
-                                                                  setState(() {
-                                                                    inputController
-                                                                            .text =
-                                                                        question;
-                                                                    _editingIndex =
-                                                                        index;
-                                                                  });
-                                                                }
+                                                                setState(() {
+                                                                  inputController
+                                                                          .text =
+                                                                      question;
+                                                                  _editingIndex =
+                                                                      index;
+                                                                });
                                                               },
                                                               child: Image.asset(
                                                                 'assets/images/edit.png',
@@ -1442,7 +1408,8 @@ class _GptScreenState extends State<GptScreen>
                                                         const SizedBox(
                                                           height: 16,
                                                         ),
-                                                        if (isLoading &&
+                                                        if (_responseLoadingStates[index] ==
+                                                                true &&
                                                             answer.isEmpty)
                                                           Row(
                                                             children: [
@@ -1461,7 +1428,11 @@ class _GptScreenState extends State<GptScreen>
                                                                 width: 10,
                                                               ),
                                                               Text(
-                                                                'Loading...',
+                                                                (chatHistory[index]['isRegenerating']
+                                                                            as bool? ??
+                                                                        false)
+                                                                    ? 'Regenerating...'
+                                                                    : 'Loading...',
                                                                 style: FTextStyle
                                                                     .defaultText
                                                                     .copyWith(
@@ -1476,24 +1447,58 @@ class _GptScreenState extends State<GptScreen>
                                                             ],
                                                           )
                                                         else if (answer
-                                                            .isNotEmpty)
+                                                                .isNotEmpty ||
+                                                            hasAudioUrl)
                                                           Column(
                                                             crossAxisAlignment:
                                                                 CrossAxisAlignment
                                                                     .start,
                                                             children: [
-                                                              MarkdownBody(
-                                                                data: answer,
-                                                                styleSheet: MarkdownStyleSheet.fromTheme(
-                                                                  Theme.of(
-                                                                    context,
+                                                              if (answer
+                                                                      .trim()
+                                                                      .isNotEmpty &&
+                                                                  answer !=
+                                                                      'Audio Response')
+                                                                MarkdownBody(
+                                                                  data: answer,
+                                                                  styleSheet: MarkdownStyleSheet.fromTheme(
+                                                                    Theme.of(
+                                                                      context,
+                                                                    ),
+                                                                  ).copyWith(
+                                                                    p:
+                                                                        FTextStyle
+                                                                            .defaultText,
                                                                   ),
-                                                                ).copyWith(
-                                                                  p:
-                                                                      FTextStyle
-                                                                          .defaultText,
                                                                 ),
-                                                              ),
+                                                              // Show audio player for API audio responses
+                                                              if (hasAudioUrl &&
+                                                                  audioUrl
+                                                                      .isNotEmpty)
+                                                                Align(
+                                                                  alignment:
+                                                                      Alignment
+                                                                          .centerLeft,
+                                                                  child: Padding(
+                                                                    padding:
+                                                                        const EdgeInsets.only(
+                                                                          top:
+                                                                              8.0,
+                                                                        ),
+                                                                    child: CustomAudioPlayer(
+                                                                      audioPath:
+                                                                          audioUrl,
+                                                                      isPlaying:
+                                                                          _currentPlayingPath ==
+                                                                              audioUrl &&
+                                                                          isPlayingResponse,
+                                                                      onPlayPause:
+                                                                          () => _playResponseAudioFromUrl(
+                                                                            audioUrl,
+                                                                          ),
+                                                                    ),
+                                                                  ),
+                                                                ),
                                                               if (index ==
                                                                       _currentResponseIndex &&
                                                                   _audioPath !=
@@ -1556,7 +1561,8 @@ class _GptScreenState extends State<GptScreen>
                                                             ],
                                                           )
                                                         else if (!isLoading &&
-                                                            answer.isEmpty)
+                                                            answer.isEmpty &&
+                                                            !hasAudioUrl)
                                                           Text(
                                                             AppLocalizations.of(
                                                               context,
@@ -1585,27 +1591,35 @@ class _GptScreenState extends State<GptScreen>
                                                                 MainAxisAlignment
                                                                     .spaceBetween,
                                                             children: [
-                                                              Row(
-                                                                children: [
-                                                                  Image.asset(
-                                                                    'assets/images/refresh.png',
-                                                                    height: 16,
-                                                                    width: 16,
-                                                                  ),
-                                                                  const SizedBox(
-                                                                    width: 10,
-                                                                  ),
-                                                                  Text(
-                                                                    AppLocalizations.of(
-                                                                      context,
-                                                                    )!.translate(
-                                                                      'regenerate',
+                                                              GestureDetector(
+                                                                onTap:
+                                                                    () =>
+                                                                        _handleRegenerate(
+                                                                          index,
+                                                                        ),
+                                                                child: Row(
+                                                                  children: [
+                                                                    Image.asset(
+                                                                      'assets/images/refresh.png',
+                                                                      height:
+                                                                          16,
+                                                                      width: 16,
                                                                     ),
-                                                                    style:
-                                                                        FTextStyle
-                                                                            .selectedRadioColorText,
-                                                                  ),
-                                                                ],
+                                                                    const SizedBox(
+                                                                      width: 10,
+                                                                    ),
+                                                                    Text(
+                                                                      AppLocalizations.of(
+                                                                        context,
+                                                                      )!.translate(
+                                                                        'regenerate',
+                                                                      ),
+                                                                      style:
+                                                                          FTextStyle
+                                                                              .selectedRadioColorText,
+                                                                    ),
+                                                                  ],
+                                                                ),
                                                               ),
                                                               Row(
                                                                 children: [
@@ -1613,20 +1627,18 @@ class _GptScreenState extends State<GptScreen>
                                                                     onTap: () {
                                                                       if (messageId
                                                                           .isNotEmpty) {
-                                                                        if (mounted) {
-                                                                          setState(() {
-                                                                            chatHistory[index]['isLiked'] =
-                                                                                !isLiked;
-                                                                            if (chatHistory[index]['isLiked'] ==
-                                                                                true) {
-                                                                              chatHistory[index]['isDisliked'] =
-                                                                                  false;
-                                                                            }
-                                                                            PrefUtils.setChatHistory(
-                                                                              chatHistory,
-                                                                            );
-                                                                          });
-                                                                        }
+                                                                        setState(() {
+                                                                          chatHistory[index]['isLiked'] =
+                                                                              !isLiked;
+                                                                          if (chatHistory[index]['isLiked'] ==
+                                                                              true) {
+                                                                            chatHistory[index]['isDisliked'] =
+                                                                                false;
+                                                                          }
+                                                                          PrefUtils.setChatHistory(
+                                                                            chatHistory,
+                                                                          );
+                                                                        });
                                                                         BlocProvider.of<
                                                                           HomeFlowBloc
                                                                         >(
@@ -1665,20 +1677,18 @@ class _GptScreenState extends State<GptScreen>
                                                                     onTap: () {
                                                                       if (messageId
                                                                           .isNotEmpty) {
-                                                                        if (mounted) {
-                                                                          setState(() {
-                                                                            chatHistory[index]['isDisliked'] =
-                                                                                !isDisliked;
-                                                                            if (chatHistory[index]['isDisliked'] ==
-                                                                                true) {
-                                                                              chatHistory[index]['isLiked'] =
-                                                                                  false;
-                                                                            }
-                                                                            PrefUtils.setChatHistory(
-                                                                              chatHistory,
-                                                                            );
-                                                                          });
-                                                                        }
+                                                                        setState(() {
+                                                                          chatHistory[index]['isDisliked'] =
+                                                                              !isDisliked;
+                                                                          if (chatHistory[index]['isDisliked'] ==
+                                                                              true) {
+                                                                            chatHistory[index]['isLiked'] =
+                                                                                false;
+                                                                          }
+                                                                          PrefUtils.setChatHistory(
+                                                                            chatHistory,
+                                                                          );
+                                                                        });
                                                                         BlocProvider.of<
                                                                           HomeFlowBloc
                                                                         >(
@@ -1746,15 +1756,13 @@ class _GptScreenState extends State<GptScreen>
                                                                     onTap: () {
                                                                       if (messageId
                                                                           .isNotEmpty) {
-                                                                        if (mounted) {
-                                                                          setState(() {
-                                                                            chatHistory[index]['isBookmarked'] =
-                                                                                !isBookmarked;
-                                                                            PrefUtils.setChatHistory(
-                                                                              chatHistory,
-                                                                            );
-                                                                          });
-                                                                        }
+                                                                        setState(() {
+                                                                          chatHistory[index]['isBookmarked'] =
+                                                                              !isBookmarked;
+                                                                          PrefUtils.setChatHistory(
+                                                                            chatHistory,
+                                                                          );
+                                                                        });
                                                                         BlocProvider.of<
                                                                           HomeFlowBloc
                                                                         >(
@@ -1794,16 +1802,13 @@ class _GptScreenState extends State<GptScreen>
                                                                               .isNotEmpty &&
                                                                           answer
                                                                               .isNotEmpty) {
-                                                                        // Create formatted text with question and answer
                                                                         final shareText =
                                                                             '''Question: $question
 
 Answer: $answer''';
-                                                                        // Share the text
                                                                         Share.share(
                                                                           shareText,
                                                                         );
-
                                                                         CommonUtils.showSuccessToast(
                                                                           'Sharing conversation...',
                                                                         );
@@ -1819,16 +1824,6 @@ Answer: $answer''';
                                                                           'Cannot share: Conversation is incomplete',
                                                                         );
                                                                       }
-
-                                                                      // if (chatId.isNotEmpty) {
-                                                                      //   BlocProvider.of<HomeFlowBloc>(context).add(
-                                                                      //     ShareChatEvent(chatId: chatId),
-                                                                      //   );
-                                                                      // } else {
-                                                                      //   CommonUtils.showErrorToast(
-                                                                      //     'Cannot share: Chat ID is missing',
-                                                                      //   );
-                                                                      // }
                                                                     },
                                                                     child: Image.asset(
                                                                       'assets/images/unshare.png',
@@ -1957,7 +1952,7 @@ Answer: $answer''';
                                                 : AppColors.gradientStart,
                                       ),
                                       onPressed:
-                                          (isSending)
+                                          isSending
                                               ? null
                                               : () async {
                                                 if (isRecording) {

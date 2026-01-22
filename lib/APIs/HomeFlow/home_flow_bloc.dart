@@ -292,67 +292,71 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
     // Store Chat Bloc
     on<StoreChatEvent>((event, emit) async {
       // Step 1: Connectivity Check — Legacy approach retained for reliability
-      if (await ConnectivityService.isConnected()) {
-        emit(StoreChatLoading());
-
-        final Uri requestUrl = Uri.parse(APIEndPoints.storeChatConversation);
-        print("📡 [API REQUEST] → URL: $requestUrl");
-
-        // Step 2: Build Request Body
-        final Map<String, dynamic> requestBody = {
-          'message': event.message,
-          'chat_id': event.chatId,
-          'model_name': event.modelName,
-          'search_engine': event.searchEngine,
-          'edited': event.edited,
-          'sender': event.sender,
-        };
-
-        print("📝 [REQUEST BODY]: ${jsonEncode(requestBody)}");
-
-        try {
-          // Step 3: Execute POST Call
-          final response = await http.post(
-            requestUrl,
-            headers: {
-              'accept': 'application/json',
-              'Content-Type': 'application/json',
-              'Cookie': PrefUtils.getToken(),
-            },
-            body: jsonEncode(requestBody),
-          );
-
-          print("📥 [RESPONSE STATUS]: ${response.statusCode}");
-          print("📄 [RESPONSE BODY]: ${response.body}");
-
-          // Step 4: Evaluate Response
-          if (response.statusCode == 201) {
-            final Map<String, dynamic> responseData = jsonDecode(response.body);
-            emit(StoreChatSuccess(responseData['data']));
-            print("✅ Store Chat Success: ${responseData['data']}");
-          } else if (response.statusCode == 401) {
-            emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
-            );
-          } else {
-            final errorData = jsonDecode(response.body);
-            emit(StoreChatError(errorData));
-            print("❌ Store Chat Error: $errorData");
-          }
-        } on SocketException {
-          emit(CheckNetworkConnectionHomeFlow());
-          print("⚠️ SocketException: No internet connection.");
-        } catch (e) {
-          emit(
-            CommonServerFailureHome(
-              'Something went wrong, Please try again later',
-            ),
-          );
-          print("💥 Exception: $e");
-        }
-      } else {
+      if (!await ConnectivityService.isConnected()) {
         emit(CheckNetworkConnectionHomeFlow());
         print("🚫 No internet connection.");
+        return;
+      }
+
+      emit(StoreChatLoading());
+
+      final Uri requestUrl = Uri.parse(APIEndPoints.storeChatConversation);
+      print("📡 [API REQUEST] → URL: $requestUrl");
+
+      // Step 2: Build Request Body
+      final Map<String, dynamic> requestBody = {
+        'message': event.message,
+        'chat_id': event.chatId,
+        'model_name': event.modelName,
+        'search_engine': event.searchEngine,
+        'edited': event.edited,
+        'sender': event.sender,
+      };
+
+      // ✅ Conditionally include audioUrl
+      if (event.audioUrl != null && event.audioUrl!.isNotEmpty) {
+        requestBody['audio_url'] = event.audioUrl;
+      }
+
+      print("📝 [REQUEST BODY]: ${jsonEncode(requestBody)}");
+
+      try {
+        // Step 3: Execute POST Call
+        final response = await http.post(
+          requestUrl,
+          headers: {
+            'accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Cookie': PrefUtils.getToken(),
+          },
+          body: jsonEncode(requestBody),
+        );
+
+        print("📥 [RESPONSE STATUS]: ${response.statusCode}");
+        print("📄 [RESPONSE BODY]: ${response.body}");
+
+        // Step 4: Evaluate Response
+        if (response.statusCode == 201) {
+          final Map<String, dynamic> responseData = jsonDecode(response.body);
+          emit(StoreChatSuccess(responseData['data']));
+          print("✅ Store Chat Success: ${responseData['data']}");
+        } else if (response.statusCode == 401) {
+          emit(SessionExpiredStateHome('Session expired. Please login again.'));
+        } else {
+          final errorData = jsonDecode(response.body);
+          emit(StoreChatError(errorData));
+          print("❌ Store Chat Error: $errorData");
+        }
+      } on SocketException {
+        emit(CheckNetworkConnectionHomeFlow());
+        print("⚠️ SocketException: No internet connection.");
+      } catch (e) {
+        emit(
+          CommonServerFailureHome(
+            'Something went wrong, Please try again later',
+          ),
+        );
+        print("💥 Exception: $e");
       }
     });
 
@@ -367,6 +371,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           'message_id': event.messageId,
           'api_name': event.apiName,
           'api_type': event.apiType,
+          'audio_url': event.audioUrl,
           'api_response': event.apiResponse,
           'status': event.apiStatus,
           'api_error': event.apiError,
@@ -1127,16 +1132,16 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
       }
     });
 
-    on<UploadProfilePhoto>((event, emit) async {
+    on<UploadFile>((event, emit) async {
       if (!await ConnectivityService.isConnected()) {
         emit(CheckNetworkConnectionHomeFlow());
         return;
       }
 
-      emit(UploadProfilephotoLoading());
+      emit(UploadFileLoading());
 
       try {
-        final uri = Uri.parse(APIEndPoints.uploadProfilePhoto);
+        final uri = Uri.parse(APIEndPoints.uploadfile);
         final request = http.MultipartRequest('POST', uri);
 
         // Add authorization
@@ -1168,7 +1173,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
-          emit(UploadProfilePhotoSuccess(data));
+          emit(UploadFileSuccess(data));
 
           // Save the new profile picture URL from response
           if (data['url'] != null) {
@@ -1183,13 +1188,13 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           } catch (_) {
             errorData = {'message': 'Failed to upload profile photo'};
           }
-          emit(UploadProfilePhotoFailure(errorData));
+          emit(UploadFileFailure(errorData));
         }
       } on SocketException {
         emit(CheckNetworkConnectionHomeFlow());
       } catch (e, stack) {
         print("Upload photo error");
-        emit(UploadProfilePhotoFailure({'message': e.toString()}));
+        emit(UploadFileFailure({'message': e.toString()}));
       }
     });
 
@@ -1288,6 +1293,148 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
       } else {
         emit(CheckNetworkConnectionHomeFlow());
         print("No internet connection.");
+      }
+    });
+
+    // Send Regenerate Chat API Response
+    on<SendRegenerateAPIResponseEvent>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(SendRegenerateAPIResponseLoading());
+
+        final Uri requestUrl = Uri.parse(
+          APIEndPoints.sendregenerateAPIResponse,
+        );
+        final requestBody = jsonEncode({
+          'message_id': event.messageId,
+          'api_name': event.apiName,
+          'api_type': event.apiType,
+          'api_response': event.apiResponse,
+          'status': event.apiStatus,
+          'api_error': event.apiError,
+        });
+
+        print("🔵 Request URL: $requestUrl");
+        print(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
+        print("🟠 Request Body: $requestBody");
+
+        try {
+          final response = await http.post(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+            body: requestBody,
+          );
+
+          print(
+            "🟣 Send Regenerate Chat Response Status Code: ${response.statusCode}",
+          );
+          print("🟤  Send Regenerate Chat Raw Response Body: ${response.body}");
+
+          if (response.statusCode == 200) {
+            final Map<String, dynamic> responseData = jsonDecode(response.body);
+            emit(SendRegenerateAPIResponseSuccess(responseData['data']));
+            print(
+              "✅ Send Regenerate Chat API RESPONSE API - Response Data: ${responseData['data']}",
+            );
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(SendRegenerateAPIResponseFailure(errorData));
+            print("❌ Error Response Data: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnectionHomeFlow());
+          print("❗ SocketException: No internet connection.");
+        } catch (e) {
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
+          print("❗ Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnectionHomeFlow());
+        print("❗ No internet connection.");
+      }
+    });
+
+    // Store Editted Chat Bloc
+    on<StoreEdittedChatEvent>((event, emit) async {
+      // Step 1: Connectivity Check — Legacy approach retained for reliability
+      if (await ConnectivityService.isConnected()) {
+        emit(StoreEdittedChatLoading());
+
+        final Uri requestUrl = Uri.parse(
+          APIEndPoints.storeEdittedChatConversation,
+        );
+        print("📡 [Store Editted API REQUEST] → URL: $requestUrl");
+
+        // Step 2: Build Request Body
+        final Map<String, dynamic> requestBody = {
+          'message': event.message,
+          'chat_id': event.chatId,
+          'message_id': event.messageId,
+          'model_name': event.modelName,
+          'search_engine': event.searchEngine,
+          'edited': event.edited,
+          'sender': event.sender,
+        };
+
+        print("📝 [Store Editted REQUEST BODY]: ${jsonEncode(requestBody)}");
+
+        try {
+          // Step 3: Execute POST Call
+          final response = await http.post(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+            body: jsonEncode(requestBody),
+          );
+
+          print("📥 [Store Edited RESPONSE STATUS]: ${response.statusCode}");
+          print("📄 [Store Edited RESPONSE BODY]: ${response.body}");
+
+          // Step 4: Evaluate Response
+          if (response.statusCode == 200) {
+            final Map<String, dynamic> responseData = jsonDecode(response.body);
+            emit(StoreEdittedChatSuccess(responseData['data']));
+            print("✅ Store Chat Success: ${responseData['data']}");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome('Session expired. Please login again.'),
+            );
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(StoreEdittedChatError(errorData));
+            print("❌ Store Chat Error: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnectionHomeFlow());
+          print("⚠️ SocketException: No internet connection.");
+        } catch (e) {
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
+          print("💥 Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnectionHomeFlow());
+        print("🚫 No internet connection.");
       }
     });
   }

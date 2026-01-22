@@ -75,6 +75,19 @@ class StoreChatError extends HomeFlowState {
   StoreChatError(this.failureResponse);
 }
 
+// Store Editted / Regenerated Chat States
+class StoreEdittedChatLoading extends HomeFlowState {}
+
+class StoreEdittedChatSuccess extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  StoreEdittedChatSuccess(this.successResponse);
+}
+
+class StoreEdittedChatError extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  StoreEdittedChatError(this.failureResponse);
+}
+
 // Send API Response States
 class SendAPIResponseLoading extends HomeFlowState {}
 
@@ -250,16 +263,16 @@ class SessionExpiredStateHome extends HomeFlowState {
 }
 
 // Upload Profile Photo States
-class UploadProfilephotoLoading extends HomeFlowState {}
+class UploadFileLoading extends HomeFlowState {}
 
-class UploadProfilePhotoSuccess extends HomeFlowState {
+class UploadFileSuccess extends HomeFlowState {
   final Map<String, dynamic> successResponse;
-  UploadProfilePhotoSuccess(this.successResponse);
+  UploadFileSuccess(this.successResponse);
 }
 
-class UploadProfilePhotoFailure extends HomeFlowState {
+class UploadFileFailure extends HomeFlowState {
   final Map<String, dynamic> failureResponse;
-  UploadProfilePhotoFailure(this.failureResponse);
+  UploadFileFailure(this.failureResponse);
 }
 
 // View User Profile States
@@ -286,6 +299,19 @@ class ViewAllContentLoaded extends HomeFlowState {
 class ViewAllContentError extends HomeFlowState {
   final Map<String, dynamic> failureResponse;
   ViewAllContentError(this.failureResponse);
+}
+
+// Send Regenerate Chat API Response States
+class SendRegenerateAPIResponseLoading extends HomeFlowState {}
+
+class SendRegenerateAPIResponseSuccess extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  SendRegenerateAPIResponseSuccess(this.successResponse);
+}
+
+class SendRegenerateAPIResponseFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  SendRegenerateAPIResponseFailure(this.failureResponse);
 }
 
 // Common Server Failure State
