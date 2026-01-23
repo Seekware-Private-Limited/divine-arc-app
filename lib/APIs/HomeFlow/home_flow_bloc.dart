@@ -265,7 +265,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("Initiate Chat Response Data: ${responseData['data']}");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -341,7 +343,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           emit(StoreChatSuccess(responseData['data']));
           print("✅ Store Chat Success: ${responseData['data']}");
         } else if (response.statusCode == 401) {
-          emit(SessionExpiredStateHome('Session expired. Please login again.'));
+          emit(
+            SessionExpiredStateHome(
+              "You're not logged in. Please log in to access this feature.",
+            ),
+          );
         } else {
           final errorData = jsonDecode(response.body);
           emit(StoreChatError(errorData));
@@ -405,7 +411,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             );
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -454,7 +462,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("Response Data: $responseData");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -518,7 +528,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("✅ Parsed Response Data: $responseData");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -580,7 +592,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("✅ Parsed Response Data: $responseData");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -638,7 +652,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("✅ Parsed Response Data: ${responseData['shareUrl']}");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -694,7 +710,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("✅ Parsed Response Data: $responseData");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -753,7 +771,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("✅ Parsed Response Data: $responseData");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -811,7 +831,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("✅ Parsed Response Data: $responseData");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -917,7 +939,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             emit(GetAllPrayersLoaded(responseData));
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -976,7 +1000,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("✅ Parsed Response Data: $responseData");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -1035,7 +1061,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("✅ Parsed Response Data: $responseData");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -1100,7 +1128,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           /// 🚨 TOKEN EXPIRED / INVALID
           else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -1196,7 +1226,11 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             PrefUtils.setProfilePicture(data['url']);
           }
         } else if (response.statusCode == 401) {
-          emit(SessionExpiredStateHome('Session expired. Please login again.'));
+          emit(
+            SessionExpiredStateHome(
+              "You're not logged in. Please log in to access this feature.",
+            ),
+          );
         } else {
           Map<String, dynamic> errorData = {};
           try {
@@ -1247,7 +1281,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("Response Data: $responseData");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -1296,7 +1332,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("Response Data: $responseData");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -1368,7 +1406,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             );
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -1438,7 +1478,9 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
             print("✅ Store Chat Success: ${responseData['data']}");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateHome('Session expired. Please login again.'),
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);

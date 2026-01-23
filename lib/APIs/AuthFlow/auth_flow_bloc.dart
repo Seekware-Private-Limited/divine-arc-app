@@ -111,7 +111,11 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         if (response.statusCode == 201) {
           emit(SignUpSuccess(responseData));
         } else if (response.statusCode == 401) {
-          emit(SessionExpiredStateAuth('Session expired. Please login again.'));
+          emit(
+            SessionExpiredStateAuth(
+              "You're not logged in. Please log in to access this feature.",
+            ),
+          );
         } else {
           emit(SignUpFailure(responseData));
         }
@@ -173,7 +177,11 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         if (response.statusCode == 200) {
           emit(LoginSuccess(responseData));
         } else if (response.statusCode == 401) {
-          emit(SessionExpiredStateAuth('Session expired. Please login again.'));
+          emit(
+            SessionExpiredStateAuth(
+              "You're not logged in. Please log in to access this feature.",
+            ),
+          );
         } else {
           emit(LoginFailure(responseData['message']));
         }
@@ -217,7 +225,9 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
             print("✅ Parsed Response Data: $responseData");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateAuth('Session expired. Please login again.'),
+              SessionExpiredStateAuth(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -274,7 +284,9 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
             print("✅ Parsed Response Data: $responseData");
           } else if (response.statusCode == 401) {
             emit(
-              SessionExpiredStateAuth('Session expired. Please login again.'),
+              SessionExpiredStateAuth(
+                "You're not logged in. Please log in to access this feature.",
+              ),
             );
           } else {
             final errorData = jsonDecode(response.body);
@@ -347,7 +359,11 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         if (response.statusCode == 200) {
           emit(SocialLoginSuccess(responseData));
         } else if (response.statusCode == 401) {
-          emit(SessionExpiredStateAuth('Session expired. Please login again.'));
+          emit(
+            SessionExpiredStateAuth(
+              "You're not logged in. Please log in to access this feature.",
+            ),
+          );
         } else {
           emit(SocialLoginFailure(responseData['message']));
         }
@@ -410,7 +426,8 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         } else if (response.statusCode == 401) {
           emit(
             SessionExpiredStateAuth(
-              responseData['message'] ?? 'Session expired. Please login again.',
+              responseData['message'] ??
+                  "You're not logged in. Please log in to access this feature.",
             ),
           );
         } else {

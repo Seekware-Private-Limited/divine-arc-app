@@ -264,13 +264,81 @@ class _ProfileScreenState extends State<ProfileScreen> {
               setState(() => isLoading = false);
               CommonUtils.showErrorToast('No internet connection');
             } else if (state is SessionExpiredStateHome) {
-              setState(() => isLoading = false);
-              CommonUtils.showErrorToast(state.message);
-              PrefUtils.clearAll();
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false,
+              setState(() {
+                isLoading = false;
+              });
+
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  behavior: SnackBarBehavior.floating,
+                  content: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Color(0xFFFC7902), // gradientStart
+                          Color(0xFFC62E00), // gradientEnd
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.25),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            state.message,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            PrefUtils.clearAll();
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const LoginScreen(),
+                              ),
+                              (route) => false,
+                            );
+                          },
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                          child: const Text(
+                            'Login',
+                            style: TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               );
             }
           },
@@ -383,17 +451,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                                 fit:
                                                                     BoxFit
                                                                         .cover,
-                                                                errorBuilder:
-                                                                    (
-                                                                      context,
-                                                                      error,
-                                                                      stackTrace,
-                                                                    ) => Image.asset(
-                                                                      'assets/images/defaultProfile.jpg',
-                                                                      fit:
-                                                                          BoxFit
-                                                                              .cover,
-                                                                    ),
+                                                                loadingBuilder: (
+                                                                  context,
+                                                                  child,
+                                                                  loadingProgress,
+                                                                ) {
+                                                                  if (loadingProgress ==
+                                                                      null)
+                                                                    return child;
+                                                                  return Image.asset(
+                                                                    'assets/images/defaultProfile.jpg',
+                                                                    fit:
+                                                                        BoxFit
+                                                                            .cover,
+                                                                  );
+                                                                },
+                                                                errorBuilder: (
+                                                                  context,
+                                                                  error,
+                                                                  stackTrace,
+                                                                ) {
+                                                                  return Image.asset(
+                                                                    'assets/images/defaultProfile.jpg',
+                                                                    fit:
+                                                                        BoxFit
+                                                                            .cover,
+                                                                  );
+                                                                },
                                                               )
                                                               : Image.asset(
                                                                 'assets/images/defaultProfile.jpg',

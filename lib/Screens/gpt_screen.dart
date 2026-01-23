@@ -1,9 +1,14 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:divine_arc/Screens/CustomAudioPlayer.dart';
 import 'package:record/record.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter/services.dart';
 
 class GptScreen extends StatefulWidget {
   final String? searchQueryFromAskAnythingScreen;
@@ -33,9 +38,6 @@ class _GptScreenState extends State<GptScreen>
 
   StreamSubscription<PlayerState>? _playerStateSubscription;
   bool isRecording = false;
-  bool isPlaying = false;
-  bool isPlayingResponse = false;
-  bool isSending = false;
   bool _isInitialLoading = false;
   bool _isApiProcessing = false;
   bool _isConvertingAudio = false;
@@ -44,7 +46,6 @@ class _GptScreenState extends State<GptScreen>
   String? _audioPath;
   String? _responseAudioPath;
   String? _apiResponse;
-  String? _currentPlayingPath;
   String reactionId = '';
 
   // Chat state
@@ -63,6 +64,11 @@ class _GptScreenState extends State<GptScreen>
   // For tracking current voice conversation
   String? _currentUserAudioUrl;
   String? _currentResponseAudioUrl;
+
+  // For tracking current playing audio
+  int? _currentlyPlayingIndex;
+  String? _currentlyPlayingUrl;
+  bool _isPlaying = false;
 
   @override
   void initState() {
@@ -87,15 +93,13 @@ class _GptScreenState extends State<GptScreen>
       if (!mounted) return;
 
       setState(() {
-        if (_currentPlayingPath == _audioPath) {
-          isPlaying = state == PlayerState.playing;
-          isPlayingResponse = false;
-        } else if (_currentPlayingPath == _responseAudioPath) {
-          isPlayingResponse = state == PlayerState.playing;
-          isPlaying = false;
-        } else {
-          isPlaying = false;
-          isPlayingResponse = false;
+        _isPlaying = state == PlayerState.playing;
+
+        // If audio stopped, clear playing state
+        if (state == PlayerState.stopped || state == PlayerState.completed) {
+          _currentlyPlayingIndex = null;
+          _currentlyPlayingUrl = null;
+          _isPlaying = false;
         }
       });
     });
@@ -212,7 +216,7 @@ class _GptScreenState extends State<GptScreen>
       _initialLoadCompleter?.complete();
     }
 
-    if (isPlaying || isPlayingResponse) {
+    if (_isPlaying) {
       _audioPlayer.stop();
     }
 
@@ -248,17 +252,17 @@ class _GptScreenState extends State<GptScreen>
 
       if (mounted) {
         setState(() {
-          isPlaying = false;
-          isPlayingResponse = false;
-          _currentPlayingPath = null;
+          _isPlaying = false;
+          _currentlyPlayingIndex = null;
+          _currentlyPlayingUrl = null;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          isPlaying = false;
-          isPlayingResponse = false;
-          _currentPlayingPath = null;
+          _isPlaying = false;
+          _currentlyPlayingIndex = null;
+          _currentlyPlayingUrl = null;
         });
       }
     }
@@ -353,7 +357,6 @@ class _GptScreenState extends State<GptScreen>
     if (_audioPath == null) return;
 
     setState(() {
-      isSending = true;
       _isApiProcessing = true;
     });
 
@@ -400,72 +403,82 @@ class _GptScreenState extends State<GptScreen>
           }
         });
       }
-    } finally {
-      setState(() => isSending = false);
     }
   }
 
-  Future<void> _playRecording() async {
-    if (_audioPath == null || !File(_audioPath!).existsSync()) return;
-
-    try {
-      if (_currentPlayingPath == _audioPath && isPlaying) {
-        await _audioPlayer.pause();
-        setState(() => isPlaying = false);
-      } else {
-        await _audioPlayer.stop();
-        setState(() {
-          _currentPlayingPath = _audioPath;
-          isPlaying = true;
-          isPlayingResponse = false;
-        });
-        await _audioPlayer.play(DeviceFileSource(_audioPath!));
-      }
-    } catch (e) {
-      CommonUtils.showErrorToast('Failed to play recording');
-    }
-  }
-
-  Future<void> _playResponseAudioFromUrl(String audioUrl) async {
+  Future<void> _playAudioFromUrl(
+    String audioUrl,
+    int index,
+    bool isUserAudio,
+  ) async {
     if (audioUrl.isEmpty) return;
 
     try {
-      if (_currentPlayingPath == audioUrl && isPlayingResponse) {
+      // If clicking on the same audio that's currently playing, pause it
+      if (_currentlyPlayingIndex == index &&
+          _currentlyPlayingUrl == audioUrl &&
+          _isPlaying) {
         await _audioPlayer.pause();
-        setState(() => isPlayingResponse = false);
-      } else {
-        await _audioPlayer.stop();
         setState(() {
-          _currentPlayingPath = audioUrl;
-          isPlayingResponse = true;
-          isPlaying = false;
+          _isPlaying = false;
         });
+      } else {
+        // Stop any currently playing audio
+        await _audioPlayer.stop();
+
+        // Play the new audio
+        setState(() {
+          _currentlyPlayingIndex = index;
+          _currentlyPlayingUrl = audioUrl;
+          _isPlaying = true;
+        });
+
         await _audioPlayer.play(UrlSource(audioUrl));
       }
     } catch (e) {
-      CommonUtils.showErrorToast('Failed to play audio response');
+      debugPrint('Error playing audio: $e');
+      CommonUtils.showErrorToast('Failed to play audio');
+      setState(() {
+        _isPlaying = false;
+        _currentlyPlayingIndex = null;
+        _currentlyPlayingUrl = null;
+      });
     }
   }
 
-  Future<void> _playResponseAudio() async {
-    if (_responseAudioPath == null || !File(_responseAudioPath!).existsSync())
-      return;
+  Future<void> _playLocalAudio(String filePath, int index) async {
+    if (filePath.isEmpty || !File(filePath).existsSync()) return;
 
     try {
-      if (_currentPlayingPath == _responseAudioPath && isPlayingResponse) {
+      // If clicking on the same audio that's currently playing, pause it
+      if (_currentlyPlayingIndex == index &&
+          _currentlyPlayingUrl == filePath &&
+          _isPlaying) {
         await _audioPlayer.pause();
-        setState(() => isPlayingResponse = false);
-      } else {
-        await _audioPlayer.stop();
         setState(() {
-          _currentPlayingPath = _responseAudioPath;
-          isPlayingResponse = true;
-          isPlaying = false;
+          _isPlaying = false;
         });
-        await _audioPlayer.play(DeviceFileSource(_responseAudioPath!));
+      } else {
+        // Stop any currently playing audio
+        await _audioPlayer.stop();
+
+        // Play the new audio
+        setState(() {
+          _currentlyPlayingIndex = index;
+          _currentlyPlayingUrl = filePath;
+          _isPlaying = true;
+        });
+
+        await _audioPlayer.play(DeviceFileSource(filePath));
       }
     } catch (e) {
-      CommonUtils.showErrorToast('Failed to play response');
+      debugPrint('Error playing local audio: $e');
+      CommonUtils.showErrorToast('Failed to play audio');
+      setState(() {
+        _isPlaying = false;
+        _currentlyPlayingIndex = null;
+        _currentlyPlayingUrl = null;
+      });
     }
   }
 
@@ -1436,14 +1449,82 @@ class _GptScreenState extends State<GptScreen>
                   });
                   CommonUtils.showErrorToast(state.failureResponse['message']);
                 } else if (state is SessionExpiredStateHome) {
-                  CommonUtils.showErrorToast(state.message);
-                  PrefUtils.clearAll();
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LoginScreen(),
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      behavior: SnackBarBehavior.floating,
+                      content: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Color(0xFFFC7902), // gradientStart
+                              Color(0xFFC62E00), // gradientEnd
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.25),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                state.message,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                PrefUtils.clearAll();
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const LoginScreen(),
+                                  ),
+                                  (route) => false,
+                                );
+                              },
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                              ),
+                              child: const Text(
+                                'Login',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    (route) => false,
                   );
                 }
               } catch (e) {
@@ -1768,12 +1849,16 @@ class _GptScreenState extends State<GptScreen>
                                                                           audioPath:
                                                                               userAudioUrl,
                                                                           isPlaying:
-                                                                              _currentPlayingPath ==
+                                                                              _currentlyPlayingIndex ==
+                                                                                  index &&
+                                                                              _currentlyPlayingUrl ==
                                                                                   userAudioUrl &&
-                                                                              isPlaying,
+                                                                              _isPlaying,
                                                                           onPlayPause:
-                                                                              () => _playResponseAudioFromUrl(
+                                                                              () => _playAudioFromUrl(
                                                                                 userAudioUrl,
+                                                                                index,
+                                                                                true,
                                                                               ),
                                                                         ),
                                                                       ],
@@ -1815,12 +1900,16 @@ class _GptScreenState extends State<GptScreen>
                                                                           audioPath:
                                                                               responseAudioUrl,
                                                                           isPlaying:
-                                                                              _currentPlayingPath ==
+                                                                              _currentlyPlayingIndex ==
+                                                                                  index &&
+                                                                              _currentlyPlayingUrl ==
                                                                                   responseAudioUrl &&
-                                                                              isPlayingResponse,
+                                                                              _isPlaying,
                                                                           onPlayPause:
-                                                                              () => _playResponseAudioFromUrl(
+                                                                              () => _playAudioFromUrl(
                                                                                 responseAudioUrl,
+                                                                                index,
+                                                                                false,
                                                                               ),
                                                                         ),
                                                                       ],
@@ -1862,9 +1951,16 @@ class _GptScreenState extends State<GptScreen>
                                                                         audioPath:
                                                                             _audioPath!,
                                                                         isPlaying:
-                                                                            isPlaying,
+                                                                            _currentlyPlayingIndex ==
+                                                                                index &&
+                                                                            _currentlyPlayingUrl ==
+                                                                                _audioPath! &&
+                                                                            _isPlaying,
                                                                         onPlayPause:
-                                                                            _playRecording,
+                                                                            () => _playLocalAudio(
+                                                                              _audioPath!,
+                                                                              index,
+                                                                            ),
                                                                       ),
                                                                     ],
                                                                   ),
@@ -1901,9 +1997,16 @@ class _GptScreenState extends State<GptScreen>
                                                                         audioPath:
                                                                             _responseAudioPath!,
                                                                         isPlaying:
-                                                                            isPlayingResponse,
+                                                                            _currentlyPlayingIndex ==
+                                                                                index &&
+                                                                            _currentlyPlayingUrl ==
+                                                                                _responseAudioPath! &&
+                                                                            _isPlaying,
                                                                         onPlayPause:
-                                                                            _playResponseAudio,
+                                                                            () => _playLocalAudio(
+                                                                              _responseAudioPath!,
+                                                                              index,
+                                                                            ),
                                                                       ),
                                                                     ],
                                                                   ),
@@ -2227,30 +2330,6 @@ Answer: $answer''';
                                 ),
                       ),
                       const SizedBox(height: 10),
-                      // if (_isConvertingAudio)
-                      //   Padding(
-                      //     padding: const EdgeInsets.only(bottom: 8.0),
-                      //     child: Row(
-                      //       mainAxisAlignment: MainAxisAlignment.center,
-                      //       children: [
-                      //         SizedBox(
-                      //           height: 16,
-                      //           width: 16,
-                      //           child: CircularProgressIndicator(
-                      //             strokeWidth: 2,
-                      //             color: AppColors.gradientStart,
-                      //           ),
-                      //         ),
-                      //         const SizedBox(width: 10),
-                      //         Text(
-                      //           'Converting audio to MP3...',
-                      //           style: FTextStyle.defaultText.copyWith(
-                      //             color: AppColors.gradientStart,
-                      //           ),
-                      //         ),
-                      //       ],
-                      //     ),
-                      //   ),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -2353,7 +2432,9 @@ Answer: $answer''';
                                                 : AppColors.gradientStart,
                                       ),
                                       onPressed:
-                                          isSending
+                                          (_isApiProcessing ||
+                                                  isRecording ||
+                                                  _isConvertingAudio)
                                               ? null
                                               : () async {
                                                 if (isRecording) {
@@ -2371,7 +2452,6 @@ Answer: $answer''';
                             GestureDetector(
                               onTap:
                                   (_isApiProcessing ||
-                                          isSending ||
                                           isRecording ||
                                           _isConvertingAudio)
                                       ? null
@@ -2392,7 +2472,6 @@ Answer: $answer''';
                                   Icons.send,
                                   color:
                                       (_isApiProcessing ||
-                                              isSending ||
                                               isRecording ||
                                               _isConvertingAudio)
                                           ? Colors.grey
@@ -2404,7 +2483,7 @@ Answer: $answer''';
                           ],
                         ),
                       ),
-                      if (isSending)
+                      if (_isConvertingAudio)
                         Padding(
                           padding: const EdgeInsets.only(top: 8.0),
                           child: Column(
@@ -2414,7 +2493,7 @@ Answer: $answer''';
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Sending to API...',
+                                'Converting audio...',
                                 style: FTextStyle.defaultText.copyWith(
                                   color: AppColors.gradientStart,
                                 ),

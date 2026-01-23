@@ -40,7 +40,7 @@ android {
     defaultConfig {
         applicationId = "com.divinearc.app"
         minSdk = 24
-        targetSdk = 33
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
