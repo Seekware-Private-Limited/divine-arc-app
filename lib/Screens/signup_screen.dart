@@ -1,9 +1,10 @@
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
-import 'package:divine_arc/Utils/common_utils.dart';
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+  final bool isFacebookLoginEnabled;
+
+  const SignUpScreen({super.key, this.isFacebookLoginEnabled = false});
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -612,39 +613,45 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                                GestureDetector(
-                                  onTap: () {
-                                    BlocProvider.of<AuthFlowBloc>(
-                                      context,
-                                    ).add(FacebookLoginEventHandler());
-                                  },
-                                  child: Container(
-                                    height: 45,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: AppColors.gradientStart,
-                                        width: 1.5,
+                                Visibility(
+                                  visible: widget.isFacebookLoginEnabled,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      BlocProvider.of<AuthFlowBloc>(
+                                        context,
+                                      ).add(FacebookLoginEventHandler());
+                                    },
+                                    child: Container(
+                                      height: 45,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: AppColors.gradientStart,
+                                          width: 1.5,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Image.asset(
-                                          'assets/images/facebook.png',
-                                          height: 24,
-                                          width: 24,
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Text(
-                                          AppLocalizations.of(
-                                            context,
-                                          )!.translate('continueWithFacebook'),
-                                          style:
-                                              FTextStyle.socialloginbuttonText,
-                                        ),
-                                      ],
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Image.asset(
+                                            'assets/images/facebook.png',
+                                            height: 24,
+                                            width: 24,
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.translate(
+                                              'continueWithFacebook',
+                                            ),
+                                            style:
+                                                FTextStyle
+                                                    .socialloginbuttonText,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),

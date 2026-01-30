@@ -115,6 +115,19 @@ class DeviceTokenSendFailure extends AuthFlowState {
   DeviceTokenSendFailure(this.failureResponse);
 }
 
+// View App Config States
+class ViewAppConfigLoading extends AuthFlowState {}
+
+class ViewAppConfigLoaded extends AuthFlowState {
+  final Map<String, dynamic> successResponse;
+  ViewAppConfigLoaded(this.successResponse);
+}
+
+class ViewAppConfigFailure extends AuthFlowState {
+  final Map<String, dynamic> failureResponse;
+  ViewAppConfigFailure(this.failureResponse);
+}
+
 class SessionExpiredStateAuth extends AuthFlowState {
   final String message;
   SessionExpiredStateAuth(this.message);

@@ -44,4 +44,5 @@ class APIEndPoints {
   static const String viewProfile = '$baseUrl/users/me';
   static const String viewAllContent = '$baseUrl/content';
   static const String sendDeviceToken = '$baseUrl/device-token';
+  static const String appConfig = '$baseUrl/app-config';
 }

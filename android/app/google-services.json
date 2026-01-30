@@ -14,51 +14,30 @@
       },
       "oauth_client": [
         {
-          "client_id": "1072160672117-4j8bo65v3bkphrqpn199lnl7cipqdmo7.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyBUevHav1YFunSntXbZbYc1TSroFb2OLps"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "1072160672117-4j8bo65v3bkphrqpn199lnl7cipqdmo7.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:1072160672117:android:7947719d8b3c08a6442b3c",
-        "android_client_info": {
-          "package_name": "com.seekware.gitagpt"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "1072160672117-i7aom9vdsjg7rna6alamod47c4gm7rda.apps.googleusercontent.com",
+          "client_id": "1072160672117-cf7gijqjgmekjdlvmcgk6sertq7h12s0.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.seekware.gitagpt",
-            "certificate_hash": "2d2d58c4e938a9da6c3b3d68330daaefdf313acf"
+            "package_name": "com.divinearc.app",
+            "certificate_hash": "3ee4f0eccd00265b8c0fa17a8080b602f7ef3b16"
           }
         },
         {
-          "client_id": "1072160672117-kvh30oqv14psvd5k62j8a9b3v1abtjmc.apps.googleusercontent.com",
+          "client_id": "1072160672117-elvlq71bp4fbo59bqr3mi4u429nqp53a.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.seekware.gitagpt",
+            "package_name": "com.divinearc.app",
             "certificate_hash": "cdf14c29f491fa244d5156cc5fab23a39c272715"
           }
         },
         {
+          "client_id": "1072160672117-t5p9ejct7452l9b7jgqkj8c5f96i79j1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.divinearc.app",
+            "certificate_hash": "2d2d58c4e938a9da6c3b3d68330daaefdf313acf"
+          }
+        },
+        {
           "client_id": "1072160672117-4j8bo65v3bkphrqpn199lnl7cipqdmo7.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -74,6 +53,13 @@
             {
               "client_id": "1072160672117-4j8bo65v3bkphrqpn199lnl7cipqdmo7.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "1072160672117-ot8a42d3ioarbn0norr7400q17to4851.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.divinearc.app"
+              }
             }
           ]
         }

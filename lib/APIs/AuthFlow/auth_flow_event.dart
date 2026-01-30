@@ -64,3 +64,6 @@ class SendDeviceTokenEvent extends AuthFlowEvent {
   final String? userID;
   SendDeviceTokenEvent({required this.deviceToken, this.userID});
 }
+
+// View App Config Event
+class ViewAppConfigEvent extends AuthFlowEvent {}
