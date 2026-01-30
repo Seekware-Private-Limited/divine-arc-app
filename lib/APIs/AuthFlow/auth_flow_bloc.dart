@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:divine_arc/Utils/app_imports.dart';
 part 'auth_flow_event.dart';
@@ -433,6 +432,58 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         } else {
           emit(
             DeviceTokenSendFailure(
+              responseData['message'] ?? 'Something went wrong',
+            ),
+          );
+        }
+      } catch (e, stackTrace) {
+        debugPrint("🔥 Exception: $e");
+        debugPrint("📌 StackTrace: $stackTrace");
+        emit(CommonServerFailure(e.toString()));
+      }
+    });
+
+    // View App Config Bloc
+    on<ViewAppConfigEvent>((event, emit) async {
+      // 1️⃣ Check internet
+      final bool isConnected = await ConnectivityService.isConnected();
+      if (!isConnected) {
+        emit(CheckNetworkConnectionAuthFlow());
+        debugPrint("❌ No internet connection");
+        return;
+      }
+
+      emit(ViewAppConfigLoading());
+
+      try {
+        final Uri requestUrl = Uri.parse(APIEndPoints.appConfig);
+        final response = await http
+            .get(
+              requestUrl,
+              headers: const {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+              },
+            )
+            .timeout(const Duration(seconds: 15));
+
+        debugPrint("✅ Status Code: ${response.statusCode}");
+        debugPrint("✅ Response Body: ${response.body}");
+
+        Map<String, dynamic> responseData = jsonDecode(response.body);
+
+        if (response.statusCode == 200) {
+          emit(ViewAppConfigLoaded(responseData));
+        } else if (response.statusCode == 401) {
+          emit(
+            SessionExpiredStateAuth(
+              responseData['message'] ??
+                  "You're not logged in. Please log in to access this feature.",
+            ),
+          );
+        } else {
+          emit(
+            ViewAppConfigFailure(
               responseData['message'] ?? 'Something went wrong',
             ),
           );

@@ -8,7 +8,7 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 
 	<key>CFBundleDisplayName</key>
-	<string>GitaGPT</string>
+	<string>Divine ARC</string>
 
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
@@ -126,7 +126,7 @@
 	<string>78e7849e3c6656ab85bf02b5b9165af5</string>
 
 	<key>FacebookDisplayName</key>
-	<string>GitaGPT</string>
+	<string>Divine ARC</string>
 
 	<key>LSApplicationQueriesSchemes</key>
 	<array>

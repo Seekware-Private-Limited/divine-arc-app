@@ -12,11 +12,23 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   bool emailError = false;
   bool passwordError = false;
+  bool isFacebookLoginEnabled = false;
   String? emailErrorText;
   String? passwordErrorText;
   bool isLoading = false;
+
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+
+  String get currentPlatform {
+    if (Platform.isAndroid) {
+      return 'android';
+    } else if (Platform.isIOS) {
+      return 'ios';
+    } else {
+      return 'all';
+    }
+  }
 
   // Email validation regex
   bool isValidEmail(String email) {
@@ -31,6 +43,12 @@ class _LoginScreenState extends State<LoginScreen> {
         RegExp(
           r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{9,32}$',
         ).hasMatch(password);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    BlocProvider.of<AuthFlowBloc>(context).add(ViewAppConfigEvent());
   }
 
   @override
@@ -65,7 +83,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() {
                           isLoading = false;
                         });
-
                         BlocProvider.of<AuthFlowBloc>(context).add(
                           SocialLoginEventHandler(
                             socialId: state.id,
@@ -149,6 +166,68 @@ class _LoginScreenState extends State<LoginScreen> {
                         });
                         print(state.failureMessage);
                         CommonUtils.showErrorToast(state.failureMessage);
+                      } else if (state is ViewAppConfigLoaded) {
+                        final response = state.successResponse;
+                        final List configs = response['data'];
+                        Map<String, dynamic>? allConfig;
+                        Map<String, dynamic>? platformSpecificConfig;
+
+                        // Detect current platform
+                        final String platform = currentPlatform;
+
+                        for (final item in configs) {
+                          if (item['config_key'] == 'social_login') {
+                            if (item['platform'] == platform) {
+                              platformSpecificConfig = item;
+                            }
+                            if (item['platform'] == 'all') {
+                              allConfig = item;
+                            }
+                          }
+                        }
+
+                        final effectiveConfig =
+                            platformSpecificConfig ?? allConfig;
+                        if (effectiveConfig == null) {
+                          print('❌ No social login config found');
+                          return;
+                        }
+
+                        final configValue = effectiveConfig['config_value'];
+                        if (configValue != null &&
+                            configValue['facebook'] != null) {
+                          setState(() {
+                            if (platform == 'android') {
+                              isFacebookLoginEnabled =
+                                  configValue['facebook']?['android']?['enabled'] ??
+                                  false;
+                            } else if (platform == 'ios') {
+                              isFacebookLoginEnabled =
+                                  configValue['facebook']?['ios']?['enabled'] ??
+                                  false;
+                            } else {
+                              final androidEnabled =
+                                  configValue['facebook']?['android']?['enabled'] ??
+                                  false;
+                              final iosEnabled =
+                                  configValue['facebook']?['ios']?['enabled'] ??
+                                  false;
+                              isFacebookLoginEnabled =
+                                  androidEnabled || iosEnabled;
+                            }
+                          });
+                        }
+
+                        print('✅ Current Platform: $platform');
+                        print(
+                          '✅ FACEBOOK ENABLED for $platform = $isFacebookLoginEnabled',
+                        );
+
+                        print('✅ Config used: ${effectiveConfig['platform']}');
+                      } else if (state is ViewAppConfigFailure) {
+                        setState(() {
+                          isFacebookLoginEnabled = false;
+                        });
                       } else if (state is SessionExpiredStateAuth) {
                         CommonUtils.showErrorToast(state.message);
                         PrefUtils.clearAll();
@@ -362,7 +441,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                 GestureDetector(
                                   onTap: () {
                                     bool hasError = false;
-
                                     if (emailController.text.isEmpty) {
                                       setState(() {
                                         emailError = true;
@@ -391,7 +469,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                       });
                                       hasError = true;
                                     }
-
                                     if (passwordController.text.isEmpty) {
                                       setState(() {
                                         passwordError = true;
@@ -429,7 +506,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                       });
                                       hasError = true;
                                     }
-
                                     if (!hasError) {
                                       BlocProvider.of<AuthFlowBloc>(
                                         context,
@@ -476,7 +552,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                             (context) => BlocProvider(
                                               create:
                                                   (context) => AuthFlowBloc(),
-                                              child: SignUpScreen(),
+                                              child: SignUpScreen(
+                                                isFacebookLoginEnabled:
+                                                    isFacebookLoginEnabled,
+                                              ),
                                             ),
                                       ),
                                     );
@@ -562,39 +641,45 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                                GestureDetector(
-                                  onTap: () {
-                                    BlocProvider.of<AuthFlowBloc>(
-                                      context,
-                                    ).add(FacebookLoginEventHandler());
-                                  },
-                                  child: Container(
-                                    height: 45,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: AppColors.gradientStart,
-                                        width: 1.5,
+                                Visibility(
+                                  visible: isFacebookLoginEnabled,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      BlocProvider.of<AuthFlowBloc>(
+                                        context,
+                                      ).add(FacebookLoginEventHandler());
+                                    },
+                                    child: Container(
+                                      height: 45,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: AppColors.gradientStart,
+                                          width: 1.5,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Image.asset(
-                                          'assets/images/facebook.png',
-                                          height: 24,
-                                          width: 24,
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Text(
-                                          AppLocalizations.of(
-                                            context,
-                                          )!.translate('continueWithFacebook'),
-                                          style:
-                                              FTextStyle.socialloginbuttonText,
-                                        ),
-                                      ],
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Image.asset(
+                                            'assets/images/facebook.png',
+                                            height: 24,
+                                            width: 24,
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.translate(
+                                              'continueWithFacebook',
+                                            ),
+                                            style:
+                                                FTextStyle
+                                                    .socialloginbuttonText,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
