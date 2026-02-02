@@ -84,154 +84,232 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     Expanded(
                       child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppColors.gradientStart,
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              ClipOval(
-                                child: SizedBox(
-                                  height: 160,
-                                  width: 160,
-                                  child:
-                                      profilePictureUrl != null &&
-                                              profilePictureUrl!.isNotEmpty
-                                          ? Image.network(
-                                            profilePictureUrl!,
-                                            fit: BoxFit.cover,
-                                            loadingBuilder: (
-                                              context,
-                                              child,
-                                              loadingProgress,
-                                            ) {
-                                              if (loadingProgress == null) {
-                                                return child;
-                                              }
-                                              return Image.asset(
-                                                'assets/images/defaultProfile.jpg',
-                                                fit: BoxFit.cover,
-                                              );
-                                            },
-                                            errorBuilder: (
-                                              context,
-                                              error,
-                                              stackTrace,
-                                            ) {
-                                              return Image.asset(
-                                                'assets/images/defaultProfile.jpg',
-                                                fit: BoxFit.cover,
-                                              );
-                                            },
-                                          )
-                                          : Image.asset(
-                                            'assets/images/defaultProfile.jpg',
-                                            fit: BoxFit.cover,
+                        child:
+                            PrefUtils.getIsGuest()
+                                ? Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    ClipOval(
+                                      child: Image.asset(
+                                        'assets/images/errorImage.png',
+                                        height: 250,
+                                        width: 250,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 24),
+
+                                    Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.translate('guest_title'),
+                                      textAlign: TextAlign.center,
+                                      style: FTextStyle.defaultTextBold
+                                          .copyWith(fontSize: 18),
+                                    ),
+
+                                    const SizedBox(height: 8),
+
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                      ),
+                                      child: Text(
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.translate('guest_description'),
+                                        textAlign: TextAlign.center,
+                                        style: FTextStyle.defaultText.copyWith(
+                                          color: Colors.grey.shade700,
+                                        ),
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 30),
+
+                                    Visibility(
+                                      visible: PrefUtils.getIsGuest(),
+                                      child: GestureDetector(
+                                        onTap: () {
+                                          Navigator.pushAndRemoveUntil(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (context) => LoginScreen(),
+                                            ),
+                                            (route) => false,
+                                          );
+                                        },
+                                        child: Container(
+                                          height: 45,
+                                          width: double.infinity,
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 24,
                                           ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              Text(
-                                userName ?? '',
-                                style: FTextStyle.defaultTextBold,
-                              ),
-
-                              const SizedBox(height: 6),
-
-                              Text(
-                                userEmail ?? '',
-                                style: FTextStyle.defaultText,
-                              ),
-
-                              const SizedBox(height: 30),
-
-                              if (!PrefUtils.getIsGuest())
-                                ListTile(
-                                  leading: Image.asset(
-                                    'assets/images/useredit.png',
-                                    height: 24,
-                                    width: 24,
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                AppColors.gradientStart,
+                                                AppColors.gradientEnd,
+                                              ],
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Text(
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate('signInToContinue'),
+                                              style: FTextStyle.buttonText,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                                : Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: AppColors.gradientStart,
+                                      width: 1.5,
+                                    ),
                                   ),
-                                  title: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.translate('editProfile'),
-                                    style: FTextStyle.defaultText,
-                                  ),
-                                  onTap: () async {
-                                    final result = await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (_) => EditProfileScreen(
-                                              name: userName ?? '',
-                                              email: userEmail ?? '',
-                                              profilePictureUrl:
-                                                  profilePictureUrl ?? '',
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      ClipOval(
+                                        child: SizedBox(
+                                          height: 160,
+                                          width: 160,
+                                          child:
+                                              profilePictureUrl != null &&
+                                                      profilePictureUrl!
+                                                          .isNotEmpty
+                                                  ? Image.network(
+                                                    profilePictureUrl!,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (_, __, ___) {
+                                                      return Image.asset(
+                                                        'assets/images/defaultProfile.jpg',
+                                                        fit: BoxFit.cover,
+                                                      );
+                                                    },
+                                                  )
+                                                  : Image.asset(
+                                                    'assets/images/defaultProfile.jpg',
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 16),
+
+                                      Text(
+                                        userName ?? '',
+                                        style: FTextStyle.defaultTextBold,
+                                      ),
+
+                                      const SizedBox(height: 6),
+
+                                      Text(
+                                        userEmail ?? '',
+                                        style: FTextStyle.defaultText,
+                                      ),
+
+                                      const SizedBox(height: 30),
+
+                                      if (!PrefUtils.getIsGuest())
+                                        ListTile(
+                                          leading: Image.asset(
+                                            'assets/images/useredit.png',
+                                            height: 24,
+                                            width: 24,
+                                          ),
+                                          title: Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.translate('editProfile'),
+                                            style: FTextStyle.defaultText,
+                                          ),
+                                          onTap: () async {
+                                            final result = await Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (_) => EditProfileScreen(
+                                                      name: userName ?? '',
+                                                      email: userEmail ?? '',
+                                                      profilePictureUrl:
+                                                          profilePictureUrl ??
+                                                          '',
+                                                    ),
+                                              ),
+                                            );
+
+                                            if (result != null) {
+                                              setState(() {
+                                                userName = result['name'];
+                                                profilePictureUrl =
+                                                    result['profile_picture'];
+                                              });
+                                            }
+                                          },
+                                        ),
+
+                                      if (!PrefUtils.getIsSocialLogin())
+                                        ListTile(
+                                          leading: Image.asset(
+                                            'assets/images/lock.png',
+                                            height: 24,
+                                            width: 24,
+                                          ),
+                                          title: Text(
+                                            AppLocalizations.of(
+                                              context,
+                                            )!.translate('updatePassword'),
+                                            style: FTextStyle.defaultText,
+                                          ),
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (_) =>
+                                                        const ChangePasswordScreen(),
+                                              ),
+                                            );
+                                          },
+                                        ),
+
+                                      ListTile(
+                                        leading: Image.asset(
+                                          'assets/images/logout.png',
+                                          height: 24,
+                                          width: 24,
+                                        ),
+                                        title: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.translate('logout'),
+                                          style: FTextStyle.defaultText,
+                                        ),
+                                        onTap:
+                                            () => _showLogoutConfirmation(
+                                              context,
                                             ),
                                       ),
-                                    );
-
-                                    if (result != null) {
-                                      setState(() {
-                                        userName = result['name'];
-                                        profilePictureUrl =
-                                            result['profile_picture'];
-                                      });
-                                    }
-                                  },
-                                ),
-
-                              if (!PrefUtils.getIsSocialLogin())
-                                ListTile(
-                                  leading: Image.asset(
-                                    'assets/images/lock.png',
-                                    height: 24,
-                                    width: 24,
+                                    ],
                                   ),
-                                  title: Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    )!.translate('updatePassword'),
-                                    style: FTextStyle.defaultText,
-                                  ),
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (_) => const ChangePasswordScreen(),
-                                      ),
-                                    );
-                                  },
                                 ),
-
-                              ListTile(
-                                leading: Image.asset(
-                                  'assets/images/logout.png',
-                                  height: 24,
-                                  width: 24,
-                                ),
-                                title: Text(
-                                  AppLocalizations.of(
-                                    context,
-                                  )!.translate('logout'),
-                                  style: FTextStyle.defaultText,
-                                ),
-                                onTap: () => _showLogoutConfirmation(context),
-                              ),
-                            ],
-                          ),
-                        ),
                       ),
                     ),
                   ],

@@ -63,16 +63,16 @@ class _LoginScreenState extends State<LoginScreen> {
         ).copyWith(textScaler: const TextScaler.linear(1)),
         child: Scaffold(
           resizeToAvoidBottomInset: false,
-          body: SafeArea(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/images/bgGitaGPT.png',
-                    fit: BoxFit.cover,
-                  ),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  'assets/images/bgGitaGPT.png',
+                  fit: BoxFit.cover,
                 ),
-                Center(
+              ),
+              SafeArea(
+                child: Center(
                   child: SingleChildScrollView(
                     child: BlocListener<AuthFlowBloc, AuthFlowState>(
                       listener: (context, state) async {
@@ -769,18 +769,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                if (isLoading)
-                  Container(
-                    color: Colors.black.withOpacity(0.4),
-                    child: Center(
-                      child: LoadingAnimationWidget.staggeredDotsWave(
-                        color: AppColors.gradientStart,
-                        size: 50,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
