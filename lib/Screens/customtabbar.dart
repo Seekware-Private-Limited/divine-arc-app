@@ -82,79 +82,69 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
         child: Scaffold(
           extendBody: true,
           body: _screens[_selectedIndex],
-          bottomNavigationBar: Stack(
-            children: [
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/bgGitaGPT.png',
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Container(
-                margin: const EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  bottom: 20,
-                  top: 0,
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.orangeAccent, width: 1.5),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: List.generate(labels.length, (index) {
-                    final bool isSelected = _selectedIndex == index;
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedIndex = index;
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 500),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isSelected ? 20 : 0,
-                          vertical: 8,
-                        ),
-                        decoration:
-                            isSelected
-                                ? BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppColors.gradientStart,
-                                      AppColors.gradientEnd,
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(10),
-                                )
-                                : null,
-                        child: Row(
-                          children: [
-                            SvgPicture.asset(
-                              isSelected
-                                  ? _selectedImages[index]
-                                  : _unselectedImages[index],
-                              height: 16,
-                              width: 16,
-                            ),
-                            if (isSelected) ...[
-                              const SizedBox(width: 8),
-                              Text(
-                                labels[index],
-                                style: FTextStyle.tabbarTextStyle,
+          bottomNavigationBar: Container(
+            margin: const EdgeInsets.only(
+              left: 20,
+              right: 20,
+              bottom: 20,
+              top: 0,
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.orangeAccent, width: 1.5),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(labels.length, (index) {
+                final bool isSelected = _selectedIndex == index;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedIndex = index;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 500),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSelected ? 20 : 0,
+                      vertical: 10,
+                    ),
+                    decoration:
+                        isSelected
+                            ? BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.gradientStart,
+                                  AppColors.gradientEnd,
+                                ],
                               ),
-                            ],
-                          ],
+                              borderRadius: BorderRadius.circular(10),
+                            )
+                            : null,
+                    child: Row(
+                      children: [
+                        SvgPicture.asset(
+                          isSelected
+                              ? _selectedImages[index]
+                              : _unselectedImages[index],
+                          height: 16,
+                          width: 16,
                         ),
-                      ),
-                    );
-                  }),
-                ),
-              ),
-            ],
+                        if (isSelected) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            labels[index],
+                            style: FTextStyle.tabbarTextStyle,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
           ),
         ),
       ),

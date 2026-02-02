@@ -20,7 +20,7 @@
   "loremipsumShort": "Lorem ipsum dolor sit.",
   "loremipsumLong": "Lorem ipsum dolor sit amet, dolor sit amet, conse ",
   "search": "Search",
-  "bhagwatGeeta": "Divine Arc",
+  "bhagwatGeeta": "Divine ARC",
   "askAnything": "Ask Anything",
   "loremQuestion": "Lorem ipsum dolor sit amet, con sectetur, seo eut enim?",
   "loremAnswer": "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
@@ -51,7 +51,7 @@
   "passwordResetLinkSent": "A password reset email has been sent to your registered email address.",
   "updatePassword": "Update Password",
   "changePassword": "Change Password",
-  "changePasswordsubText": "Change your password and continue your journey of wisdom with Divine Arc.",
+  "changePasswordsubText": "Change your password and continue your journey of wisdom with Divine ARC.",
 
 
   "emptyNameError": "Name is required.",
@@ -78,7 +78,7 @@
   "noMessages": "No messages found",
   "signInToContinue": "Sign In to Continue",
   "noChatHistory": "No Chat history found",
-  "guestDescription": "You are using Divine Arc App as a guest. Log in to save your chat history, bookmarks, and manage your profile.",
+  "guestDescription": "You are using Divine ARC App as a guest. Log in to save your chat history, bookmarks, and manage your profile.",
   "longPasswordError": "Password must not exceed 32 characters.",
   "noBookmarks": "No bookmarks found. Start saving your favorite conversations here!",
   "invalidPasswordError": "Password must include at least one uppercase letter, one lowercase letter, one number, and one special character.",
@@ -91,6 +91,10 @@
   "chatunbookmarkedsuccessfully":"Chat unbookmarked successfully!",
   "nochathistory":"No chat history yet. Start a conversation!",
   "noresponsereceived":"No response received",
-  "responsecopied":"Response copied to clipboard!"
+  "responsecopied":"Response copied to clipboard!",
+  "editProfile":"Edit Profile",
+  "editprofile_description":"Update your personal details to keep your profile accurate and up to date.",
+  "cancel":"Cancel",
+  "logout_description":"Are you sure you want to logout?"
 
 }
