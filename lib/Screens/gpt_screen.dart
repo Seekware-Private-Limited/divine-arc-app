@@ -2596,24 +2596,24 @@ class _GptScreenState extends State<GptScreen>
                           ],
                         ),
                       ),
-                      if (_isConvertingAudio)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Column(
-                            children: [
-                              CircularProgressIndicator(
-                                color: AppColors.gradientStart,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Converting audio...',
-                                style: FTextStyle.defaultText.copyWith(
-                                  color: AppColors.gradientStart,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                      // if (_isConvertingAudio)
+                      //   Padding(
+                      //     padding: const EdgeInsets.only(top: 8.0),
+                      //     child: Column(
+                      //       children: [
+                      //         CircularProgressIndicator(
+                      //           color: AppColors.gradientStart,
+                      //         ),
+                      //         const SizedBox(height: 8),
+                      //         Text(
+                      //           'Converting audio...',
+                      //           style: FTextStyle.defaultText.copyWith(
+                      //             color: AppColors.gradientStart,
+                      //           ),
+                      //         ),
+                      //       ],
+                      //     ),
+                      //   ),
                       const SizedBox(height: 10),
                     ],
                   ),

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:divine_arc/Utils/app_imports.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -78,251 +77,269 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocListener<HomeFlowBloc, HomeFlowState>(
-        listener: (context, state) {
-          if (state is UpdateProfileLoading) {
-            setState(() => isUpdating = true);
-          } else if (state is UpdateProfileLoaded) {
-            setState(() => isUpdating = false);
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: const TextScaler.linear(1)),
+        child: Scaffold(
+          body: BlocListener<HomeFlowBloc, HomeFlowState>(
+            listener: (context, state) {
+              if (state is UpdateProfileLoading) {
+                setState(() => isUpdating = true);
+              } else if (state is UpdateProfileLoaded) {
+                setState(() => isUpdating = false);
 
-            CommonUtils.showSuccessToast(
-              AppLocalizations.of(
-                context,
-              )!.translate('profileUpdatedSuccessfully'),
-            );
+                CommonUtils.showSuccessToast(
+                  AppLocalizations.of(
+                    context,
+                  )!.translate('profileUpdatedSuccessfully'),
+                );
 
-            Navigator.pop(context, {
-              'name': nameController.text.trim(),
-              'profile_picture': uploadedImageUrl,
-            });
-          } else if (state is UpdateProfileError) {
-            setState(() => isUpdating = false);
-            CommonUtils.showErrorToast(
-              state.failureResponse['message'] ?? 'Something went wrong',
-            );
-          }
+                Navigator.pop(context, {
+                  'name': nameController.text.trim(),
+                  'profile_picture': uploadedImageUrl,
+                });
+              } else if (state is UpdateProfileError) {
+                setState(() => isUpdating = false);
+                CommonUtils.showErrorToast(
+                  state.failureResponse['message'] ?? 'Something went wrong',
+                );
+              }
 
-          if (state is UploadFileLoading) {
-            setState(() => isImageUploading = true);
-          } else if (state is UploadFileSuccess) {
-            uploadedImageUrl = state.successResponse['url'];
-            setState(() => isImageUploading = false);
-          } else if (state is UploadFileFailure) {
-            setState(() => isImageUploading = false);
-            CommonUtils.showErrorToast(
-              state.failureResponse['message'] ?? 'Image upload failed',
-            );
-          } else if (state is CheckNetworkConnectionHomeFlow) {
-            setState(() {
-              isUpdating = false;
-              isImageUploading = false;
-            });
-            CommonUtils.showErrorToast(
-              AppLocalizations.of(context)!.translate('nointernetConnection'),
-            );
-          } else if (state is SessionExpiredStateHome) {
-            CommonUtils.showErrorToast(state.message);
-            PrefUtils.clearAll();
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginScreen()),
-              (route) => false,
-            );
-          }
-        },
-        child: Stack(
-          children: [
-            /// Background
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/bgGitaGPT.png',
-                fit: BoxFit.cover,
-              ),
-            ),
+              if (state is UploadFileLoading) {
+                setState(() => isImageUploading = true);
+              } else if (state is UploadFileSuccess) {
+                uploadedImageUrl = state.successResponse['url'];
+                setState(() => isImageUploading = false);
+              } else if (state is UploadFileFailure) {
+                setState(() => isImageUploading = false);
+                CommonUtils.showErrorToast(
+                  state.failureResponse['message'] ?? 'Image upload failed',
+                );
+              } else if (state is CheckNetworkConnectionHomeFlow) {
+                setState(() {
+                  isUpdating = false;
+                  isImageUploading = false;
+                });
+                CommonUtils.showErrorToast(
+                  AppLocalizations.of(
+                    context,
+                  )!.translate('nointernetConnection'),
+                );
+              } else if (state is SessionExpiredStateHome) {
+                CommonUtils.showErrorToast(state.message);
+                PrefUtils.clearAll();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  (route) => false,
+                );
+              }
+            },
+            child: Stack(
+              children: [
+                /// Background
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/images/bgGitaGPT.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
 
-            /// Content
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    /// Header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                /// Content
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: const Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Colors.black,
-                            size: 22,
-                          ),
+                        /// Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: const Icon(
+                                Icons.arrow_back_ios_new,
+                                color: Colors.black,
+                                size: 22,
+                              ),
+                            ),
+                            const LanguageDropdown(),
+                          ],
                         ),
-                        const LanguageDropdown(),
-                      ],
-                    ),
 
-                    const SizedBox(height: 30),
+                        const SizedBox(height: 30),
 
-                    Text(
-                      AppLocalizations.of(context)!.translate('editProfile'),
-                      style: FTextStyle.boldText,
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      AppLocalizations.of(
-                        context,
-                      )!.translate('editprofile_description'),
-                      style: FTextStyle.defaultText,
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: AppColors.gradientStart,
-                            width: 1.4,
-                          ),
+                        Text(
+                          AppLocalizations.of(
+                            context,
+                          )!.translate('editProfile'),
+                          style: FTextStyle.boldText,
                         ),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              /// Profile Image
-                              Stack(
-                                alignment: Alignment.center,
+                        const SizedBox(height: 5),
+                        Text(
+                          AppLocalizations.of(
+                            context,
+                          )!.translate('editprofile_description'),
+                          style: FTextStyle.defaultText,
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: AppColors.gradientStart,
+                                width: 1.4,
+                              ),
+                            ),
+                            child: SingleChildScrollView(
+                              child: Column(
                                 children: [
-                                  CircleAvatar(
-                                    radius: 100,
-                                    backgroundImage: _getProfileImage(),
-                                  ),
-                                  if (isImageUploading)
-                                    Container(
-                                      height: 200,
-                                      width: 200,
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.4),
-                                        shape: BoxShape.circle,
+                                  /// Profile Image
+                                  Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 100,
+                                        backgroundImage: _getProfileImage(),
                                       ),
-                                      child: const Center(
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 1.5,
+                                      if (isImageUploading)
+                                        Container(
+                                          height: 200,
+                                          width: 200,
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(
+                                              0.4,
+                                            ),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Center(
+                                            child: CircularProgressIndicator(
+                                              color: Colors.white,
+                                              strokeWidth: 1.5,
+                                            ),
+                                          ),
                                         ),
+                                      Positioned(
+                                        bottom: 0,
+                                        right: 0,
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: AppColors.gradientStart,
+                                          ),
+                                          child: IconButton(
+                                            icon: const Icon(
+                                              Icons.camera_alt,
+                                              color: Colors.white,
+                                              size: 20,
+                                            ),
+                                            onPressed:
+                                                () => _pickImage(
+                                                  ImageSource.gallery,
+                                                ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 40),
+
+                                  /// Name
+                                  TextFormField(
+                                    controller: nameController,
+                                    style: FTextStyle.defaultText,
+                                    decoration: InputDecoration(
+                                      hintText: 'Name',
+                                      filled: true,
+                                      fillColor: AppColors.GlobalBG,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide.none,
                                       ),
                                     ),
-                                  Positioned(
-                                    bottom: 0,
-                                    right: 0,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: AppColors.gradientStart,
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  /// Email (FIXED)
+                                  TextFormField(
+                                    controller: emailController,
+                                    readOnly: true,
+                                    style: FTextStyle.defaultText,
+                                    decoration: InputDecoration(
+                                      hintText: AppLocalizations.of(
+                                        context,
+                                      )!.translate('emailAddress'),
+                                      filled: true,
+                                      fillColor: AppColors.GlobalBG,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide.none,
                                       ),
-                                      child: IconButton(
-                                        icon: const Icon(
-                                          Icons.camera_alt,
-                                          color: Colors.white,
-                                          size: 20,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 30),
+
+                                  /// Save Button
+                                  GestureDetector(
+                                    onTap: isUpdating ? null : _onSave,
+                                    child: Container(
+                                      height: 46,
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            AppColors.gradientStart,
+                                            AppColors.gradientEnd,
+                                          ],
                                         ),
-                                        onPressed:
-                                            () =>
-                                                _pickImage(ImageSource.gallery),
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Center(
+                                        child:
+                                            isUpdating
+                                                ? LoadingAnimationWidget.staggeredDotsWave(
+                                                  color: Colors.white,
+                                                  size: 30,
+                                                )
+                                                : Text(
+                                                  AppLocalizations.of(
+                                                    context,
+                                                  )!.translate('save'),
+                                                  style: FTextStyle.buttonText,
+                                                ),
                                       ),
                                     ),
                                   ),
                                 ],
                               ),
-
-                              const SizedBox(height: 40),
-
-                              /// Name
-                              TextFormField(
-                                controller: nameController,
-                                style: FTextStyle.defaultText,
-                                decoration: InputDecoration(
-                                  hintText: 'Name',
-                                  filled: true,
-                                  fillColor: AppColors.GlobalBG,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              /// Email (FIXED)
-                              TextFormField(
-                                controller: emailController,
-                                readOnly: true,
-                                style: FTextStyle.defaultText,
-                                decoration: InputDecoration(
-                                  hintText: AppLocalizations.of(
-                                    context,
-                                  )!.translate('emailAddress'),
-                                  filled: true,
-                                  fillColor: AppColors.GlobalBG,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 30),
-
-                              /// Save Button
-                              GestureDetector(
-                                onTap: isUpdating ? null : _onSave,
-                                child: Container(
-                                  height: 46,
-                                  width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppColors.gradientStart,
-                                        AppColors.gradientEnd,
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Center(
-                                    child:
-                                        isUpdating
-                                            ? LoadingAnimationWidget.staggeredDotsWave(
-                                              color: Colors.white,
-                                              size: 30,
-                                            )
-                                            : Text(
-                                              AppLocalizations.of(
-                                                context,
-                                              )!.translate('save'),
-                                              style: FTextStyle.buttonText,
-                                            ),
-                                  ),
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
 
-            /// Full Screen Loader
-            if (isUpdating) Container(color: Colors.black.withOpacity(0.15)),
-          ],
+                /// Full Screen Loader
+                if (isUpdating)
+                  Container(color: Colors.black.withOpacity(0.15)),
+              ],
+            ),
+          ),
         ),
       ),
     );
