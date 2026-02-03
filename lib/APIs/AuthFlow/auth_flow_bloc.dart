@@ -29,10 +29,6 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
           print('User Email Is : ${googleSignInAccount.email}');
           print('User Photo Is : ${googleSignInAccount.photoUrl}');
           print('User Id Is : ${googleSignInAccount.id}');
-        } else {
-          emit(
-            GoogleLoginFailure("Something went wrong.Please try again later."),
-          );
         }
       } catch (e) {
         if (kDebugMode) {

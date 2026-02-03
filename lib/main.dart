@@ -10,9 +10,7 @@ Future<void> main() async {
   };
 
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await Prefs.init();
   await NotificationService.init();
 
@@ -38,7 +36,7 @@ class MyApp extends StatelessWidget {
           ],
           child: MaterialApp(
             debugShowCheckedModeBanner: false,
-            title: 'Divine Arc',
+            title: 'Divine ARC',
             supportedLocales: const [Locale('hi'), Locale('en')],
             locale: languageProvider.locale,
             localizationsDelegates: const [

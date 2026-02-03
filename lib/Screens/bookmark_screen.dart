@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
-
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
@@ -30,165 +28,176 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
       ).copyWith(textScaler: const TextScaler.linear(1)),
       child: Scaffold(
         backgroundColor: AppColors.GlobalBG,
-        body: SafeArea(
-          child: BlocListener<HomeFlowBloc, HomeFlowState>(
-            listener: (context, state) {
-              if (state is GetAllBookmarksChatLoading) {
-                setState(() {
-                  isLoading = true;
-                });
-              } else if (state is GetAllBookmarksChatSuccess) {
-                setState(() {
-                  isLoading = false;
-                  allBookmarksChat = state.successResponse;
-                });
-              } else if (state is GetAllBookmarksChatFailure) {
-                setState(() {
-                  isLoading = false;
-                });
-                CommonUtils.showErrorToast(state.failureResponse['message']);
-              } else if (state is UnbookmarkChatSuccess) {
-                final messageId = state.successResponse['data']['message_id'];
-                debugPrint(
-                  'UnbookmarkChatSuccess received for messageId: $messageId',
-                );
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/bgGitaGPT.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+            SafeArea(
+              child: BlocListener<HomeFlowBloc, HomeFlowState>(
+                listener: (context, state) {
+                  if (state is GetAllBookmarksChatLoading) {
+                    setState(() {
+                      isLoading = true;
+                    });
+                  } else if (state is GetAllBookmarksChatSuccess) {
+                    setState(() {
+                      isLoading = false;
+                      allBookmarksChat = state.successResponse;
+                    });
+                  } else if (state is GetAllBookmarksChatFailure) {
+                    setState(() {
+                      isLoading = false;
+                    });
+                    CommonUtils.showErrorToast(
+                      state.failureResponse['message'],
+                    );
+                  } else if (state is UnbookmarkChatSuccess) {
+                    final messageId =
+                        state.successResponse['data']['message_id'];
+                    debugPrint(
+                      'UnbookmarkChatSuccess received for messageId: $messageId',
+                    );
 
-                // Update local bookmarks list
-                setState(() {
-                  allBookmarksChat.removeWhere(
-                    (chat) => chat['message_id'] == messageId,
-                  );
-                  debugPrint('Updated allBookmarksChat after removal.');
-                });
+                    // Update local bookmarks list
+                    setState(() {
+                      allBookmarksChat.removeWhere(
+                        (chat) => chat['message_id'] == messageId,
+                      );
+                      debugPrint('Updated allBookmarksChat after removal.');
+                    });
 
-                // Update chatHistory in PrefUtils
-                List<Map<String, dynamic>> chatHistory =
-                    PrefUtils.getChatHistory();
-                debugPrint('Loaded chatHistory from PrefUtils: $chatHistory');
+                    // Update chatHistory in PrefUtils
+                    List<Map<String, dynamic>> chatHistory =
+                        PrefUtils.getChatHistory();
+                    debugPrint(
+                      'Loaded chatHistory from PrefUtils: $chatHistory',
+                    );
 
-                // Print all messageIds in chatHistory for verification
-                for (var chat in chatHistory) {
-                  debugPrint('chatHistory messageId: ${chat['messageId']}');
-                }
+                    // Print all messageIds in chatHistory for verification
+                    for (var chat in chatHistory) {
+                      debugPrint('chatHistory messageId: ${chat['messageId']}');
+                    }
 
-                final index = chatHistory.indexWhere(
-                  (chat) => chat['messageId'] == messageId,
-                );
-                debugPrint('Found index: $index');
+                    final index = chatHistory.indexWhere(
+                      (chat) => chat['messageId'] == messageId,
+                    );
+                    debugPrint('Found index: $index');
 
-                if (index != -1) {
-                  chatHistory[index]['isBookmarked'] = false;
-                  PrefUtils.setChatHistory(chatHistory);
-                  debugPrint('Updated chatHistory in PrefUtils: $chatHistory');
-                } else {
-                  debugPrint(
-                    '❌ No matching messageId found in chatHistory. messageId: $messageId',
-                  );
-                }
+                    if (index != -1) {
+                      chatHistory[index]['isBookmarked'] = false;
+                      PrefUtils.setChatHistory(chatHistory);
+                      debugPrint(
+                        'Updated chatHistory in PrefUtils: $chatHistory',
+                      );
+                    } else {
+                      debugPrint(
+                        '❌ No matching messageId found in chatHistory. messageId: $messageId',
+                      );
+                    }
 
-                CommonUtils.showSuccessToast('Bookmark removed successfully!');
-              } else if (state is UnbookmarkChatFailure) {
-                setState(() {
-                  isLoading = false;
-                });
-                CommonUtils.showErrorToast(state.failureResponse['message']);
-              } else if (state is SessionExpiredStateHome) {
-                setState(() {
-                  isLoading = false;
-                });
+                    CommonUtils.showSuccessToast(
+                      'Bookmark removed successfully!',
+                    );
+                  } else if (state is UnbookmarkChatFailure) {
+                    setState(() {
+                      isLoading = false;
+                    });
+                    CommonUtils.showErrorToast(
+                      state.failureResponse['message'],
+                    );
+                  } else if (state is SessionExpiredStateHome) {
+                    setState(() {
+                      isLoading = false;
+                    });
 
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    behavior: SnackBarBehavior.floating,
-                    content: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
-                          colors: [
-                            Color(0xFFFC7902), // gradientStart
-                            Color(0xFFC62E00), // gradientEnd
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.25),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        backgroundColor: Colors.transparent,
+                        elevation: 0,
+                        behavior: SnackBarBehavior.floating,
+                        content: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              state.message,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                              colors: [
+                                Color(0xFFFC7902), // gradientStart
+                                Color(0xFFC62E00), // gradientEnd
+                              ],
                             ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.25),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          TextButton(
-                            onPressed: () {
-                              PrefUtils.clearAll();
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const LoginScreen(),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  state.message,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
                                 ),
-                                (route) => false,
-                              );
-                            },
-                            style: TextButton.styleFrom(
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
                               ),
-                            ),
-                            child: const Text(
-                              'Login',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
+                              TextButton(
+                                onPressed: () {
+                                  PrefUtils.clearAll();
+                                  Navigator.pushAndRemoveUntil(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const LoginScreen(),
+                                    ),
+                                    (route) => false,
+                                  );
+                                },
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Login',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                );
-              } else if (state is CheckNetworkConnectionHomeFlow) {
-                setState(() {
-                  isLoading = false;
-                });
-              }
-            },
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/images/bgGitaGPT.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Padding(
+                    );
+                  } else if (state is CheckNetworkConnectionHomeFlow) {
+                    setState(() {
+                      isLoading = false;
+                    });
+                  }
+                },
+                child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 10,
@@ -293,7 +302,7 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
                                                       question,
                                                       style:
                                                           FTextStyle
-                                                              .defaultText,
+                                                              .defaultTextBold,
                                                     ),
                                                   ),
                                                   const SizedBox(width: 16),
@@ -356,9 +365,9 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );

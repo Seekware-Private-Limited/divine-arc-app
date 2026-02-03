@@ -24,9 +24,7 @@ class ChalisaScreen extends StatefulWidget {
 class _ChalisaScreenState extends State<ChalisaScreen> {
   double _fontSizeMultiplier = 1.0;
   final AudioPlayer _audioPlayer = AudioPlayer();
-  bool _isPlaying = false;
-  Duration _currentPosition = Duration.zero;
-
+  bool isPlaying = false;
   void _onLanguageChanged() => setState(() {});
 
   @override
@@ -35,7 +33,7 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
     _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) {
         setState(() {
-          _isPlaying = state == PlayerState.playing;
+          isPlaying = state == PlayerState.playing;
         });
       }
     });
@@ -58,114 +56,120 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
       ).copyWith(textScaler: TextScaler.linear(_fontSizeMultiplier)),
       child: Scaffold(
         backgroundColor: AppColors.GlobalBG,
-        body: SafeArea(
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/bgGitaGPT.png',
-                  fit: BoxFit.cover,
-                ),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/bgGitaGPT.png',
+                fit: BoxFit.cover,
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ),
+            SafeArea(
+              child: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    child: Column(
                       children: [
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Colors.black,
-                            size: 22,
-                          ),
-                        ),
-
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            LanguageDropdown(
-                              onLanguageChanged: _onLanguageChanged,
-                            ),
-                            const SizedBox(width: 8),
-                            FontSizeDropdown(
-                              currentScale: _fontSizeMultiplier,
-                              onFontSizeChanged: (newScale) {
-                                setState(() => _fontSizeMultiplier = newScale);
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.of(context).pop();
                               },
+                              child: Icon(
+                                Icons.arrow_back_ios_new,
+                                color: Colors.black,
+                                size: 22,
+                              ),
+                            ),
+
+                            Row(
+                              children: [
+                                LanguageDropdown(
+                                  onLanguageChanged: _onLanguageChanged,
+                                ),
+                                const SizedBox(width: 8),
+                                FontSizeDropdown(
+                                  currentScale: _fontSizeMultiplier,
+                                  onFontSizeChanged: (newScale) {
+                                    setState(
+                                      () => _fontSizeMultiplier = newScale,
+                                    );
+                                  },
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
 
-                    const SizedBox(height: 10),
+                        const SizedBox(height: 10),
 
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.only(bottom: 100),
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppColors.gradientStart,
-                              width: 1.5,
-                            ),
-                            color: Colors.white,
-                          ),
-                          child: Column(
-                            children: [
-                              ClipOval(
-                                child: Image.network(
-                                  widget.contentImage,
-                                  height: 100,
-                                  width: 100,
-                                  fit: BoxFit.cover,
-                                  errorBuilder:
-                                      (context, error, stackTrace) =>
-                                          Image.asset(
-                                            'assets/images/errorImage.png',
-                                            height: 100,
-                                            width: 100,
-                                            fit: BoxFit.cover,
-                                          ),
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.only(bottom: 100),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: AppColors.gradientStart,
+                                  width: 1.5,
                                 ),
+                                color: Colors.white,
                               ),
-                              const SizedBox(height: 15),
-                              Text(title, style: FTextStyle.boldText),
-                              const SizedBox(height: 10),
-                              if (description.isNotEmpty) ...[
-                                const SizedBox(height: 10),
-                                Text(
-                                  description,
-                                  style: FTextStyle.defaultText,
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ],
+                              child: Column(
+                                children: [
+                                  ClipOval(
+                                    child: Image.network(
+                                      widget.contentImage,
+                                      height: 100,
+                                      width: 100,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              Image.asset(
+                                                'assets/images/errorImage.png',
+                                                height: 100,
+                                                width: 100,
+                                                fit: BoxFit.cover,
+                                              ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 15),
+                                  Text(title, style: FTextStyle.boldText),
+                                  const SizedBox(height: 10),
+                                  if (description.isNotEmpty) ...[
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      description,
+                                      style: FTextStyle.defaultText,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
 
-              Positioned(
-                left: 20,
-                right: 20,
-                bottom: 30,
-                child: AudioPlayerWidget(audioPath: widget.contentAudio),
+                  Positioned(
+                    left: 20,
+                    right: 20,
+                    bottom: 30,
+                    child: AudioPlayerWidget(audioPath: widget.contentAudio),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

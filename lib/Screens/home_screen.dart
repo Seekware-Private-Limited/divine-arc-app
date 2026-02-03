@@ -41,149 +41,150 @@ class _HomeScreenState extends State<HomeScreen> {
             context,
           ).copyWith(textScaler: const TextScaler.linear(1)),
           child: Scaffold(
-            body: SafeArea(
-              child: BlocListener<HomeFlowBloc, HomeFlowState>(
-                listener: (context, state) {
-                  if (state is GetRandomQuoteLoading) {
-                    setState(() {
-                      isLoading = true;
-                    });
-                  } else if (state is GetRandomQuoteSuccess) {
-                    setState(() {
-                      isLoading = false;
-                      quoteResponse = state.successResponse;
-                    });
-                  } else if (state is GetRandomQuoteFailure) {
-                    setState(() {
-                      isLoading = false;
-                      quoteResponse = '';
-                    });
-                    CommonUtils.showErrorToast(
-                      'Something went wrong, Please try again later',
-                    );
-                  } else if (state is ViewAllContentLoading) {
-                    setState(() {
-                      isContentLoading = true;
-                    });
-                  } else if (state is ViewAllContentLoaded) {
-                    setState(() {
-                      isContentLoading = false;
-                      allPrayers.clear(); // Clear before adding new data
-                      allPrayers.addAll(state.successResponse['data']);
-                    });
-                  } else if (state is ViewAllContentError) {
-                    setState(() {
-                      isContentLoading = false;
-                    });
-                    CommonUtils.showErrorToast('Failed to load prayers');
-                  } else if (state is CommonServerFailureHome) {
-                    setState(() {
-                      isLoading = false;
-                      isContentLoading = false;
-                    });
-                  } else if (state is SessionExpiredStateHome) {
-                    setState(() {
-                      isLoading = false;
-                    });
+            body: Stack(
+              children: [
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/images/bgGitaGPT.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                SafeArea(
+                  child: BlocListener<HomeFlowBloc, HomeFlowState>(
+                    listener: (context, state) {
+                      if (state is GetRandomQuoteLoading) {
+                        setState(() {
+                          isLoading = true;
+                        });
+                      } else if (state is GetRandomQuoteSuccess) {
+                        setState(() {
+                          isLoading = false;
+                          quoteResponse = state.successResponse;
+                        });
+                      } else if (state is GetRandomQuoteFailure) {
+                        setState(() {
+                          isLoading = false;
+                          quoteResponse = '';
+                        });
+                        CommonUtils.showErrorToast(
+                          'Something went wrong, Please try again later',
+                        );
+                      } else if (state is ViewAllContentLoading) {
+                        setState(() {
+                          isContentLoading = true;
+                        });
+                      } else if (state is ViewAllContentLoaded) {
+                        setState(() {
+                          isContentLoading = false;
+                          allPrayers.clear(); // Clear before adding new data
+                          allPrayers.addAll(state.successResponse['data']);
+                        });
+                      } else if (state is ViewAllContentError) {
+                        setState(() {
+                          isContentLoading = false;
+                        });
+                        CommonUtils.showErrorToast('Failed to load prayers');
+                      } else if (state is CommonServerFailureHome) {
+                        setState(() {
+                          isLoading = false;
+                          isContentLoading = false;
+                        });
+                      } else if (state is SessionExpiredStateHome) {
+                        setState(() {
+                          isLoading = false;
+                        });
 
-                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        backgroundColor: Colors.transparent,
-                        elevation: 0,
-                        behavior: SnackBarBehavior.floating,
-                        content: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                              colors: [
-                                Color(0xFFFC7902), // gradientStart
-                                Color(0xFFC62E00), // gradientEnd
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.25),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            backgroundColor: Colors.transparent,
+                            elevation: 0,
+                            behavior: SnackBarBehavior.floating,
+                            content: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
                               ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.warning_amber_rounded,
-                                color: Colors.white,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  state.message,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                  ),
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                  colors: [
+                                    Color(0xFFFC7902), // gradientStart
+                                    Color(0xFFC62E00), // gradientEnd
+                                  ],
                                 ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.25),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                              TextButton(
-                                onPressed: () {
-                                  PrefUtils.clearAll();
-                                  Navigator.pushAndRemoveUntil(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const LoginScreen(),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.warning_amber_rounded,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      state.message,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                      ),
                                     ),
-                                    (route) => false,
-                                  );
-                                },
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
                                   ),
-                                ),
-                                child: const Text(
-                                  'Login',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
+                                  TextButton(
+                                    onPressed: () {
+                                      PrefUtils.clearAll();
+                                      Navigator.pushAndRemoveUntil(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (context) => const LoginScreen(),
+                                        ),
+                                        (route) => false,
+                                      );
+                                    },
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Login',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                    );
-                  } else if (state is CheckNetworkConnectionHomeFlow) {
-                    setState(() {
-                      isLoading = false;
-                      isContentLoading = false;
-                    });
-                    CommonUtils.showErrorToast(
-                      AppLocalizations.of(
-                        context,
-                      )!.translate('nointernetConnection'),
-                    );
-                  }
-                },
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Image.asset(
-                        'assets/images/bgGitaGPT.png',
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    Padding(
+                        );
+                      } else if (state is CheckNetworkConnectionHomeFlow) {
+                        setState(() {
+                          isLoading = false;
+                          isContentLoading = false;
+                        });
+                        CommonUtils.showErrorToast(
+                          AppLocalizations.of(
+                            context,
+                          )!.translate('nointernetConnection'),
+                        );
+                      }
+                    },
+                    child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
                         vertical: 16,
@@ -513,9 +514,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         );

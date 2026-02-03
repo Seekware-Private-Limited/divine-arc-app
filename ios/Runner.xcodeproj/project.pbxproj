@@ -491,7 +491,7 @@
 				DEVELOPMENT_TEAM = 89C7XJBQ4Y;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Divine Arc";
+				INFOPLIST_KEY_CFBundleDisplayName = "Divine ARC";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -677,7 +677,7 @@
 				DEVELOPMENT_TEAM = 89C7XJBQ4Y;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Divine Arc";
+				INFOPLIST_KEY_CFBundleDisplayName = "Divine ARC";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -703,7 +703,7 @@
 				DEVELOPMENT_TEAM = 89C7XJBQ4Y;
 				ENABLE_BITCODE = NO;
 				INFOPLIST_FILE = Runner/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Divine Arc";
+				INFOPLIST_KEY_CFBundleDisplayName = "Divine ARC";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

@@ -1,6 +1,4 @@
-import 'package:divine_arc/APIs/HomeFlow/home_flow_bloc.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
-import 'package:divine_arc/Utils/common_utils.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -27,16 +25,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ).copyWith(textScaler: const TextScaler.linear(1)),
       child: Scaffold(
         backgroundColor: AppColors.GlobalBG,
-        body: SafeArea(
-          child: Stack(
-            children: [
-              Positioned.fill(
-                child: Image.asset(
-                  'assets/images/bgGitaGPT.png',
-                  fit: BoxFit.cover,
-                ),
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: Image.asset(
+                'assets/images/bgGitaGPT.png',
+                fit: BoxFit.cover,
               ),
-              Padding(
+            ),
+            SafeArea(
+              child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
                   vertical: 10,
@@ -257,8 +255,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

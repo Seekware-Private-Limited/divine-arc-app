@@ -1,4 +1,4 @@
-# Divine Arc
+# Divine ARC
 
 A Flutter application with Firebase integration, supporting multiple authentication methods including Google Sign-In, Apple Sign-In, and Facebook Login.
 

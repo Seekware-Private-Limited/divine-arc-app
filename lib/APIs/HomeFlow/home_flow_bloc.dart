@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:developer' as developer;
 import 'package:bloc/bloc.dart';
 import 'package:divine_arc/Utils/api_constant.dart';
 import 'package:divine_arc/Utils/connectivity_service.dart';
