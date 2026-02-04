@@ -316,6 +316,19 @@ class SendRegenerateAPIResponseFailure extends HomeFlowState {
   SendRegenerateAPIResponseFailure(this.failureResponse);
 }
 
+// Fetch All Trending Questions States
+class TrendingQuestionsLoading extends HomeFlowState {}
+
+class TrendingQuestionsLoaded extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  TrendingQuestionsLoaded(this.successResponse);
+}
+
+class TrendingQuestionsFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  TrendingQuestionsFailure(this.failureResponse);
+}
+
 // Common Server Failure State
 class CommonServerFailureHome extends HomeFlowState {
   final String error;

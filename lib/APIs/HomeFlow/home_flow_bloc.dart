@@ -1502,5 +1502,56 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         print("🚫 No internet connection.");
       }
     });
+
+    // Fetch All Trending Questions
+    on<FetchAllTrendingQuestionEvent>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(TrendingQuestionsLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.trendingQuestions);
+        print("Request URL: $requestUrl");
+
+        try {
+          final response = await http.get(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+          );
+
+          if (response.statusCode == 200) {
+            final responseData = jsonDecode(response.body);
+            emit(TrendingQuestionsLoaded(responseData));
+            print("Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
+            );
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(TrendingQuestionsFailure(errorData));
+            print("Error Response: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnectionHomeFlow());
+          print("SocketException: No internet connection.");
+        } catch (e) {
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
+          print("Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnectionHomeFlow());
+        print("No internet connection.");
+      }
+    });
   }
 }
