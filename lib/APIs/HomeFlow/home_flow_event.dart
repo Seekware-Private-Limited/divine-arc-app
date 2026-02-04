@@ -220,3 +220,6 @@ class SendRegenerateAPIResponseEvent extends HomeFlowEvent {
     required this.apiError,
   });
 }
+
+// Fetch All Trending Questions
+class FetchAllTrendingQuestionEvent extends HomeFlowEvent {}
