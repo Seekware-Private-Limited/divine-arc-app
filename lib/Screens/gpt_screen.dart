@@ -2383,44 +2383,65 @@ class _GptScreenState extends State<GptScreen>
                                                                   const SizedBox(
                                                                     width: 10,
                                                                   ),
-                                                                  GestureDetector(
-                                                                    onTap: () {
-                                                                      if (question
-                                                                              .isNotEmpty &&
-                                                                          answer
-                                                                              .isNotEmpty) {
-                                                                        final shareText =
-                                                                            '''Question: $question
+                                                                  Builder(
+                                                                    builder: (
+                                                                      BuildContext
+                                                                      context,
+                                                                    ) {
+                                                                      return GestureDetector(
+                                                                        onTap: () async {
+                                                                          if (question.isNotEmpty &&
+                                                                              answer.isNotEmpty) {
+                                                                            final shareText =
+                                                                                '''Question: $question
         
         Answer: $answer''';
-                                                                        SharePlus.instance.share(
-                                                                          ShareParams(
-                                                                            text:
-                                                                                shareText,
-                                                                          ),
-                                                                        );
-                                                                        CommonUtils.showSuccessToast(
-                                                                          'Sharing conversation...',
-                                                                        );
-                                                                      } else if (question
-                                                                              .isNotEmpty &&
-                                                                          answer
-                                                                              .isEmpty) {
-                                                                        CommonUtils.showErrorToast(
-                                                                          'Cannot share: No response available yet',
-                                                                        );
-                                                                      } else {
-                                                                        CommonUtils.showErrorToast(
-                                                                          'Cannot share: Conversation is incomplete',
-                                                                        );
-                                                                      }
+
+                                                                            // Get the widget's position for iOS share dialog
+                                                                            final box =
+                                                                                context.findRenderObject()
+                                                                                    as RenderBox?;
+                                                                            final Rect?
+                                                                            sharePositionOrigin =
+                                                                                box !=
+                                                                                        null
+                                                                                    ? box.localToGlobal(
+                                                                                          Offset.zero,
+                                                                                        ) &
+                                                                                        box.size
+                                                                                    : null;
+
+                                                                            SharePlus.instance.share(
+                                                                              ShareParams(
+                                                                                text:
+                                                                                    shareText,
+                                                                                sharePositionOrigin:
+                                                                                    sharePositionOrigin,
+                                                                              ),
+                                                                            );
+                                                                            CommonUtils.showSuccessToast(
+                                                                              'Sharing conversation...',
+                                                                            );
+                                                                          } else if (question.isNotEmpty &&
+                                                                              answer.isEmpty) {
+                                                                            CommonUtils.showErrorToast(
+                                                                              'Cannot share: No response available yet',
+                                                                            );
+                                                                          } else {
+                                                                            CommonUtils.showErrorToast(
+                                                                              'Cannot share: Conversation is incomplete',
+                                                                            );
+                                                                          }
+                                                                        },
+                                                                        child: Image.asset(
+                                                                          'assets/images/unshare.png',
+                                                                          height:
+                                                                              14,
+                                                                          width:
+                                                                              14,
+                                                                        ),
+                                                                      );
                                                                     },
-                                                                    child: Image.asset(
-                                                                      'assets/images/unshare.png',
-                                                                      height:
-                                                                          14,
-                                                                      width: 14,
-                                                                    ),
                                                                   ),
                                                                 ],
                                                               ),
