@@ -5,7 +5,6 @@ class CustomBottomNavBar extends StatefulWidget {
   const CustomBottomNavBar({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _CustomBottomNavBarState createState() => _CustomBottomNavBarState();
 }
 
@@ -83,13 +82,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
           extendBody: true,
           body: _screens[_selectedIndex],
           bottomNavigationBar: Container(
-            margin: const EdgeInsets.only(
-              left: 20,
-              right: 20,
-              bottom: 20,
-              top: 0,
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 10),
+            margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(10),
@@ -99,47 +92,56 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(labels.length, (index) {
                 final bool isSelected = _selectedIndex == index;
+
                 return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: () {
                     setState(() {
                       _selectedIndex = index;
                     });
                   },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 500),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isSelected ? 20 : 0,
-                      vertical: 10,
-                    ),
-                    decoration:
-                        isSelected
-                            ? BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.gradientStart,
-                                  AppColors.gradientEnd,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            )
-                            : null,
-                    child: Row(
-                      children: [
-                        SvgPicture.asset(
-                          isSelected
-                              ? _selectedImages[index]
-                              : _unselectedImages[index],
-                          height: 16,
-                          width: 16,
+                  child: SizedBox(
+                    height: 55,
+                    width: isSelected ? null : 60,
+                    child: Center(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isSelected ? 16 : 0,
+                          vertical: 10,
                         ),
-                        if (isSelected) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            labels[index],
-                            style: FTextStyle.tabbarTextStyle,
-                          ),
-                        ],
-                      ],
+                        decoration:
+                            isSelected
+                                ? BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.gradientStart,
+                                      AppColors.gradientEnd,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                )
+                                : null,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SvgPicture.asset(
+                              isSelected
+                                  ? _selectedImages[index]
+                                  : _unselectedImages[index],
+                              height: 16,
+                              width: 16,
+                            ),
+                            if (isSelected) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                labels[index],
+                                style: FTextStyle.tabbarTextStyle,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 );
