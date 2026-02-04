@@ -114,30 +114,22 @@ class _SplashScreenState extends State<SplashScreen> {
       data: MediaQuery.of(
         context,
       ).copyWith(textScaler: const TextScaler.linear(1)),
-      child: const Scaffold(
-        body: Center(
-          child: Image(
-            image: AssetImage('assets/images/DivineArcLogo.png'),
-            height: 200,
-            width: 200,
-            fit: BoxFit.cover,
-          ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset('assets/images/bgGitaGPT.png', fit: BoxFit.cover),
+            Center(
+              child: Image.asset(
+                'assets/images/DivineArcLogo.png',
+                height: 200,
+                width: 200,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ],
         ),
-      ),
-    );
-  }
-}
-
-class BackgroundImage extends StatelessWidget {
-  final String image;
-
-  const BackgroundImage({super.key, required this.image});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        image: DecorationImage(image: AssetImage(image), fit: BoxFit.cover),
       ),
     );
   }
