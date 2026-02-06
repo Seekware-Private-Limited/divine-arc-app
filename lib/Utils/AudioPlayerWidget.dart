@@ -1,6 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
-import 'package:flutter/material.dart';
 
 class AudioPlayerWidget extends StatefulWidget {
   final String audioPath;

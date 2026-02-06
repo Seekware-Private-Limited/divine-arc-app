@@ -19,7 +19,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    BlocProvider.of<HomeFlowBloc>(context).add(ViewUserProfile());
+    if (!PrefUtils.getIsGuest()) {
+      BlocProvider.of<HomeFlowBloc>(context).add(ViewUserProfile());
+    }
   }
 
   @override

@@ -488,7 +488,7 @@ class GptScreenChatList extends StatelessWidget {
     bool isDisliked,
     int index,
   ) {
-    final double iconSize = isDisliked ? 15 : 18;
+    final double iconSize = isDisliked ? 15 : 17;
 
     return GestureDetector(
       onTap:
@@ -531,12 +531,12 @@ class GptScreenChatList extends StatelessWidget {
   }
 
   Widget _buildBookmarkButton(String messageId, bool isBookmarked, int index) {
-    if (kDebugMode) {
-      debugPrint('📚 Bookmark Button Debug:');
-      debugPrint('  - Index: $index');
-      debugPrint('  - Message ID: $messageId');
-      debugPrint('  - isBookmarked: $isBookmarked');
-    }
+    // if (kDebugMode) {
+    //   debugPrint('📚 Bookmark Button Debug:');
+    //   debugPrint('  - Index: $index');
+    //   debugPrint('  - Message ID: $messageId');
+    //   debugPrint('  - isBookmarked: $isBookmarked');
+    // }
 
     return GestureDetector(
       onTap: () {

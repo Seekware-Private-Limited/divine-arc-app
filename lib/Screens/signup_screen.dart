@@ -1,5 +1,6 @@
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/session_expired_snackbar.dart';
 
 class SignUpScreen extends StatefulWidget {
   final bool isFacebookLoginEnabled;
@@ -157,14 +158,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           print(state.failureMessage);
                           CommonUtils.showErrorToast(state.failureMessage);
                         } else if (state is SessionExpiredStateAuth) {
-                          CommonUtils.showErrorToast(state.message);
-                          PrefUtils.clearAll();
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginScreen(),
-                            ),
-                            (route) => false,
+                          SessionExpiredSnackBar.show(
+                            context: context,
+                            message: state.message,
                           );
                         }
                       },

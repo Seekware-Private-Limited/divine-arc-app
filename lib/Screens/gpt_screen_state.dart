@@ -1,6 +1,3 @@
-import 'dart:async';
-import 'package:divine_arc/Utils/app_imports.dart';
-
 // This file exists to provide proper state exposure to the mixin
 // The actual state class is in gpt_screen.dart
 

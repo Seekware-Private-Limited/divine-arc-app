@@ -36,12 +36,17 @@ class _GptScreenState extends State<GptScreen>
       widget.searchQueryFromAskAnythingScreen;
 
   // Controllers
+  @override
   final TextEditingController inputController = TextEditingController();
+  @override
   final TextEditingController feedbackTextController = TextEditingController();
+  @override
   final ScrollController scrollController = ScrollController();
 
   // Audio components
+  @override
   late final AudioRecorder audioRecorder;
+  @override
   late final AudioPlayer audioPlayer;
   late final AnimationController animationController;
   late final Animation<double> scaleAnimation;
@@ -49,36 +54,57 @@ class _GptScreenState extends State<GptScreen>
   StreamSubscription<PlayerState>? playerStateSubscription;
 
   // State variables
+  @override
   bool isRecording = false;
+  @override
   bool isInitialLoading = false;
+  @override
   bool isApiProcessing = false;
+  @override
   bool isConvertingAudio = false;
 
   // File paths
+  @override
   String? audioPath;
+  @override
   String? responseAudioPath;
+  @override
   String? apiResponse;
+  @override
   String reactionId = '';
 
   // Chat state
+  @override
   int? editingIndex;
+  @override
   int? currentResponseIndex;
+  @override
   List<Map<String, dynamic>> chatHistory = [];
+  @override
   Timer? scrollTimer;
+  @override
   final Map<int, bool> responseLoadingStates = {};
+  @override
   Completer<void>? initialLoadCompleter;
 
   // Audio URL tracking
+  @override
   final Map<int, String> userAudioUrlMap = {};
+  @override
   final Map<int, String> responseAudioUrlMap = {};
 
   // Current voice conversation
+  @override
   String? currentUserAudioUrl;
+  @override
   String? currentResponseAudioUrl;
 
   // Current playing audio
+  @override
   int? currentlyPlayingIndex;
+  @override
   String? currentlyPlayingUrl;
+  @override
   bool isPlaying = false;
 
   @override

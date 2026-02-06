@@ -96,6 +96,11 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
+                    // 🔥 Instantly hide any visible snackbar
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+                    if (_selectedIndex == index) return;
+
                     setState(() {
                       _selectedIndex = index;
                     });

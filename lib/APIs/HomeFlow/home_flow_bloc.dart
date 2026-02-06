@@ -1246,7 +1246,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         }
       } on SocketException {
         emit(CheckNetworkConnectionHomeFlow());
-      } catch (e, stack) {
+      } catch (e) {
         print("Upload file error: $e");
         emit(
           UploadFileFailure({
