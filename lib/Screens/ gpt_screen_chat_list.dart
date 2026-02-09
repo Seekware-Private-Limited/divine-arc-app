@@ -23,7 +23,7 @@ class GptScreenChatList extends StatelessWidget {
   final Function(String filePath, int index) onPlayLocalAudio;
   final Function(String messageId, int index) onLike;
   final Function(String messageId, int index) onDislike;
-  final Function(String messageId, int index, bool isBookmarked) onBookmark;
+  final Function(String messageId, int index, bool is_bookmarked) onBookmark;
 
   const GptScreenChatList({
     super.key,
@@ -78,7 +78,7 @@ class GptScreenChatList extends StatelessWidget {
     final question = chatHistory[index]['question']?.toString().trim() ?? '';
     final answer = chatHistory[index]['answer']?.toString().trim() ?? '';
     final messageId = chatHistory[index]['messageId']?.toString().trim() ?? '';
-    final bool isBookmarked = chatHistory[index]['isBookmarked'] ?? false;
+    final bool is_bookmarked = chatHistory[index]['is_bookmarked'] ?? false;
     final bool isLiked = chatHistory[index]['isLiked'] ?? false;
     final bool isDisliked = chatHistory[index]['isDisliked'] ?? false;
     final bool isUserAudio = chatHistory[index]['isUserAudio'] ?? false;
@@ -143,7 +143,7 @@ class GptScreenChatList extends StatelessWidget {
                   index,
                   answer,
                   messageId,
-                  isBookmarked,
+                  is_bookmarked,
                   isLiked,
                   isDisliked,
                   question,
@@ -408,7 +408,7 @@ class GptScreenChatList extends StatelessWidget {
     int index,
     String answer,
     String messageId,
-    bool isBookmarked,
+    bool is_bookmarked,
     bool isLiked,
     bool isDisliked,
     String question,
@@ -425,7 +425,7 @@ class GptScreenChatList extends StatelessWidget {
             const SizedBox(width: 10),
             _buildCopyButton(context, answer),
             const SizedBox(width: 10),
-            _buildBookmarkButton(messageId, isBookmarked, index),
+            _buildBookmarkButton(messageId, is_bookmarked, index),
             const SizedBox(width: 10),
             _buildShareButton(context, question, answer),
           ],
@@ -530,12 +530,12 @@ class GptScreenChatList extends StatelessWidget {
     );
   }
 
-  Widget _buildBookmarkButton(String messageId, bool isBookmarked, int index) {
+  Widget _buildBookmarkButton(String messageId, bool is_bookmarked, int index) {
     // if (kDebugMode) {
     //   debugPrint('📚 Bookmark Button Debug:');
     //   debugPrint('  - Index: $index');
     //   debugPrint('  - Message ID: $messageId');
-    //   debugPrint('  - isBookmarked: $isBookmarked');
+    //   debugPrint('  - is_bookmarked: $is_bookmarked');
     // }
 
     return GestureDetector(
@@ -543,11 +543,11 @@ class GptScreenChatList extends StatelessWidget {
         if (messageId.isNotEmpty) {
           if (kDebugMode) {
             debugPrint(
-              '🎯 Bookmark tapped: ${isBookmarked ? 'UNBOOKMARK' : 'BOOKMARK'}',
+              '🎯 Bookmark tapped: ${is_bookmarked ? 'UNBOOKMARK' : 'BOOKMARK'}',
             );
           }
           // Don't change state optimistically - let the API response handle it
-          onBookmark(messageId, index, isBookmarked);
+          onBookmark(messageId, index, is_bookmarked);
         } else {
           if (kDebugMode) {
             debugPrint('❌ Cannot bookmark: Message ID is missing');
@@ -556,7 +556,7 @@ class GptScreenChatList extends StatelessWidget {
         }
       },
       child: Image.asset(
-        isBookmarked
+        is_bookmarked
             ? 'assets/images/bookmark.png'
             : 'assets/images/unbookmark.png',
         height: 14,

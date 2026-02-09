@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -17,7 +16,6 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
   @override
   void initState() {
     super.initState();
-    print("CHAT HISTORY: ${jsonEncode(PrefUtils.getChatHistory())}");
     BlocProvider.of<HomeFlowBloc>(context).add(GetAllBookmarksChat());
   }
 
@@ -89,7 +87,7 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
                     debugPrint('Found index: $index');
 
                     if (index != -1) {
-                      chatHistory[index]['isBookmarked'] = false;
+                      chatHistory[index]['is_bookmarked'] = false;
                       PrefUtils.setChatHistory(chatHistory);
                       debugPrint(
                         'Updated chatHistory in PrefUtils: $chatHistory',
@@ -194,10 +192,19 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
                                     itemCount: allBookmarksChat.length,
                                     itemBuilder: (context, index) {
                                       final chat = allBookmarksChat[index];
-                                      final question = chat['question'] ?? '';
-                                      final answer = chat['answer'] ?? '';
-                                      final messageId =
-                                          chat['message_id'] ?? '';
+
+                                      final question = chat['message'] ?? '';
+
+                                      final answer =
+                                          (chat['apiResponses'] != null &&
+                                                  chat['apiResponses']
+                                                      .isNotEmpty)
+                                              ? chat['apiResponses'][0]['api_response'] ??
+                                                  ''
+                                              : '';
+
+                                      final messageId = chat['id'] ?? '';
+
                                       return Padding(
                                         padding: const EdgeInsets.only(
                                           bottom: 10,

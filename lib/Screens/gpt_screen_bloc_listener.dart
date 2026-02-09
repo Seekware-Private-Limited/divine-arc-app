@@ -422,7 +422,7 @@ extension GptScreenBlocListener on GptScreenMethods {
                     ? apiResponses[0]['audio_url']?.toString() ?? ''
                     : '';
             final String userAudioUrl = message['audio_url']?.toString() ?? '';
-            final bool isBookmarked = message['isBookmarked'] ?? false;
+            final bool is_bookmarked = message['is_bookmarked'] ?? false;
             final bool isLiked = message['isLiked'] ?? false;
             final bool isDisliked = message['isDisliked'] ?? false;
             final localChat = localChatMap[messageId] ?? {};
@@ -436,7 +436,8 @@ extension GptScreenBlocListener on GptScreenMethods {
               'answer': answer,
               'chatId': chatId,
               'messageId': messageId,
-              'isBookmarked': isBookmarked || localChat['isBookmarked'] == true,
+              'is_bookmarked':
+                  is_bookmarked || localChat['is_bookmarked'] == true,
               'isLiked': isLiked || localChat['isLiked'] == true,
               'isDisliked': isDisliked || localChat['isDisliked'] == true,
               'isUserAudio': isUserAudio,
@@ -531,10 +532,12 @@ extension GptScreenBlocListener on GptScreenMethods {
 
   void _handleBookmarkChatSuccess(BookmarkChatSuccess state) {
     final response = state.successResponse;
-    final messageId = response['data']['message_id']?.toString() ?? '';
+    // FIX: The message ID is in response['data']['id'], not response['data']['message_id']
+    final messageId = response['data']['id']?.toString() ?? '';
 
     if (kDebugMode) {
       debugPrint('✅ Bookmark Success - Message ID: $messageId');
+      debugPrint('📊 Full response: $response');
     }
 
     setState(() {
@@ -545,14 +548,15 @@ extension GptScreenBlocListener on GptScreenMethods {
       if (index != -1) {
         if (kDebugMode) {
           debugPrint('📌 Updating bookmark for index $index to TRUE');
+          debugPrint('📋 Chat item found: ${chatHistory[index]}');
         }
-        chatHistory[index]['isBookmarked'] = true;
+        chatHistory[index]['is_bookmarked'] = true;
         PrefUtils.setChatHistory(chatHistory);
       } else {
         if (kDebugMode) {
           debugPrint('❌ Could not find chat with messageId: $messageId');
           debugPrint(
-            'Available messageIds: ${chatHistory.map((c) => c['messageId']).toList()}',
+            '🔍 Available messageIds: ${chatHistory.map((c) => c['messageId']).toList()}',
           );
         }
       }
@@ -564,10 +568,16 @@ extension GptScreenBlocListener on GptScreenMethods {
   }
 
   void _handleBookmarkChatFailure(BookmarkChatFailure state) {
-    final messageId = state.failureResponse['message_id']?.toString() ?? '';
+    // FIX: Check if the response structure matches
+    final failureResponse = state.failureResponse;
+    final messageId =
+        failureResponse['message_id']?.toString() ??
+        failureResponse['id']?.toString() ??
+        '';
 
     if (kDebugMode) {
       debugPrint('❌ Bookmark Failed - Message ID: $messageId');
+      debugPrint('📊 Failure response: $failureResponse');
     }
 
     setState(() {
@@ -576,7 +586,31 @@ extension GptScreenBlocListener on GptScreenMethods {
       );
       if (index != -1) {
         // Revert the bookmark state on failure
-        chatHistory[index]['isBookmarked'] = false;
+        chatHistory[index]['is_bookmarked'] = false;
+        PrefUtils.setChatHistory(chatHistory);
+      }
+    });
+    CommonUtils.showErrorToast(state.failureResponse['message']);
+  }
+
+  void _handleUnbookmarkChatFailure(UnbookmarkChatFailure state) {
+    final failureResponse = state.failureResponse;
+    final messageId =
+        failureResponse['message_id']?.toString() ??
+        failureResponse['id']?.toString() ??
+        '';
+
+    if (kDebugMode) {
+      debugPrint('❌ Unbookmark Failed - Message ID: $messageId');
+    }
+
+    setState(() {
+      final index = chatHistory.indexWhere(
+        (chat) => chat['messageId'] == messageId,
+      );
+      if (index != -1) {
+        // Revert the bookmark state on failure
+        chatHistory[index]['is_bookmarked'] = true;
         PrefUtils.setChatHistory(chatHistory);
       }
     });
@@ -585,7 +619,8 @@ extension GptScreenBlocListener on GptScreenMethods {
 
   void _handleUnbookmarkChatSuccess(UnbookmarkChatSuccess state) {
     final response = state.successResponse;
-    final messageId = response['data']['message_id']?.toString() ?? '';
+    // FIX: Same issue here
+    final messageId = response['data']['id']?.toString() ?? '';
 
     if (kDebugMode) {
       debugPrint('✅ Unbookmark Success - Message ID: $messageId');
@@ -599,7 +634,7 @@ extension GptScreenBlocListener on GptScreenMethods {
         if (kDebugMode) {
           debugPrint('📌 Updating bookmark for index $index to FALSE');
         }
-        chatHistory[index]['isBookmarked'] = false;
+        chatHistory[index]['is_bookmarked'] = false;
         PrefUtils.setChatHistory(chatHistory);
       }
     });
@@ -607,26 +642,6 @@ extension GptScreenBlocListener on GptScreenMethods {
     CommonUtils.showSuccessToast(
       AppLocalizations.of(context)!.translate('chatunbookmarkedsuccessfully'),
     );
-  }
-
-  void _handleUnbookmarkChatFailure(UnbookmarkChatFailure state) {
-    final messageId = state.failureResponse['message_id']?.toString() ?? '';
-
-    if (kDebugMode) {
-      debugPrint('❌ Unbookmark Failed - Message ID: $messageId');
-    }
-
-    setState(() {
-      final index = chatHistory.indexWhere(
-        (chat) => chat['messageId'] == messageId,
-      );
-      if (index != -1) {
-        // Revert the bookmark state on failure
-        chatHistory[index]['isBookmarked'] = true;
-        PrefUtils.setChatHistory(chatHistory);
-      }
-    });
-    CommonUtils.showErrorToast(state.failureResponse['message']);
   }
 
   void _handleSessionExpiredStateHome(

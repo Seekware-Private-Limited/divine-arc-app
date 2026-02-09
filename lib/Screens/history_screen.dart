@@ -11,11 +11,26 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   bool isLoading = false;
   List<Map<String, dynamic>> allChatHistory = [];
+  bool isGuest = false;
 
   @override
   void initState() {
     super.initState();
-    BlocProvider.of<HomeFlowBloc>(context).add(GetChatHistoryEvent());
+
+    isGuest = PrefUtils.getIsGuest();
+
+    if (isGuest) {
+      // Load local history for guest
+      final localChats = PrefUtils.getChatHistory();
+
+      setState(() {
+        allChatHistory = List<Map<String, dynamic>>.from(localChats ?? []);
+        isLoading = false;
+      });
+    } else {
+      // Load server history for logged user
+      BlocProvider.of<HomeFlowBloc>(context).add(GetChatHistoryEvent());
+    }
   }
 
   @override
@@ -43,7 +58,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Sticky Header
+                    // Header
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -56,134 +71,135 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Scrollable List
-                    BlocListener<HomeFlowBloc, HomeFlowState>(
-                      listener: (context, state) {
-                        if (state is GetChatHistoryLoading) {
-                          setState(() {
-                            isLoading = true;
-                          });
-                        } else if (state is GetChatHistorySuccess) {
-                          final chats = state.successResponse['chats'] as List;
-                          setState(() {
-                            isLoading = false;
-                            allChatHistory =
-                                chats
-                                    .map<Map<String, dynamic>>(
-                                      (item) => item as Map<String, dynamic>,
-                                    )
-                                    .toList();
-                          });
-                        } else if (state is GetChatHistoryFailure) {
-                          setState(() {
-                            isLoading = false;
-                          });
-                          CommonUtils.showErrorToast(
-                            state.failureResponse['message'],
-                          );
-                        } else if (state is CheckNetworkConnectionHomeFlow) {
-                          setState(() {
-                            isLoading = false;
-                          });
-                        } else if (state is SessionExpiredStateHome) {
-                          setState(() {
-                            isLoading = false;
-                          });
+                    // If guest → no bloc listener
+                    if (!isGuest)
+                      BlocListener<HomeFlowBloc, HomeFlowState>(
+                        listener: (context, state) {
+                          if (state is GetChatHistoryLoading) {
+                            setState(() {
+                              isLoading = true;
+                            });
+                          } else if (state is GetChatHistorySuccess) {
+                            final chats =
+                                state.successResponse['chats'] as List;
 
-                          SessionExpiredSnackBar.show(
-                            context: context,
-                            message: state.message,
-                          );
-                        }
-                      },
-                      child: Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: AppColors.gradientStart,
-                              width: 1.5,
-                            ),
-                            color: Colors.white,
-                          ),
-                          child:
-                              isLoading
-                                  ? Center(
-                                    child:
-                                        LoadingAnimationWidget.staggeredDotsWave(
-                                          color: AppColors.gradientStart,
-                                          size: 50,
-                                        ),
-                                  )
-                                  : allChatHistory.isEmpty
-                                  ? Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        ClipOval(
-                                          child: Image.asset(
-                                            'assets/images/errorImage.png',
-                                            height: 200,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 20),
-                                        Text(
-                                          AppLocalizations.of(
-                                            context,
-                                          )!.translate('noChatHistory'),
-                                          style: FTextStyle.defaultTextBold,
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                  : ListView.builder(
-                                    itemCount: allChatHistory.length,
-                                    itemBuilder: (context, index) {
-                                      final chat = allChatHistory[index];
-                                      final ChatID = chat['id'];
-                                      return Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 10,
-                                        ),
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder:
-                                                    (context) => GptScreen(
-                                                      chatId: ChatID,
-                                                    ),
-                                              ),
-                                            );
-                                          },
-                                          child: Container(
-                                            padding: const EdgeInsets.all(20),
-                                            decoration: BoxDecoration(
-                                              color: AppColors.GlobalBG,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Text(
-                                              chat['question'] ?? 'No question',
-                                              style: FTextStyle.defaultText,
-                                            ),
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                        ),
-                      ),
-                    ),
+                            setState(() {
+                              isLoading = false;
+                              allChatHistory =
+                                  chats
+                                      .map<Map<String, dynamic>>(
+                                        (item) => item as Map<String, dynamic>,
+                                      )
+                                      .toList();
+                            });
+                          } else if (state is GetChatHistoryFailure) {
+                            setState(() {
+                              isLoading = false;
+                            });
+                            CommonUtils.showErrorToast(
+                              state.failureResponse['message'],
+                            );
+                          } else if (state is CheckNetworkConnectionHomeFlow) {
+                            setState(() {
+                              isLoading = false;
+                            });
+                          } else if (state is SessionExpiredStateHome) {
+                            setState(() {
+                              isLoading = false;
+                            });
+
+                            SessionExpiredSnackBar.show(
+                              context: context,
+                              message: state.message,
+                            );
+                          }
+                        },
+                        child: _historyContainer(),
+                      )
+                    else
+                      Expanded(child: _historyContainer()),
                   ],
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _historyContainer() {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.gradientStart, width: 1.5),
+          color: Colors.white,
+        ),
+        child:
+            isLoading
+                ? Center(
+                  child: LoadingAnimationWidget.staggeredDotsWave(
+                    color: AppColors.gradientStart,
+                    size: 50,
+                  ),
+                )
+                : allChatHistory.isEmpty
+                ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ClipOval(
+                        child: Image.asset(
+                          'assets/images/errorImage.png',
+                          height: 200,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        AppLocalizations.of(
+                          context,
+                        )!.translate('noChatHistory'),
+                        style: FTextStyle.defaultTextBold,
+                      ),
+                    ],
+                  ),
+                )
+                : ListView.builder(
+                  itemCount: allChatHistory.length,
+                  itemBuilder: (context, index) {
+                    final chat = allChatHistory[index];
+
+                    // Works for both guest & logged user
+                    final chatID = chat['id'] ?? chat['chatId'];
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => GptScreen(chatId: chatID),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppColors.GlobalBG,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            chat['question'] ?? 'No question',
+                            style: FTextStyle.defaultText,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
       ),
     );
   }

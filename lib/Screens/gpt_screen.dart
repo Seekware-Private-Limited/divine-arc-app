@@ -330,14 +330,14 @@ class _GptScreenState extends State<GptScreen>
                                       onBookmark: (
                                         messageId,
                                         index,
-                                        isBookmarked,
+                                        is_bookmarked,
                                       ) {
                                         // Don't update state optimistically
                                         // Let the API response handler update it
                                         BlocProvider.of<HomeFlowBloc>(
                                           context,
                                         ).add(
-                                          isBookmarked
+                                          is_bookmarked
                                               ? UnbookmarkChat(
                                                 messageId: messageId,
                                               )

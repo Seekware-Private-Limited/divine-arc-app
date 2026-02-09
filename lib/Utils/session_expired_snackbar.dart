@@ -75,15 +75,18 @@ class _SessionExpiredContent extends StatelessWidget {
               style: const TextStyle(color: Colors.white, fontSize: 12),
             ),
           ),
-          TextButton(
-            onPressed: onLoginTap,
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-            child: const Text(
-              'Login',
-              style: TextStyle(color: Colors.white, fontSize: 12),
+          SizedBox(
+            height: 40,
+            child: TextButton(
+              onPressed: onLoginTap,
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              child: const Text(
+                'Login',
+                style: TextStyle(color: Colors.white, fontSize: 12),
+              ),
             ),
           ),
         ],
