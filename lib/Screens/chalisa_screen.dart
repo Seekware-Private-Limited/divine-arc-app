@@ -112,6 +112,7 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                         Expanded(
                           child: SingleChildScrollView(
                             child: Container(
+                              width: double.infinity,
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10),

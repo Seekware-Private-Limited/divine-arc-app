@@ -57,6 +57,11 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+
+    /// ✅ Respect safe area (gesture nav / modern phones)
+    final double safeBottom = mediaQuery.padding.bottom;
+
     final List<String> labels = [
       AppLocalizations.of(context)!.translate('home'),
       AppLocalizations.of(context)!.translate('bookmark'),
@@ -75,14 +80,13 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
         }
       },
       child: MediaQuery(
-        data: MediaQuery.of(
-          context,
-        ).copyWith(textScaler: const TextScaler.linear(1)),
+        data: mediaQuery.copyWith(textScaler: const TextScaler.linear(1)),
         child: Scaffold(
           extendBody: true,
           body: _screens[_selectedIndex],
+
           bottomNavigationBar: Container(
-            margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+            margin: EdgeInsets.fromLTRB(20, 0, 20, 20 + safeBottom),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(10),
@@ -96,7 +100,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                 return GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
-                    // 🔥 Instantly hide any visible snackbar
+                    /// 🔥 Instantly hide snackbar
                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
                     if (_selectedIndex == index) return;
