@@ -436,10 +436,9 @@ extension GptScreenBlocListener on GptScreenMethods {
               'answer': answer,
               'chatId': chatId,
               'messageId': messageId,
-              'is_bookmarked':
-                  is_bookmarked || localChat['is_bookmarked'] == true,
-              'isLiked': isLiked || localChat['isLiked'] == true,
-              'isDisliked': isDisliked || localChat['isDisliked'] == true,
+              'is_bookmarked': is_bookmarked,
+              'isLiked': isLiked,
+              'isDisliked': isDisliked,
               'isUserAudio': isUserAudio,
               'hasAudioUrl': audioUrl.isNotEmpty,
               'audio_url': userAudioUrl,
