@@ -161,7 +161,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         AppLocalizations.of(
                           context,
                         )!.translate('noChatHistory'),
-                        style: FTextStyle.defaultTextBold,
+                        style: FTextStyle.defaultTextSemiBold,
                       ),
                     ],
                   ),

@@ -14,6 +14,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool emailError = false;
   bool passwordError = false;
   bool isFacebookLoginEnabled = false;
+  bool isGoogleLoginEnabled = false;
   String? emailErrorText;
   String? passwordErrorText;
   bool isLoading = false;
@@ -150,7 +151,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             isLoading = false;
                           });
                           final response = state.successResponse['data'];
-                          print(response);
                           final name = response['name'];
                           final email = response['email'];
                           final id = response['id'];
@@ -173,7 +173,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           setState(() {
                             isLoading = false;
                           });
-                          print(state.failureMessage);
                           CommonUtils.showErrorToast(state.failureMessage);
                         } else if (state is ViewAppConfigLoaded) {
                           final response = state.successResponse;
@@ -210,19 +209,35 @@ class _LoginScreenState extends State<LoginScreen> {
                                 isFacebookLoginEnabled =
                                     configValue['facebook']?['android']?['enabled'] ??
                                     false;
+                                isGoogleLoginEnabled =
+                                    configValue['google']?['android']?['enabled'] ??
+                                    false;
                               } else if (platform == 'ios') {
                                 isFacebookLoginEnabled =
                                     configValue['facebook']?['ios']?['enabled'] ??
                                     false;
+                                isGoogleLoginEnabled =
+                                    configValue['google']?['ios']?['enabled'] ??
+                                    false;
                               } else {
-                                final androidEnabled =
+                                final androidFacebookEnabled =
                                     configValue['facebook']?['android']?['enabled'] ??
                                     false;
-                                final iosEnabled =
+                                final iosFacebookEnabled =
                                     configValue['facebook']?['ios']?['enabled'] ??
                                     false;
+                                final androidGoogleEnabled =
+                                    configValue['google']?['android']?['enabled'] ??
+                                    false;
+                                final iosGoogleEnabled =
+                                    configValue['google']?['ios']?['enabled'] ??
+                                    false;
+
                                 isFacebookLoginEnabled =
-                                    androidEnabled || iosEnabled;
+                                    androidFacebookEnabled ||
+                                    iosFacebookEnabled;
+                                isGoogleLoginEnabled =
+                                    androidGoogleEnabled || iosGoogleEnabled;
                               }
                             });
                           }
@@ -230,6 +245,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           print('✅ Current Platform: $platform');
                           print(
                             '✅ FACEBOOK ENABLED for $platform = $isFacebookLoginEnabled',
+                          );
+                          print(
+                            '✅ GOOGLE ENABLED for $platform = $isGoogleLoginEnabled',
                           );
 
                           print(
@@ -587,6 +605,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 child: SignUpScreen(
                                                   isFacebookLoginEnabled:
                                                       isFacebookLoginEnabled,
+                                                  isisGoogleLoginEnabled:
+                                                      isGoogleLoginEnabled,
                                                 ),
                                               ),
                                         ),
@@ -637,40 +657,47 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 24),
-                                  GestureDetector(
-                                    onTap: () {
-                                      BlocProvider.of<AuthFlowBloc>(
-                                        context,
-                                      ).add(GoogleLoginEventHandler());
-                                    },
-                                    child: Container(
-                                      height: 45,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: AppColors.gradientStart,
-                                          width: 1.5,
+                                  Visibility(
+                                    visible: isGoogleLoginEnabled,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        BlocProvider.of<AuthFlowBloc>(
+                                          context,
+                                        ).add(GoogleLoginEventHandler());
+                                      },
+                                      child: Container(
+                                        height: 45,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: AppColors.gradientStart,
+                                            width: 1.5,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          SvgPicture.asset(
-                                            'assets/images/google.svg',
-                                            height: 24,
-                                            width: 24,
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Text(
-                                            AppLocalizations.of(
-                                              context,
-                                            )!.translate('continueWithGoogle'),
-                                            style:
-                                                FTextStyle
-                                                    .socialloginbuttonText,
-                                          ),
-                                        ],
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            SvgPicture.asset(
+                                              'assets/images/google.svg',
+                                              height: 24,
+                                              width: 24,
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Text(
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate(
+                                                'continueWithGoogle',
+                                              ),
+                                              style:
+                                                  FTextStyle
+                                                      .socialloginbuttonText,
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),

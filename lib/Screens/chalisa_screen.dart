@@ -147,7 +147,7 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                                     const SizedBox(height: 10),
                                     Text(
                                       description,
-                                      style: FTextStyle.defaultText,
+                                      style: FTextStyle.defaultTextSemiBold,
                                       textAlign: TextAlign.center,
                                     ),
                                   ],

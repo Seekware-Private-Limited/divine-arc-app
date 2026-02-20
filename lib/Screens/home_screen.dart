@@ -19,7 +19,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     BlocProvider.of<HomeFlowBloc>(context).add(GetRandomQuoteEvent());
 
-    // Get language with fallback to 'en' if not set
     String language = PrefUtils.getLanguage();
     if (language.isEmpty) {
       language = 'en';
@@ -77,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       } else if (state is ViewAllContentLoaded) {
                         setState(() {
                           isContentLoading = false;
-                          allPrayers.clear(); // Clear before adding new data
+                          allPrayers.clear();
                           allPrayers.addAll(state.successResponse['data']);
                         });
                       } else if (state is ViewAllContentError) {
@@ -118,7 +117,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Column(
                         children: [
-                          // Sticky Header
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -135,7 +133,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 20),
 
-                          // Sticky Card with search
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
@@ -147,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.white,
                             ),
                             child: Container(
-                              height: 180,
+                              height: 200,
                               width: double.infinity,
                               decoration: BoxDecoration(
                                 color: AppColors.GlobalBG,
@@ -169,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
+                                      horizontal: 20,
                                     ),
                                     child: Column(
                                       mainAxisAlignment:
@@ -191,12 +188,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 : AppLocalizations.of(
                                                   context,
                                                 )!.translate('dummyText'),
-                                            style:
-                                                FTextStyle
-                                                    .socialloginbuttonText,
+                                            style: FTextStyle.defaultText,
                                             textAlign: TextAlign.center,
                                           ),
-                                        const SizedBox(height: 20),
+                                        const SizedBox(height: 10),
                                         Container(
                                           height: 50,
                                           decoration: BoxDecoration(
@@ -258,7 +253,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           const SizedBox(height: 20),
 
-                          // Scrollable list
                           Expanded(
                             child:
                                 isContentLoading
@@ -320,7 +314,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ),
                                               child: Row(
                                                 children: [
-                                                  // Show network image from content_image
                                                   ClipRRect(
                                                     borderRadius:
                                                         BorderRadius.circular(
@@ -345,7 +338,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     ),
                                                   ),
                                                   const SizedBox(width: 10),
-                                                  // Title and Description
                                                   Expanded(
                                                     child: Column(
                                                       crossAxisAlignment:
@@ -360,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                           style: FTextStyle
                                                               .defaultText
                                                               .copyWith(
-                                                                fontSize: 12,
+                                                                fontSize: 14,
                                                                 fontWeight:
                                                                     FontWeight
                                                                         .w600,
@@ -374,7 +366,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                           style: FTextStyle
                                                               .defaultText
                                                               .copyWith(
-                                                                fontSize: 10,
+                                                                fontSize: 12,
                                                               ),
                                                           maxLines: 2,
                                                           overflow:
@@ -385,7 +377,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     ),
                                                   ),
                                                   const SizedBox(width: 10),
-                                                  // Right Arrow Icon
                                                   GestureDetector(
                                                     onTap: () {
                                                       Navigator.push(

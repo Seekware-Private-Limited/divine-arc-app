@@ -2,7 +2,7 @@ name: divine_arc
 description: "A new Flutter project."
 publish_to: "none"
 
-version: 1.0.0+6
+version: 1.0.0+7
 
 environment:
   sdk: ^3.7.2
@@ -64,6 +64,7 @@ flutter:
     - assets/images/
     - assets/audio/
     - lib/l10n/
+    - shorebird.yaml
 
   fonts:
     - family: Warnes-Regular
