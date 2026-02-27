@@ -7,14 +7,14 @@ class ChalisaScreen extends StatefulWidget {
   final String contentImage;
   final String contentName;
   final String contentDescription;
-  final String contentAudio;
+  final String? contentAudio;
 
   const ChalisaScreen({
     super.key,
     required this.contentImage,
     required this.contentName,
     required this.contentDescription,
-    required this.contentAudio,
+    this.contentAudio,
   });
 
   @override
@@ -111,8 +111,8 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
 
                         Expanded(
                           child: SingleChildScrollView(
-                            padding: const EdgeInsets.only(bottom: 100),
                             child: Container(
+                              width: double.infinity,
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(10),
@@ -147,7 +147,7 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                                     const SizedBox(height: 10),
                                     Text(
                                       description,
-                                      style: FTextStyle.defaultText,
+                                      style: FTextStyle.defaultTextSemiBold,
                                       textAlign: TextAlign.center,
                                     ),
                                   ],
@@ -159,13 +159,14 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                       ],
                     ),
                   ),
-
-                  Positioned(
-                    left: 20,
-                    right: 20,
-                    bottom: 30,
-                    child: AudioPlayerWidget(audioPath: widget.contentAudio),
-                  ),
+                  if (widget.contentAudio != null &&
+                      widget.contentAudio!.trim().isNotEmpty)
+                    Positioned(
+                      left: 20,
+                      right: 20,
+                      bottom: 30,
+                      child: AudioPlayerWidget(audioPath: widget.contentAudio!),
+                    ),
                 ],
               ),
             ),

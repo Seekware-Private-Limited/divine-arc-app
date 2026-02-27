@@ -1,4 +1,5 @@
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/session_expired_snackbar.dart';
 import 'gpt_screen_methods.dart';
 
 extension GptScreenBlocListener on GptScreenMethods {
@@ -327,7 +328,7 @@ extension GptScreenBlocListener on GptScreenMethods {
   ) async {
     final response = state.successResponse;
     if (kDebugMode) {
-      debugPrint("AUDIO RESPONSE RECEIVED :${response}");
+      debugPrint("AUDIO RESPONSE RECEIVED :$response");
     }
 
     if (currentResponseIndex != null &&
@@ -421,7 +422,7 @@ extension GptScreenBlocListener on GptScreenMethods {
                     ? apiResponses[0]['audio_url']?.toString() ?? ''
                     : '';
             final String userAudioUrl = message['audio_url']?.toString() ?? '';
-            final bool isBookmarked = message['isBookmarked'] ?? false;
+            final bool is_bookmarked = message['is_bookmarked'] ?? false;
             final bool isLiked = message['isLiked'] ?? false;
             final bool isDisliked = message['isDisliked'] ?? false;
             final localChat = localChatMap[messageId] ?? {};
@@ -435,9 +436,9 @@ extension GptScreenBlocListener on GptScreenMethods {
               'answer': answer,
               'chatId': chatId,
               'messageId': messageId,
-              'isBookmarked': isBookmarked || localChat['isBookmarked'] == true,
-              'isLiked': isLiked || localChat['isLiked'] == true,
-              'isDisliked': isDisliked || localChat['isDisliked'] == true,
+              'is_bookmarked': is_bookmarked,
+              'isLiked': isLiked,
+              'isDisliked': isDisliked,
               'isUserAudio': isUserAudio,
               'hasAudioUrl': audioUrl.isNotEmpty,
               'audio_url': userAudioUrl,
@@ -530,10 +531,12 @@ extension GptScreenBlocListener on GptScreenMethods {
 
   void _handleBookmarkChatSuccess(BookmarkChatSuccess state) {
     final response = state.successResponse;
-    final messageId = response['data']['message_id']?.toString() ?? '';
+    // FIX: The message ID is in response['data']['id'], not response['data']['message_id']
+    final messageId = response['data']['id']?.toString() ?? '';
 
     if (kDebugMode) {
       debugPrint('✅ Bookmark Success - Message ID: $messageId');
+      debugPrint('📊 Full response: $response');
     }
 
     setState(() {
@@ -544,14 +547,15 @@ extension GptScreenBlocListener on GptScreenMethods {
       if (index != -1) {
         if (kDebugMode) {
           debugPrint('📌 Updating bookmark for index $index to TRUE');
+          debugPrint('📋 Chat item found: ${chatHistory[index]}');
         }
-        chatHistory[index]['isBookmarked'] = true;
+        chatHistory[index]['is_bookmarked'] = true;
         PrefUtils.setChatHistory(chatHistory);
       } else {
         if (kDebugMode) {
           debugPrint('❌ Could not find chat with messageId: $messageId');
           debugPrint(
-            'Available messageIds: ${chatHistory.map((c) => c['messageId']).toList()}',
+            '🔍 Available messageIds: ${chatHistory.map((c) => c['messageId']).toList()}',
           );
         }
       }
@@ -563,10 +567,16 @@ extension GptScreenBlocListener on GptScreenMethods {
   }
 
   void _handleBookmarkChatFailure(BookmarkChatFailure state) {
-    final messageId = state.failureResponse['message_id']?.toString() ?? '';
+    // FIX: Check if the response structure matches
+    final failureResponse = state.failureResponse;
+    final messageId =
+        failureResponse['message_id']?.toString() ??
+        failureResponse['id']?.toString() ??
+        '';
 
     if (kDebugMode) {
       debugPrint('❌ Bookmark Failed - Message ID: $messageId');
+      debugPrint('📊 Failure response: $failureResponse');
     }
 
     setState(() {
@@ -575,7 +585,31 @@ extension GptScreenBlocListener on GptScreenMethods {
       );
       if (index != -1) {
         // Revert the bookmark state on failure
-        chatHistory[index]['isBookmarked'] = false;
+        chatHistory[index]['is_bookmarked'] = false;
+        PrefUtils.setChatHistory(chatHistory);
+      }
+    });
+    CommonUtils.showErrorToast(state.failureResponse['message']);
+  }
+
+  void _handleUnbookmarkChatFailure(UnbookmarkChatFailure state) {
+    final failureResponse = state.failureResponse;
+    final messageId =
+        failureResponse['message_id']?.toString() ??
+        failureResponse['id']?.toString() ??
+        '';
+
+    if (kDebugMode) {
+      debugPrint('❌ Unbookmark Failed - Message ID: $messageId');
+    }
+
+    setState(() {
+      final index = chatHistory.indexWhere(
+        (chat) => chat['messageId'] == messageId,
+      );
+      if (index != -1) {
+        // Revert the bookmark state on failure
+        chatHistory[index]['is_bookmarked'] = true;
         PrefUtils.setChatHistory(chatHistory);
       }
     });
@@ -584,7 +618,8 @@ extension GptScreenBlocListener on GptScreenMethods {
 
   void _handleUnbookmarkChatSuccess(UnbookmarkChatSuccess state) {
     final response = state.successResponse;
-    final messageId = response['data']['message_id']?.toString() ?? '';
+    // FIX: Same issue here
+    final messageId = response['data']['id']?.toString() ?? '';
 
     if (kDebugMode) {
       debugPrint('✅ Unbookmark Success - Message ID: $messageId');
@@ -598,7 +633,7 @@ extension GptScreenBlocListener on GptScreenMethods {
         if (kDebugMode) {
           debugPrint('📌 Updating bookmark for index $index to FALSE');
         }
-        chatHistory[index]['isBookmarked'] = false;
+        chatHistory[index]['is_bookmarked'] = false;
         PrefUtils.setChatHistory(chatHistory);
       }
     });
@@ -608,92 +643,10 @@ extension GptScreenBlocListener on GptScreenMethods {
     );
   }
 
-  void _handleUnbookmarkChatFailure(UnbookmarkChatFailure state) {
-    final messageId = state.failureResponse['message_id']?.toString() ?? '';
-
-    if (kDebugMode) {
-      debugPrint('❌ Unbookmark Failed - Message ID: $messageId');
-    }
-
-    setState(() {
-      final index = chatHistory.indexWhere(
-        (chat) => chat['messageId'] == messageId,
-      );
-      if (index != -1) {
-        // Revert the bookmark state on failure
-        chatHistory[index]['isBookmarked'] = true;
-        PrefUtils.setChatHistory(chatHistory);
-      }
-    });
-    CommonUtils.showErrorToast(state.failureResponse['message']);
-  }
-
   void _handleSessionExpiredStateHome(
     BuildContext context,
     SessionExpiredStateHome state,
   ) {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        content: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-              colors: [Color(0xFFFC7902), Color(0xFFC62E00)],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.25),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.warning_amber_rounded,
-                color: Colors.white,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  state.message,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  PrefUtils.clearAll();
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LoginScreen(),
-                    ),
-                    (route) => false,
-                  );
-                },
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-                child: const Text(
-                  'Login',
-                  style: TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    SessionExpiredSnackBar.show(context: context, message: state.message);
   }
 }

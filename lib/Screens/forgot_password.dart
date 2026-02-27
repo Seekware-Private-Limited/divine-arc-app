@@ -1,5 +1,6 @@
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/session_expired_snackbar.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -65,14 +66,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             state.failureResponse['message'],
                           );
                         } else if (state is SessionExpiredStateAuth) {
-                          CommonUtils.showErrorToast(state.message);
-                          PrefUtils.clearAll();
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginScreen(),
-                            ),
-                            (route) => false,
+                          SessionExpiredSnackBar.show(
+                            context: context,
+                            message: state.message,
                           );
                         } else if (state is CheckNetworkConnectionAuthFlow) {
                           setState(() {

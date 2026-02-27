@@ -1,4 +1,5 @@
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/session_expired_snackbar.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final String name;
@@ -131,12 +132,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   )!.translate('nointernetConnection'),
                 );
               } else if (state is SessionExpiredStateHome) {
-                CommonUtils.showErrorToast(state.message);
-                PrefUtils.clearAll();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  (route) => false,
+                SessionExpiredSnackBar.show(
+                  context: context,
+                  message: state.message,
                 );
               }
             },

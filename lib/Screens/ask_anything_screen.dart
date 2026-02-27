@@ -1,5 +1,5 @@
 import 'package:divine_arc/Utils/app_imports.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:divine_arc/Utils/session_expired_snackbar.dart';
 
 class AskAnythingScreen extends StatefulWidget {
   const AskAnythingScreen({super.key});
@@ -14,59 +14,17 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
   bool isTrendingQuestionsLoading = false;
   bool commonserverfailure = false;
 
-  // Changed to List<Map<String, dynamic>> for better type safety
-  List<Map<String, dynamic>> geetaList = [];
+  List<Map<String, dynamic>> trendingQuestions = [];
 
   @override
   void initState() {
     super.initState();
     askAnythingController.clear();
 
-    // Add dummy data immediately (will be replaced when real data arrives)
-    _setDummyTrendingQuestions();
-
     BlocProvider.of<HomeFlowBloc>(
       context,
     ).add(CreateSessionEvent(language: PrefUtils.getLanguage()));
     BlocProvider.of<HomeFlowBloc>(context).add(FetchAllTrendingQuestionEvent());
-  }
-
-  void _setDummyTrendingQuestions() {
-    geetaList = [
-      {
-        "id": "dummy1",
-        "title": "Why did Lord Krishna deliver the Geeta on the battlefield?",
-        "hindi_title":
-            "भगवान श्रीकृष्ण ने गीता का उपदेश युद्धभूमि पर क्यों दिया?",
-        "image": "https://gitagpt-prod.s3.ap-south-1.amazonaws.com/swastik.png",
-        "created_at": "2025-01-01T00:00:00Z",
-        "updated_at": "2025-01-01T00:00:00Z",
-      },
-      {
-        "id": "dummy2",
-        "title": "What is the core message of the Bhagavad Gita?",
-        "hindi_title": "भगवद गीता का मुख्य संदेश क्या है?",
-        "image": "https://gitagpt-prod.s3.ap-south-1.amazonaws.com/swastik.png",
-        "created_at": "2025-01-01T00:00:00Z",
-        "updated_at": "2025-01-01T00:00:00Z",
-      },
-      {
-        "id": "dummy3",
-        "title": "How does Karma Yoga help in daily life?",
-        "hindi_title": "कर्म योग दैनिक जीवन में कैसे मदद करता है?",
-        "image": "https://gitagpt-prod.s3.ap-south-1.amazonaws.com/swastik.png",
-        "created_at": "2025-01-01T00:00:00Z",
-        "updated_at": "2025-01-01T00:00:00Z",
-      },
-      {
-        "id": "dummy4",
-        "title": "What is the importance of Bhakti Yoga in the Gita?",
-        "hindi_title": "गीता में भक्ति योग का क्या महत्व है?",
-        "image": "https://gitagpt-prod.s3.ap-south-1.amazonaws.com/swastik.png",
-        "created_at": "2025-01-01T00:00:00Z",
-        "updated_at": "2025-01-01T00:00:00Z",
-      },
-    ];
   }
 
   @override
@@ -132,8 +90,8 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                     } else if (state is TrendingQuestionsLoaded) {
                       if (mounted) {
                         setState(() {
-                          isTrendingQuestionsLoading = true;
-                          geetaList = List<Map<String, dynamic>>.from(
+                          isTrendingQuestionsLoading = false;
+                          trendingQuestions = List<Map<String, dynamic>>.from(
                             (state.successResponse['data'] ?? []),
                           );
                         });
@@ -146,81 +104,13 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                         state.failureResponse['message'],
                       );
                     } else if (state is SessionExpiredStateHome) {
-                      if (mounted) setState(() => isLoading = false);
+                      setState(() {
+                        isLoading = false;
+                      });
 
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: Colors.transparent,
-                          elevation: 0,
-                          behavior: SnackBarBehavior.floating,
-                          content: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                                colors: [Color(0xFFFC7902), Color(0xFFC62E00)],
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.25),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.warning_amber_rounded,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    state.message,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    PrefUtils.clearAll();
-                                    Navigator.pushAndRemoveUntil(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (context) => const LoginScreen(),
-                                      ),
-                                      (route) => false,
-                                    );
-                                  },
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Login',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                      SessionExpiredSnackBar.show(
+                        context: context,
+                        message: state.message,
                       );
                     } else if (state is CheckNetworkConnectionHomeFlow) {
                       if (mounted) setState(() => isLoading = false);
@@ -297,7 +187,6 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                 ),
                                 const SizedBox(height: 16),
 
-                                // Input field
                                 Container(
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(10),
@@ -381,7 +270,7 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                                   PrefUtils.getstoredChatID();
 
                                               if (existingChatId.isNotEmpty) {
-                                                Navigator.push(
+                                                Navigator.pushReplacement(
                                                   context,
                                                   MaterialPageRoute(
                                                     builder:
@@ -418,12 +307,11 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
 
                                 const SizedBox(height: 20),
 
-                                // Trending Questions Section
                                 if (isTrendingQuestionsLoading)
                                   Center(
                                     child: Container(
                                       width: double.infinity,
-                                      height: 300,
+                                      height: 340,
                                       padding: const EdgeInsets.all(20),
                                       child: Center(
                                         child:
@@ -435,27 +323,18 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                     ),
                                   )
                                 else
-                                  GridView.builder(
+                                  ListView.builder(
                                     shrinkWrap: true,
                                     physics:
                                         const NeverScrollableScrollPhysics(),
-                                    itemCount: geetaList.length,
-                                    gridDelegate:
-                                        const SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 2,
-                                          childAspectRatio: 0.85,
-                                          crossAxisSpacing: 12,
-                                          mainAxisSpacing: 12,
-                                        ),
+                                    itemCount: trendingQuestions.length,
                                     itemBuilder: (context, index) {
-                                      final item = geetaList[index];
-
+                                      final item = trendingQuestions[index];
                                       final String question;
                                       final languageCode =
                                           Localizations.localeOf(
                                             context,
                                           ).languageCode;
-
                                       if (languageCode == 'hi') {
                                         question =
                                             item['hindi_title']?.toString() ??
@@ -467,54 +346,51 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                             item['hindi_title']?.toString() ??
                                             'Question not available';
                                       }
-
-                                      return InkWell(
-                                        borderRadius: BorderRadius.circular(8),
-                                        onTap: () {
-                                          if (mounted) {
-                                            setState(() {
-                                              askAnythingController.text =
-                                                  question;
-                                            });
-                                          }
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.all(16),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.GlobalBG,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 10,
+                                        ),
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            if (mounted) {
+                                              setState(() {
+                                                askAnythingController.text =
+                                                    question;
+                                              });
+                                            }
+                                          },
+                                          child: Container(
+                                            padding: EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.GlobalBG,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
                                             ),
-                                          ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Image.network(
-                                                item['image']?.toString() ??
-                                                    'https://gitagpt-prod.s3.ap-south-1.amazonaws.com/swastik.png',
-                                                height: 30,
-                                                width: 30,
-                                                errorBuilder: (
-                                                  context,
-                                                  error,
-                                                  stackTrace,
-                                                ) {
-                                                  return Image.asset(
-                                                    'assets/images/swastik.png',
-                                                    height: 30,
-                                                    width: 30,
-                                                  );
-                                                },
-                                              ),
-                                              const SizedBox(height: 10),
-                                              Text(
-                                                question,
-                                                style: FTextStyle.defaultText,
-                                                maxLines: 4,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ],
+                                            child: Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.center,
+                                              children: [
+                                                Image.network(
+                                                  item['image']?.toString() ??
+                                                      'https://gitagpt-prod.s3.ap-south-1.amazonaws.com/swastik.png',
+                                                  height: 30,
+                                                  width: 30,
+                                                  errorBuilder: (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) {
+                                                    return Image.asset(
+                                                      'assets/images/swastik.png',
+                                                      height: 30,
+                                                      width: 30,
+                                                    );
+                                                  },
+                                                ),
+                                                const SizedBox(width: 16),
+                                                Expanded(child: Text(question)),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       );

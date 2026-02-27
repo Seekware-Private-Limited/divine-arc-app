@@ -20,7 +20,6 @@ class APIEndPoints {
   static const String signup = '$baseUrl/auth/register';
   static const String login = '$baseUrl/auth/login';
   static const String socialLogin = '$baseUrl/auth/socialLogin';
-  static const String googleLogin = '$baseUrl/auth/google/login';
   static const String initiateChat = '$baseUrl/chat/initiate';
   static String allPrayers(String lan) => '$baseUrl/chat/$lan/prayers';
   static const String storeChatConversation = '$baseUrl/chat/store';

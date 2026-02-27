@@ -1,5 +1,6 @@
 import 'package:divine_arc/Screens/chalisa_screen.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/session_expired_snackbar.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,7 +19,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     BlocProvider.of<HomeFlowBloc>(context).add(GetRandomQuoteEvent());
 
-    // Get language with fallback to 'en' if not set
     String language = PrefUtils.getLanguage();
     if (language.isEmpty) {
       language = 'en';
@@ -76,7 +76,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       } else if (state is ViewAllContentLoaded) {
                         setState(() {
                           isContentLoading = false;
-                          allPrayers.clear(); // Clear before adding new data
+                          allPrayers.clear();
                           allPrayers.addAll(state.successResponse['data']);
                         });
                       } else if (state is ViewAllContentError) {
@@ -94,83 +94,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           isLoading = false;
                         });
 
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            backgroundColor: Colors.transparent,
-                            elevation: 0,
-                            behavior: SnackBarBehavior.floating,
-                            content: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  begin: Alignment.centerLeft,
-                                  end: Alignment.centerRight,
-                                  colors: [
-                                    Color(0xFFFC7902), // gradientStart
-                                    Color(0xFFC62E00), // gradientEnd
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.25),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.warning_amber_rounded,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      state.message,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      PrefUtils.clearAll();
-                                      Navigator.pushAndRemoveUntil(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder:
-                                              (context) => const LoginScreen(),
-                                        ),
-                                        (route) => false,
-                                      );
-                                    },
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                      ),
-                                    ),
-                                    child: const Text(
-                                      'Login',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                        SessionExpiredSnackBar.show(
+                          context: context,
+                          message: state.message,
                         );
                       } else if (state is CheckNetworkConnectionHomeFlow) {
                         setState(() {
@@ -191,7 +117,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       child: Column(
                         children: [
-                          // Sticky Header
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -208,7 +133,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           const SizedBox(height: 20),
 
-                          // Sticky Card with search
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
@@ -220,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.white,
                             ),
                             child: Container(
-                              height: 180,
+                              height: 200,
                               width: double.infinity,
                               decoration: BoxDecoration(
                                 color: AppColors.GlobalBG,
@@ -242,7 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 24,
+                                      horizontal: 20,
                                     ),
                                     child: Column(
                                       mainAxisAlignment:
@@ -264,12 +188,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 : AppLocalizations.of(
                                                   context,
                                                 )!.translate('dummyText'),
-                                            style:
-                                                FTextStyle
-                                                    .socialloginbuttonText,
+                                            style: FTextStyle.defaultText,
                                             textAlign: TextAlign.center,
                                           ),
-                                        const SizedBox(height: 20),
+                                        const SizedBox(height: 10),
                                         Container(
                                           height: 50,
                                           decoration: BoxDecoration(
@@ -331,7 +253,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                           const SizedBox(height: 20),
 
-                          // Scrollable list
                           Expanded(
                             child:
                                 isContentLoading
@@ -393,7 +314,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ),
                                               child: Row(
                                                 children: [
-                                                  // Show network image from content_image
                                                   ClipRRect(
                                                     borderRadius:
                                                         BorderRadius.circular(
@@ -418,7 +338,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     ),
                                                   ),
                                                   const SizedBox(width: 10),
-                                                  // Title and Description
                                                   Expanded(
                                                     child: Column(
                                                       crossAxisAlignment:
@@ -433,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                           style: FTextStyle
                                                               .defaultText
                                                               .copyWith(
-                                                                fontSize: 12,
+                                                                fontSize: 14,
                                                                 fontWeight:
                                                                     FontWeight
                                                                         .w600,
@@ -447,7 +366,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                           style: FTextStyle
                                                               .defaultText
                                                               .copyWith(
-                                                                fontSize: 10,
+                                                                fontSize: 12,
                                                               ),
                                                           maxLines: 2,
                                                           overflow:
@@ -458,7 +377,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     ),
                                                   ),
                                                   const SizedBox(width: 10),
-                                                  // Right Arrow Icon
                                                   GestureDetector(
                                                     onTap: () {
                                                       Navigator.push(

@@ -37,6 +37,10 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 
+	<!-- Encryption Declaration (IMPORTANT FOR APP STORE) -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
 	<!-- UI / Orientation -->
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
@@ -88,9 +92,7 @@
 	<key>NSUserNotificationUsageDescription</key>
 	<string>We use notifications to keep you updated.</string>
 
-	<!-- ========================= -->
 	<!-- URL SCHEMES (Facebook + Google) -->
-	<!-- ========================= -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<!-- Facebook -->
@@ -110,15 +112,11 @@
 		</dict>
 	</array>
 
-	<!-- ========================= -->
 	<!-- GOOGLE SIGN-IN -->
-	<!-- ========================= -->
 	<key>GIDClientID</key>
 	<string>1072160672117-ot8a42d3ioarbn0norr7400q17to4851.apps.googleusercontent.com</string>
 
-	<!-- ========================= -->
 	<!-- FACEBOOK LOGIN -->
-	<!-- ========================= -->
 	<key>FacebookAppID</key>
 	<string>1782497495950827</string>
 

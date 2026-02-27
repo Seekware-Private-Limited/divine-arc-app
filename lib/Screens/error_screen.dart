@@ -46,7 +46,7 @@ class _ErrorScreenState extends State<ErrorScreen> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          Text('404', style: FTextStyle.divine_arc_text),
+                          Text('404', style: FTextStyle.divineArcText),
                           Image.asset('assets/images/errorImage.png'),
                           Text(
                             AppLocalizations.of(

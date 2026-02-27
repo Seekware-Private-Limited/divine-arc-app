@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'flutter_color_themes.dart';
 
 class FTextStyle {
-  static const divine_arc_text = TextStyle(
+  static const divineArcText = TextStyle(
     fontFamily: 'Warnes-Regular',
     fontSize: 28,
     fontWeight: FontWeight.w400,
@@ -28,7 +28,7 @@ class FTextStyle {
   );
   static const defaultText = TextStyle(
     fontFamily: 'DM_Sans',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: FontWeight.w400,
     color: Colors.black,
   );
@@ -60,7 +60,7 @@ class FTextStyle {
 
   static const socialloginbuttonText = TextStyle(
     fontFamily: 'DM_Sans',
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: FontWeight.w400,
     color: Colors.black,
   );
@@ -72,7 +72,7 @@ class FTextStyle {
   );
   static const errorTextStyle = TextStyle(
     fontFamily: 'DM_Sans',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: FontWeight.w400,
     color: Colors.red,
   );

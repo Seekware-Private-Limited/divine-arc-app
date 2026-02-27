@@ -19,9 +19,9 @@ class FontSizeDropdown extends StatefulWidget {
 class _FontSizeDropdownState extends State<FontSizeDropdown> {
   final List<String> _fontSizes = ['Small', 'Medium', 'Large'];
   final Map<String, double> _sizeMap = {
-    'Small': 0.85,
-    'Medium': 1.0,
-    'Large': 1.25,
+    'Small': 1.0,
+    'Medium': 1.25,
+    'Large': 1.5,
   };
 
   final GlobalKey _dropdownKey = GlobalKey();
@@ -29,8 +29,8 @@ class _FontSizeDropdownState extends State<FontSizeDropdown> {
   String _getSelectedSizeLabel(double scale) {
     return _sizeMap.entries
         .firstWhere(
-          (entry) => entry.value == scale,
-          orElse: () => const MapEntry('Medium', 1.0),
+          (entry) => (entry.value - scale).abs() < 0.01,
+          orElse: () => const MapEntry('Small', 1.0),
         )
         .key;
   }

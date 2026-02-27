@@ -1,10 +1,15 @@
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:divine_arc/Utils/session_expired_snackbar.dart';
 
 class SignUpScreen extends StatefulWidget {
   final bool isFacebookLoginEnabled;
-
-  const SignUpScreen({super.key, this.isFacebookLoginEnabled = false});
+  final bool isisGoogleLoginEnabled;
+  const SignUpScreen({
+    super.key,
+    this.isFacebookLoginEnabled = false,
+    this.isisGoogleLoginEnabled = false,
+  });
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -157,14 +162,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           print(state.failureMessage);
                           CommonUtils.showErrorToast(state.failureMessage);
                         } else if (state is SessionExpiredStateAuth) {
-                          CommonUtils.showErrorToast(state.message);
-                          PrefUtils.clearAll();
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const LoginScreen(),
-                            ),
-                            (route) => false,
+                          SessionExpiredSnackBar.show(
+                            context: context,
+                            message: state.message,
                           );
                         }
                       },
@@ -609,40 +609,47 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   ),
                                   const SizedBox(height: 40),
                                   // Social Login Buttons (Google, Apple, Microsoft)
-                                  GestureDetector(
-                                    onTap: () {
-                                      BlocProvider.of<AuthFlowBloc>(
-                                        context,
-                                      ).add(GoogleLoginEventHandler());
-                                    },
-                                    child: Container(
-                                      height: 45,
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          color: AppColors.gradientStart,
-                                          width: 1.5,
+                                  Visibility(
+                                    visible: widget.isisGoogleLoginEnabled,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        BlocProvider.of<AuthFlowBloc>(
+                                          context,
+                                        ).add(GoogleLoginEventHandler());
+                                      },
+                                      child: Container(
+                                        height: 45,
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: AppColors.gradientStart,
+                                            width: 1.5,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                         ),
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          SvgPicture.asset(
-                                            'assets/images/google.svg',
-                                            height: 24,
-                                            width: 24,
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Text(
-                                            AppLocalizations.of(
-                                              context,
-                                            )!.translate('continueWithGoogle'),
-                                            style:
-                                                FTextStyle
-                                                    .socialloginbuttonText,
-                                          ),
-                                        ],
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            SvgPicture.asset(
+                                              'assets/images/google.svg',
+                                              height: 24,
+                                              width: 24,
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Text(
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate(
+                                                'continueWithGoogle',
+                                              ),
+                                              style:
+                                                  FTextStyle
+                                                      .socialloginbuttonText,
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),

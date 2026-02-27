@@ -156,7 +156,7 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
         'answer': '',
         'chatId': getCurrentChatId(),
         'messageId': '',
-        'isBookmarked': false,
+        'is_bookmarked': false,
         'isLiked': false,
         'isDisliked': false,
         'isUserAudio': false,
@@ -330,6 +330,24 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
     }
   }
 
+  Future<void> cancelRecording() async {
+    if (!isRecording) return;
+
+    try {
+      await audioRecorder.stop();
+      setState(() {
+        isRecording = false;
+        isApiProcessing = false;
+      });
+    } catch (e) {
+      debugPrint('Error cancelling recording: $e');
+      setState(() {
+        isRecording = false;
+        isApiProcessing = false;
+      });
+    }
+  }
+
   Future<void> sendAudioToApi() async {
     if (audioPath == null) return;
 
@@ -348,7 +366,7 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
         'answer': '',
         'chatId': getCurrentChatId(),
         'messageId': '',
-        'isBookmarked': false,
+        'is_bookmarked': false,
         'isLiked': false,
         'isDisliked': false,
         'isUserAudio': true,
@@ -551,7 +569,7 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
             'answer': '',
             'chatId': chatIdValue,
             'messageId': '',
-            'isBookmarked': false,
+            'is_bookmarked': false,
             'isLiked': false,
             'isDisliked': false,
             'isUserAudio': false,
