@@ -217,7 +217,7 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                                   vertical: 16,
                                                 ),
                                           ),
-                                          maxLines: 5,
+                                          maxLines: 3,
                                         ),
                                       ),
                                       Positioned(
