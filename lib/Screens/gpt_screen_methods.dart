@@ -330,24 +330,6 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
     }
   }
 
-  Future<void> cancelRecording() async {
-    if (!isRecording) return;
-
-    try {
-      await audioRecorder.stop();
-      setState(() {
-        isRecording = false;
-        isApiProcessing = false;
-      });
-    } catch (e) {
-      debugPrint('Error cancelling recording: $e');
-      setState(() {
-        isRecording = false;
-        isApiProcessing = false;
-      });
-    }
-  }
-
   Future<void> sendAudioToApi() async {
     if (audioPath == null) return;
 
