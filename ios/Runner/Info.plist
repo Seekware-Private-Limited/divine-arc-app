@@ -2,108 +2,34 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-
-	<!-- App Identity -->
-	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
-
-	<key>CFBundleDisplayName</key>
-	<string>Divine ARC</string>
-
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-
-	<key>CFBundleName</key>
-	<string>Divine ARC</string>
-
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-
-	<key>CFBundleShortVersionString</key>
-	<string>$(FLUTTER_BUILD_NAME)</string>
-
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
-
-	<key>CFBundleSignature</key>
-	<string>????</string>
-
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-
-	<!-- Encryption Declaration (IMPORTANT FOR APP STORE) -->
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-
-	<!-- UI / Orientation -->
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-
-	<key>UIMainStoryboardFile</key>
-	<string>Main</string>
-
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
-
-	<key>UIApplicationSupportsIndirectInputEvents</key>
-	<true/>
-
-	<!-- Camera -->
-	<key>NSCameraUsageDescription</key>
-	<string>We need camera access to take profile pictures.</string>
-
-	<!-- Microphone -->
-	<key>NSMicrophoneUsageDescription</key>
-	<string>We need microphone access to record audio.</string>
-
-	<!-- Photo Library -->
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We need access to your photo library to select images.</string>
-
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>We need permission to save images to your photo library.</string>
-
-	<!-- Media / Audio -->
-	<key>NSAppleMusicUsageDescription</key>
-	<string>We need access to media files for audio selection.</string>
-
-	<!-- Notifications -->
-	<key>NSUserNotificationUsageDescription</key>
-	<string>We use notifications to keep you updated.</string>
-
-	<!-- URL SCHEMES (Facebook + Google) -->
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Divine ARC</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Divine ARC</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
 	<key>CFBundleURLTypes</key>
 	<array>
-		<!-- Facebook -->
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>fb1782497495950827</string>
 			</array>
 		</dict>
-
-		<!-- Google Sign-In -->
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
@@ -111,21 +37,18 @@
 			</array>
 		</dict>
 	</array>
-
-	<!-- GOOGLE SIGN-IN -->
-	<key>GIDClientID</key>
-	<string>1072160672117-ot8a42d3ioarbn0norr7400q17to4851.apps.googleusercontent.com</string>
-
-	<!-- FACEBOOK LOGIN -->
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>FacebookAppID</key>
 	<string>1782497495950827</string>
-
 	<key>FacebookClientToken</key>
 	<string>78e7849e3c6656ab85bf02b5b9165af5</string>
-
 	<key>FacebookDisplayName</key>
 	<string>Divine ARC</string>
-
+	<key>GIDClientID</key>
+	<string>1072160672117-ot8a42d3ioarbn0norr7400q17to4851.apps.googleusercontent.com</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>fbapi</string>
@@ -133,6 +56,36 @@
 		<string>fbauth2</string>
 		<string>fbshareextension</string>
 	</array>
-
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>We need access to media files for audio selection.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access to take profile pictures.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>We need microphone access to record audio.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We need permission to save images to your photo library.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library to select images.</string>
+	<key>NSUserNotificationUsageDescription</key>
+	<string>We use notifications to keep you updated.</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
 </dict>
 </plist>
