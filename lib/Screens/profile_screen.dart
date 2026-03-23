@@ -1,6 +1,8 @@
 import 'package:divine_arc/Screens/edit_profile.dart';
 import 'package:divine_arc/Screens/change_password_screen.dart';
+import 'package:divine_arc/Screens/report_issue.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,7 +13,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool isLoading = false;
-
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
   String? userName;
   String? userEmail;
   String? profilePictureUrl;
@@ -19,8 +21,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initialize();
+    });
+  }
+
+  Future<void> _initialize() async {
+    await _analytics.logEvent(name: 'UserIsOnProfileScreen');
+
     if (!PrefUtils.getIsGuest()) {
-      BlocProvider.of<HomeFlowBloc>(context).add(ViewUserProfile());
+      if (!mounted) return;
+      context.read<HomeFlowBloc>().add(ViewUserProfile());
     }
   }
 
@@ -49,6 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
 
           if (state is LogoutSuccess) {
+            _analytics.logEvent(name: 'UserClickedLogout');
             PrefUtils.clearAll();
             Navigator.pushAndRemoveUntil(
               context,
@@ -291,7 +304,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             );
                                           },
                                         ),
-
+                                      ListTile(
+                                        leading: Image.asset(
+                                          'assets/images/feedback.png',
+                                          height: 24,
+                                          width: 24,
+                                        ),
+                                        title: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.translate('report_issue_title'),
+                                          style: FTextStyle.defaultText,
+                                        ),
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (_) =>
+                                                      const ReportIssueScreen(),
+                                            ),
+                                          );
+                                        },
+                                      ),
                                       ListTile(
                                         leading: Image.asset(
                                           'assets/images/logout.png',

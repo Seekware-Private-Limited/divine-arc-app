@@ -2,6 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:divine_arc/Utils/AudioPlayerWidget.dart';
 import 'package:divine_arc/Utils/FontSizeDropdown.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class ChalisaScreen extends StatefulWidget {
   final String contentImage;
@@ -24,12 +25,14 @@ class ChalisaScreen extends StatefulWidget {
 class _ChalisaScreenState extends State<ChalisaScreen> {
   double _fontSizeMultiplier = 1.0;
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
   bool isPlaying = false;
   void _onLanguageChanged() => setState(() {});
 
   @override
   void initState() {
     super.initState();
+    _initialize();
     _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) {
         setState(() {
@@ -37,6 +40,10 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
         });
       }
     });
+  }
+
+  Future<void> _initialize() async {
+    await _analytics.logEvent(name: 'UserIsOnChalisaScreen');
   }
 
   @override

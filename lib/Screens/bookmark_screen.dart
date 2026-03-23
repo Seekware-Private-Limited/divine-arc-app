@@ -1,5 +1,6 @@
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 class BookmarkScreen extends StatefulWidget {
@@ -12,11 +13,19 @@ class BookmarkScreen extends StatefulWidget {
 class _BookmarkScreenState extends State<BookmarkScreen> {
   List<dynamic> allBookmarksChat = [];
   bool isLoading = false;
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
+  @override
   @override
   void initState() {
     super.initState();
-    BlocProvider.of<HomeFlowBloc>(context).add(GetAllBookmarksChat());
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _analytics.logEvent(name: 'UserIsOnBookmarkScreen');
+    if (!mounted) return;
+    context.read<HomeFlowBloc>().add(GetAllBookmarksChat());
   }
 
   @override
@@ -139,7 +148,6 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
     );
   }
 
-  /// ✅ EMPTY STATE WIDGET (Cleaner)
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
@@ -165,7 +173,6 @@ class _BookmarkScreenState extends State<BookmarkScreen> {
     );
   }
 
-  /// ✅ BOOKMARKS LIST WIDGET
   Widget _buildBookmarksList() {
     return Container(
       padding: const EdgeInsets.all(16),

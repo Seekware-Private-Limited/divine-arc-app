@@ -1,5 +1,6 @@
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final String name;
@@ -21,6 +22,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   File? _imageFile;
   String? uploadedImageUrl;
@@ -31,6 +33,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _initialize();
     nameController.text = widget.name;
     emailController.text = widget.email;
     uploadedImageUrl = widget.profilePictureUrl;
@@ -41,6 +44,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     nameController.dispose();
     emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _initialize() async {
+    await _analytics.logEvent(name: 'UserIsOnEditProfileSceen');
   }
 
   Future<void> _pickImage(ImageSource source) async {

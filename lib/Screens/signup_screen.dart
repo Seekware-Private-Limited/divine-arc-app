@@ -1,6 +1,7 @@
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class SignUpScreen extends StatefulWidget {
   final bool isFacebookLoginEnabled;
@@ -27,6 +28,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   // Name validation regex
   bool isValidName(String name) {
@@ -177,7 +179,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               children: [
                                 const LanguageDropdown(),
                                 GestureDetector(
-                                  onTap: () {
+                                  onTap: () async {
+                                    await _analytics.logEvent(
+                                      name: 'SkipButtonTapped',
+                                    );
                                     PrefUtils.setIsGuest(true);
                                     Navigator.push(
                                       context,
@@ -192,7 +197,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         CrossAxisAlignment.center,
                                     children: [
                                       Text(
-                                        'Skip',
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.translate('skip'),
                                         style: FTextStyle.defaultTextBold,
                                       ),
                                       const SizedBox(width: 4),
@@ -427,7 +434,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   ),
                                   const SizedBox(height: 16),
                                   GestureDetector(
-                                    onTap: () {
+                                    onTap: () async {
                                       bool hasError = false;
 
                                       if (nameController.text.isEmpty) {
@@ -541,6 +548,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       }
 
                                       if (!hasError) {
+                                        await _analytics.logEvent(
+                                          name: 'SignUpButtonClicked',
+                                          parameters: {
+                                            'name': nameController.text.trim,
+                                            'email':
+                                                emailController.text.trim(),
+                                            'password':
+                                                passwordController.text.trim(),
+                                          },
+                                        );
                                         BlocProvider.of<AuthFlowBloc>(
                                           context,
                                         ).add(

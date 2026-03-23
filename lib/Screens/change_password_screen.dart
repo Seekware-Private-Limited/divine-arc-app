@@ -1,6 +1,7 @@
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -18,6 +19,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final TextEditingController currentPasswordController =
       TextEditingController();
   final TextEditingController newPasswordController = TextEditingController();
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   // Password validation regex
   bool isValidPassword(String password) {
@@ -26,6 +28,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         RegExp(
           r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{9,32}$',
         ).hasMatch(password);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _analytics.logEvent(name: 'UserIsOnChangePasswordScreen');
   }
 
   @override

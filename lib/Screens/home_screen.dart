@@ -1,6 +1,9 @@
 import 'package:divine_arc/Screens/chalisa_screen.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:rate_my_app/rate_my_app.dart';
+import 'dart:io' show Platform;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,17 +16,157 @@ class _HomeScreenState extends State<HomeScreen> {
   String quoteResponse = '';
   bool isContentLoading = false;
   List<dynamic> allPrayers = [];
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+
+  final RateMyApp _rateMyApp = RateMyApp(
+    minDays: 0,
+    minLaunches: 5,
+    remindDays: 7,
+    remindLaunches: 10,
+    googlePlayIdentifier: 'com.divinearc.app',
+    appStoreIdentifier: '6758439307',
+  );
 
   @override
   void initState() {
     super.initState();
+    _initialize();
+    _initRateMyApp();
+  }
+
+  Future<void> _initRateMyApp() async {
+    await _rateMyApp.init();
+
+    if (_rateMyApp.shouldOpenDialog) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showCustomRateDialog();
+      });
+    }
+  }
+
+  void _showCustomRateDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          elevation: 8,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset('assets/images/DivineArcLogo.png', height: 80),
+                const SizedBox(height: 16),
+
+                Text(
+                  AppLocalizations.of(context)!.translate('enjoyingdivinearc'),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.gradientStart,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+
+                Text(
+                  AppLocalizations.of(
+                    context,
+                  )!.translate('enjoyingdivinearc_description'),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[800]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          _rateMyApp.callEvent(
+                            RateMyAppEventType.laterButtonPressed,
+                          );
+                          Navigator.of(dialogContext).pop();
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: AppColors.gradientStart),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('later'),
+                          style: FTextStyle.rateNowBlack,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.gradientStart,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                        ),
+                        onPressed: () async {
+                          await _rateMyApp.callEvent(
+                            RateMyAppEventType.rateButtonPressed,
+                          );
+                          await _rateMyApp.launchStore();
+                          if (mounted) {
+                            Navigator.of(dialogContext).pop();
+                          }
+                        },
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('ratenow'),
+                          style: FTextStyle.rateNowWhite,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                TextButton(
+                  onPressed: () {
+                    _rateMyApp.callEvent(RateMyAppEventType.noButtonPressed);
+                    Navigator.of(dialogContext).pop();
+                  },
+                  child: Text(
+                    AppLocalizations.of(context)!.translate('nothanks'),
+                    style: TextStyle(color: Colors.grey[700]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _initialize() async {
+    await _analytics.logEvent(name: 'UserIsOnHomeScreen');
+
     BlocProvider.of<HomeFlowBloc>(context).add(GetRandomQuoteEvent());
 
     String language = PrefUtils.getLanguage();
     if (language.isEmpty) {
       language = 'en';
     }
-
+    if (!mounted) return;
     BlocProvider.of<HomeFlowBloc>(
       context,
     ).add(ViewAllContent(language: language));
@@ -53,9 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: BlocListener<HomeFlowBloc, HomeFlowState>(
                     listener: (context, state) {
                       if (state is GetRandomQuoteLoading) {
-                        setState(() {
-                          isLoading = true;
-                        });
+                        setState(() => isLoading = true);
                       } else if (state is GetRandomQuoteSuccess) {
                         setState(() {
                           isLoading = false;
@@ -70,9 +211,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           'Something went wrong, Please try again later',
                         );
                       } else if (state is ViewAllContentLoading) {
-                        setState(() {
-                          isContentLoading = true;
-                        });
+                        setState(() => isContentLoading = true);
                       } else if (state is ViewAllContentLoaded) {
                         setState(() {
                           isContentLoading = false;
@@ -80,9 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           allPrayers.addAll(state.successResponse['data']);
                         });
                       } else if (state is ViewAllContentError) {
-                        setState(() {
-                          isContentLoading = false;
-                        });
+                        setState(() => isContentLoading = false);
                         CommonUtils.showErrorToast('Failed to load prayers');
                       } else if (state is CommonServerFailureHome) {
                         setState(() {
@@ -90,10 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           isContentLoading = false;
                         });
                       } else if (state is SessionExpiredStateHome) {
-                        setState(() {
-                          isLoading = false;
-                        });
-
+                        setState(() => isLoading = false);
                         SessionExpiredSnackBar.show(
                           context: context,
                           message: state.message,
@@ -216,7 +350,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   controller: searchController,
                                                   textInputAction:
                                                       TextInputAction.search,
-                                                  onTap: () {
+                                                  onTap: () async {
+                                                    await _analytics.logEvent(
+                                                      name:
+                                                          'AskAnythingTextFieldTappedOnHomeScreen',
+                                                    );
                                                     Navigator.push(
                                                       context,
                                                       MaterialPageRoute(
@@ -284,7 +422,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                             bottom: 15,
                                           ),
                                           child: GestureDetector(
-                                            onTap: () {
+                                            onTap: () async {
+                                              await _analytics.logEvent(
+                                                name:
+                                                    'ChalisaViewTappedOnHomeScreen',
+                                              );
                                               Navigator.push(
                                                 context,
                                                 MaterialPageRoute(

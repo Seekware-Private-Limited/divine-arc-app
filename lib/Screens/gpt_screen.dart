@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:divine_arc/Screens/%20gpt_screen_chat_list.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:record/record.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 
@@ -42,6 +43,8 @@ class _GptScreenState extends State<GptScreen>
   final TextEditingController feedbackTextController = TextEditingController();
   @override
   final ScrollController scrollController = ScrollController();
+
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   // Audio components
   @override
@@ -110,6 +113,7 @@ class _GptScreenState extends State<GptScreen>
   @override
   void initState() {
     super.initState();
+    _initialize();
     WidgetsBinding.instance.addObserver(this);
 
     audioRecorder = AudioRecorder();
@@ -139,6 +143,10 @@ class _GptScreenState extends State<GptScreen>
     });
 
     initializeChatHistory();
+  }
+
+  Future<void> _initialize() async {
+    await _analytics.logEvent(name: 'UserIsOnGPTScreen');
   }
 
   @override

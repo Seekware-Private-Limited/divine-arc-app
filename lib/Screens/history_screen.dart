@@ -1,5 +1,6 @@
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -12,24 +13,34 @@ class _HistoryScreenState extends State<HistoryScreen> {
   bool isLoading = false;
   List<Map<String, dynamic>> allChatHistory = [];
   bool isGuest = false;
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   @override
   void initState() {
     super.initState();
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initialize();
+    });
+  }
+
+  Future<void> _initialize() async {
+    await _analytics.logEvent(name: 'UserIsOnHistoryScreen');
+
     isGuest = PrefUtils.getIsGuest();
 
     if (isGuest) {
-      // Load local history for guest
       final localChats = PrefUtils.getChatHistory();
 
+      if (!mounted) return;
+
       setState(() {
-        allChatHistory = List<Map<String, dynamic>>.from(localChats ?? []);
+        allChatHistory = List<Map<String, dynamic>>.from(localChats);
         isLoading = false;
       });
     } else {
-      // Load server history for logged user
-      BlocProvider.of<HomeFlowBloc>(context).add(GetChatHistoryEvent());
+      if (!mounted) return;
+      context.read<HomeFlowBloc>().add(GetChatHistoryEvent());
     }
   }
 

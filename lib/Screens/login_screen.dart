@@ -2,6 +2,7 @@ import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Screens/forgot_password.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   String get currentPlatform {
     if (Platform.isAndroid) {
@@ -278,7 +280,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               children: [
                                 const LanguageDropdown(),
                                 GestureDetector(
-                                  onTap: () {
+                                  onTap: () async {
+                                    await _analytics.logEvent(
+                                      name: 'SkipButtonTapped',
+                                    );
                                     PrefUtils.setIsGuest(true);
                                     Navigator.push(
                                       context,
@@ -293,7 +298,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         CrossAxisAlignment.center,
                                     children: [
                                       Text(
-                                        'Skip',
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.translate('skip'),
                                         style: FTextStyle.defaultTextBold,
                                       ),
                                       const SizedBox(width: 4),
@@ -475,7 +482,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   const SizedBox(height: 16),
                                   GestureDetector(
-                                    onTap: () {
+                                    onTap: () async {
                                       bool hasError = false;
                                       if (emailController.text.isEmpty) {
                                         setState(() {
@@ -557,6 +564,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                         hasError = true;
                                       }
                                       if (!hasError) {
+                                        await _analytics.logEvent(
+                                          name: 'LoginButtonClicked',
+                                          parameters: {
+                                            'email':
+                                                emailController.text.trim(),
+                                            'password':
+                                                passwordController.text.trim(),
+                                          },
+                                        );
+
                                         BlocProvider.of<AuthFlowBloc>(
                                           context,
                                         ).add(

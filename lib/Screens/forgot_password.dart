@@ -1,6 +1,7 @@
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -13,10 +14,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   String? emailErrorText;
   bool isLoading = false;
   final TextEditingController emailController = TextEditingController();
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   // Email validation regex
   bool isValidEmail(String email) {
     return RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$").hasMatch(email);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _analytics.logEvent(name: 'UserIsOnForgotPasswordScreen');
   }
 
   @override

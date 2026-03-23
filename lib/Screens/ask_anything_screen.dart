@@ -1,5 +1,6 @@
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class AskAnythingScreen extends StatefulWidget {
   const AskAnythingScreen({super.key});
@@ -10,6 +11,7 @@ class AskAnythingScreen extends StatefulWidget {
 
 class _AskAnythingScreenState extends State<AskAnythingScreen> {
   final TextEditingController askAnythingController = TextEditingController();
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
   bool isLoading = false;
   bool isTrendingQuestionsLoading = false;
   bool commonserverfailure = false;
@@ -19,12 +21,17 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
   @override
   void initState() {
     super.initState();
+    _initialize();
     askAnythingController.clear();
 
     BlocProvider.of<HomeFlowBloc>(
       context,
     ).add(CreateSessionEvent(language: PrefUtils.getLanguage()));
     BlocProvider.of<HomeFlowBloc>(context).add(FetchAllTrendingQuestionEvent());
+  }
+
+  Future<void> _initialize() async {
+    await _analytics.logEvent(name: 'UserIsOnAskAnythingScreen');
   }
 
   @override
@@ -388,7 +395,13 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                                   },
                                                 ),
                                                 const SizedBox(width: 16),
-                                                Expanded(child: Text(question)),
+                                                Expanded(
+                                                  child: Text(
+                                                    question,
+                                                    style:
+                                                        FTextStyle.defaultText,
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                           ),

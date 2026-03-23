@@ -73,16 +73,17 @@ class _SplashScreenState extends State<SplashScreen> {
 
       PrefUtils.setDeviceToken(token);
 
-      print('✅ FCM Token: $token');
+      developer.log('✅ FCM Token: $token');
+      if (!mounted) return;
       BlocProvider.of<AuthFlowBloc>(context).add(
         SendDeviceTokenEvent(deviceToken: token, userID: PrefUtils.getID()),
       );
-      print('✅ Stored Device Token: ${PrefUtils.getDeviceToken()}');
+      developer.log('✅ Stored Device Token: ${PrefUtils.getDeviceToken()}');
 
       // 🔄 Handle token refresh
       FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
         PrefUtils.setDeviceToken(newToken);
-        print('🔄 FCM Token refreshed: $newToken');
+        developer.log('🔄 FCM Token refreshed: $newToken');
       });
     } catch (e, stackTrace) {
       developer.log(
