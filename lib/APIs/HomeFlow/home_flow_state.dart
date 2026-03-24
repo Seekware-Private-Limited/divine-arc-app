@@ -329,6 +329,19 @@ class TrendingQuestionsFailure extends HomeFlowState {
   TrendingQuestionsFailure(this.failureResponse);
 }
 
+// Report An Issue States
+class ReportIssueLoading extends HomeFlowState {}
+
+class ReportIssueLoaded extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  ReportIssueLoaded(this.successResponse);
+}
+
+class ReportIssueFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  ReportIssueFailure(this.failureResponse);
+}
+
 // Common Server Failure State
 class CommonServerFailureHome extends HomeFlowState {
   final String error;

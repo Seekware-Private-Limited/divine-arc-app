@@ -45,4 +45,5 @@ class APIEndPoints {
   static const String sendDeviceToken = '$baseUrl/device-token';
   static const String appConfig = '$baseUrl/app-config';
   static const String trendingQuestions = '$baseUrl/trending-questions/random';
+  static const String reportIssue = '$baseUrl/support';
 }

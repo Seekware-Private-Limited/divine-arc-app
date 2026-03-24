@@ -38,6 +38,15 @@ class GptScreenInputSection extends StatelessWidget {
           Expanded(
             child: TextFormField(
               controller: inputController,
+              maxLength: 500,
+              buildCounter: (
+                context, {
+                required int currentLength,
+                required bool isFocused,
+                required int? maxLength,
+              }) {
+                return null;
+              },
               decoration: InputDecoration(
                 hintText: AppLocalizations.of(
                   context,

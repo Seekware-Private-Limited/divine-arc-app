@@ -9,8 +9,6 @@ class ReportIssueScreen extends StatefulWidget {
 
 class _ReportIssueScreenState extends State<ReportIssueScreen> {
   final TextEditingController issueController = TextEditingController();
-  final TextEditingController stepsController = TextEditingController();
-
   final GlobalKey _dropdownKey = GlobalKey();
 
   String? selectedIssueType;
@@ -99,239 +97,249 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
       data: MediaQuery.of(
         context,
       ).copyWith(textScaler: const TextScaler.linear(1)),
-      child: Scaffold(
-        resizeToAvoidBottomInset: true,
-        backgroundColor: AppColors.GlobalBG,
-        body: Stack(
-          children: [
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/bgGitaGPT.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-            SafeArea(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.only(
-                  left: 20,
-                  right: 20,
-                  bottom: MediaQuery.of(context).viewInsets.bottom,
+      child: BlocListener<HomeFlowBloc, HomeFlowState>(
+        listener: (context, state) {
+          if (state is ReportIssueLoaded) {
+            CommonUtils.showSuccessToast('Issue submitted successfully');
+            setState(() {
+              issueController.clear();
+              selectedIssueType = null;
+              isSubmitted = false;
+            });
+          } else if (state is ReportIssueFailure) {
+            CommonUtils.showErrorToast(state.failureResponse['message']);
+          }
+        },
+        child: Scaffold(
+          backgroundColor: AppColors.GlobalBG,
+          body: Stack(
+            children: [
+              SizedBox.expand(
+                child: Image.asset(
+                  'assets/images/bgGitaGPT.png',
+                  fit: BoxFit.cover,
                 ),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight:
-                        MediaQuery.of(context).size.height -
-                        MediaQuery.of(context).padding.top,
-                  ),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: const Icon(
-                                Icons.arrow_back_ios_new,
-                                color: Colors.black,
-                                size: 22,
-                              ),
+              ),
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: const Icon(
+                              Icons.arrow_back_ios_new,
+                              color: Colors.black,
+                              size: 22,
                             ),
-                            const LanguageDropdown(),
-                          ],
+                          ),
+                          const LanguageDropdown(),
+                        ],
+                      ),
+                      const SizedBox(height: 40),
+                      Text(
+                        AppLocalizations.of(
+                          context,
+                        )!.translate('report_issue_title'),
+                        style: FTextStyle.boldText,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        AppLocalizations.of(
+                          context,
+                        )!.translate('report_issue_subtitle'),
+                        style: FTextStyle.defaultText,
+                      ),
+                      const SizedBox(height: 30),
+
+                      GestureDetector(
+                        key: _dropdownKey,
+                        onTap: _showCustomDropdown,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.report_problem_outlined,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  selectedIssueType == null
+                                      ? AppLocalizations.of(
+                                        context,
+                                      )!.translate('issue_type')
+                                      : AppLocalizations.of(
+                                        context,
+                                      )!.translate(selectedIssueType!),
+                                  style: FTextStyle.defaultText,
+                                ),
+                              ),
+                              const Icon(Icons.keyboard_arrow_down_rounded),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 40),
-                        Text(
-                          AppLocalizations.of(
-                            context,
-                          )!.translate('report_issue_title'),
-                          style: FTextStyle.boldText,
-                        ),
+                      ),
+
+                      if (isSubmitted && selectedIssueType == null) ...[
                         const SizedBox(height: 8),
                         Text(
                           AppLocalizations.of(
                             context,
-                          )!.translate('report_issue_subtitle'),
-                          style: FTextStyle.defaultText,
+                          )!.translate('issue_type_required_error'),
+                          style: FTextStyle.errorTextStyle,
                         ),
-                        const SizedBox(height: 30),
-
-                        GestureDetector(
-                          key: _dropdownKey,
-                          onTap: _showCustomDropdown,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 14,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(14),
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.white.withOpacity(0.9),
-                                  Colors.white.withOpacity(0.8),
-                                ],
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.report_problem_outlined,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    selectedIssueType == null
-                                        ? AppLocalizations.of(
-                                          context,
-                                        )!.translate('issue_type')
-                                        : AppLocalizations.of(
-                                          context,
-                                        )!.translate(selectedIssueType!),
-                                    style: FTextStyle.defaultText,
-                                  ),
-                                ),
-                                const Icon(Icons.keyboard_arrow_down_rounded),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        if (isSubmitted && selectedIssueType == null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            AppLocalizations.of(
-                              context,
-                            )!.translate('issue_type_required_error'),
-                            style: FTextStyle.errorTextStyle,
-                          ),
-                        ],
-
-                        const SizedBox(height: 20),
-
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.black),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: TextField(
-                            controller: issueController,
-                            maxLines: 5,
-                            style: FTextStyle.defaultText,
-                            onChanged: (value) {
-                              setState(() {});
-                            },
-                            decoration: InputDecoration(
-                              hintText: AppLocalizations.of(
-                                context,
-                              )!.translate('issue_hint'),
-                              hintStyle: FTextStyle.defaultText,
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.all(15),
-                            ),
-                          ),
-                        ),
-
-                        if (isSubmitted &&
-                            issueController.text.trim().length < 10) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            AppLocalizations.of(
-                              context,
-                            )!.translate('issue_min_length_error'),
-                            style: FTextStyle.errorTextStyle,
-                          ),
-                        ],
-
-                        const SizedBox(height: 20),
-
-                        Container(
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.black),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: TextField(
-                            controller: stepsController,
-                            maxLines: 4,
-                            style: FTextStyle.defaultText,
-                            decoration: InputDecoration(
-                              hintText: AppLocalizations.of(
-                                context,
-                              )!.translate('steps_hint'),
-                              hintStyle: FTextStyle.defaultText,
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.all(15),
-                            ),
-                          ),
-                        ),
-
-                        const Spacer(),
-
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              isSubmitted = true;
-                            });
-
-                            if (isValid()) {
-                              print("Issue Type: $selectedIssueType");
-                              print("Description: ${issueController.text}");
-                              print("Steps: ${stepsController.text}");
-
-                              setState(() {
-                                issueController.clear();
-                                stepsController.clear();
-                                selectedIssueType = null;
-                                isSubmitted = false;
-                              });
-                              CommonUtils.showSuccessToast(
-                                'Issue submitted successfully',
-                              );
-                            }
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.gradientStart,
-                                  AppColors.gradientEnd,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            height: 45,
-                            width: double.infinity,
-                            child: Center(
-                              child: Text(
-                                AppLocalizations.of(
-                                  context,
-                                )!.translate('submit_issue'),
-                                style: FTextStyle.buttonText,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
                       ],
-                    ),
+
+                      const SizedBox(height: 20),
+
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: issueController,
+                          maxLines: 5,
+                          maxLength: 500,
+                          buildCounter: (
+                            context, {
+                            required int currentLength,
+                            required bool isFocused,
+                            required int? maxLength,
+                          }) {
+                            return null;
+                          },
+                          style: FTextStyle.defaultText,
+                          onChanged: (_) {
+                            setState(() {});
+                          },
+                          decoration: InputDecoration(
+                            hintText: AppLocalizations.of(
+                              context,
+                            )!.translate('issue_hint'),
+                            hintStyle: FTextStyle.defaultText.copyWith(
+                              color: Colors.grey,
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.all(15),
+                          ),
+                        ),
+                      ),
+
+                      if (isSubmitted &&
+                          issueController.text.trim().length < 10) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          AppLocalizations.of(
+                            context,
+                          )!.translate('issue_min_length_error'),
+                          style: FTextStyle.errorTextStyle,
+                        ),
+                      ],
+
+                      const SizedBox(height: 40),
+
+                      BlocBuilder<HomeFlowBloc, HomeFlowState>(
+                        builder: (context, state) {
+                          final isLoading = state is ReportIssueLoading;
+
+                          return GestureDetector(
+                            onTap:
+                                isLoading
+                                    ? null
+                                    : () {
+                                      setState(() {
+                                        isSubmitted = true;
+                                      });
+
+                                      if (isValid()) {
+                                        BlocProvider.of<HomeFlowBloc>(
+                                          context,
+                                        ).add(
+                                          ReportIssue(
+                                            title: AppLocalizations.of(
+                                              context,
+                                            )!.translate(selectedIssueType!),
+                                            description:
+                                                issueController.text.trim(),
+                                          ),
+                                        );
+                                      }
+                                    },
+                            child: Container(
+                              height: 45,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.gradientStart,
+                                    AppColors.gradientEnd,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child:
+                                    isLoading
+                                        ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                        : Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.translate('submit_issue'),
+                                          style: FTextStyle.buttonText,
+                                        ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

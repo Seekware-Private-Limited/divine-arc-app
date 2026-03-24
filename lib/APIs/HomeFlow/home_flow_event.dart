@@ -223,3 +223,10 @@ class SendRegenerateAPIResponseEvent extends HomeFlowEvent {
 
 // Fetch All Trending Questions
 class FetchAllTrendingQuestionEvent extends HomeFlowEvent {}
+
+// Report An Issue Event
+class ReportIssue extends HomeFlowEvent {
+  final String title;
+  final String description;
+  ReportIssue({required this.title, required this.description});
+}

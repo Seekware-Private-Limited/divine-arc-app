@@ -1,15 +1,10 @@
 import 'dart:async';
 import 'dart:developer' as developer;
-
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
+import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/notification_service.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-
-import 'package:divine_arc/Screens/customtabbar.dart';
-import 'package:divine_arc/Screens/login_screen.dart';
-import 'package:divine_arc/Utils/pref_utils.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:upgrader/upgrader.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -20,6 +15,10 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   static const _splashDelay = Duration(seconds: 3);
+  final Upgrader upgrader = Upgrader(
+    // debugLogging: true,
+    // debugDisplayAlways: true,
+  );
 
   @override
   void initState() {
@@ -29,6 +28,7 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _initApp() async {
+    await upgrader.initialize();
     await _registerFcmToken();
     Timer(_splashDelay, _navigateUser);
   }
@@ -80,7 +80,6 @@ class _SplashScreenState extends State<SplashScreen> {
       );
       developer.log('✅ Stored Device Token: ${PrefUtils.getDeviceToken()}');
 
-      // 🔄 Handle token refresh
       FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
         PrefUtils.setDeviceToken(newToken);
         developer.log('🔄 FCM Token refreshed: $newToken');
@@ -99,13 +98,116 @@ class _SplashScreenState extends State<SplashScreen> {
 
     final isLoggedIn = PrefUtils.getIsLogin();
 
+    final nextScreen =
+        isLoggedIn ? const CustomBottomNavBar() : const LoginScreen();
+
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder:
-            (_) =>
-                isLoggedIn ? const CustomBottomNavBar() : const LoginScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => nextScreen),
       (_) => false,
+    );
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (upgrader.shouldDisplayUpgrade()) {
+        _showCustomUpdateDialog();
+      }
+    });
+  }
+
+  void _showCustomUpdateDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return Dialog(
+          backgroundColor: AppColors.containerBG,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          elevation: 8,
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset('assets/images/DivineArcLogo.png', height: 80),
+                const SizedBox(height: 16),
+                Text(
+                  AppLocalizations.of(context)!.translate('update_available'),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  upgrader.body(upgrader.determineMessages(context)),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[800]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  children: [
+                    if (!upgrader.blocked())
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.of(dialogContext).pop();
+                          },
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.orange),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          child: Text(
+                            AppLocalizations.of(context)!.translate('later'),
+                          ),
+                        ),
+                      ),
+                    if (!upgrader.blocked()) const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () {
+                          upgrader.sendUserToAppStore();
+                        },
+                        child: Text(
+                          AppLocalizations.of(context)!.translate('update'),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (!upgrader.blocked())
+                  TextButton(
+                    onPressed: () {
+                      upgrader.saveIgnored();
+                      Navigator.of(dialogContext).pop();
+                    },
+                    child: Text(
+                      AppLocalizations.of(context)!.translate('nothanks'),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

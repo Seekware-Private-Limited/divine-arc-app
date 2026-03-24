@@ -3,7 +3,6 @@ import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:rate_my_app/rate_my_app.dart';
-import 'dart:io' show Platform;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,10 +18,10 @@ class _HomeScreenState extends State<HomeScreen> {
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   final RateMyApp _rateMyApp = RateMyApp(
-    minDays: 0,
+    minDays: 3,
     minLaunches: 5,
-    remindDays: 7,
-    remindLaunches: 10,
+    remindDays: 3,
+    remindLaunches: 5,
     googlePlayIdentifier: 'com.divinearc.app',
     appStoreIdentifier: '6758439307',
   );
@@ -50,11 +49,14 @@ class _HomeScreenState extends State<HomeScreen> {
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return Dialog(
+          backgroundColor: AppColors.containerBG,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 20),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           elevation: 8,
           child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: Colors.white,

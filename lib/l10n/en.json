@@ -103,7 +103,6 @@
   "issue_type_performance": "Performance Issue",
   "issue_type_other": "Other",
   "issue_hint": "Explain what went wrong...",
-  "steps_hint": "1. Go to...\n2. Tap on...\n3. Issue occurs...",
   "submit_issue": "Submit Issue",
   "issue_min_length_error": "Issue description must be at least 10 characters",
   "issue_type_required_error": "Please select an issue type",
@@ -111,5 +110,7 @@
   "enjoyingdivinearc_description":"It would mean a lot to us if you could take a moment to rate the app. Your feedback helps us improve!",
   "later":"Later",
   "ratenow":"Rate Now",
-  "nothanks":"No Thanks"
+  "nothanks":"No Thanks",
+  "update":"Update",
+  "update_available":"Update Available"
 }

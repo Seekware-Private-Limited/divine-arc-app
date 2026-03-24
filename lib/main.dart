@@ -3,6 +3,7 @@ import 'package:divine_arc/Screens/splash_screen.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/notification_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:upgrader/upgrader.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {

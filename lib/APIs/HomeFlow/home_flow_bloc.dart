@@ -1553,5 +1553,69 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         print("No internet connection.");
       }
     });
+
+    // Report An Issue Bloc
+    on<ReportIssue>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(ReportIssueLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.reportIssue);
+        final requestBody = jsonEncode({
+          'title': event.title,
+          'description': event.description,
+        });
+
+        print("🔵 Request URL: $requestUrl");
+        print(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
+        print("🟠 Request Body: $requestBody");
+
+        try {
+          final response = await http.post(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+            body: requestBody,
+          );
+
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
+
+          if (response.statusCode == 201) {
+            final Map<String, dynamic> responseData = jsonDecode(response.body);
+            emit(ReportIssueLoaded(responseData));
+            print("✅ Parsed Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
+            );
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(ReportIssueFailure(errorData));
+            print("❌ Error Response Data: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnectionHomeFlow());
+          print("❗ SocketException: No internet connection.");
+        } catch (e) {
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
+          print("❗ Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnectionHomeFlow());
+        print("❗ No internet connection.");
+      }
+    });
   }
 }
