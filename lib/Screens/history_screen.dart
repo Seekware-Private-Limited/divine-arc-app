@@ -140,78 +140,74 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _historyContainer() {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.gradientStart, width: 1.5),
-          color: Colors.white,
-        ),
-        child:
-            isLoading
-                ? Center(
-                  child: LoadingAnimationWidget.staggeredDotsWave(
-                    color: AppColors.gradientStart,
-                    size: 50,
-                  ),
-                )
-                : allChatHistory.isEmpty
-                ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ClipOval(
-                        child: Image.asset(
-                          'assets/images/errorImage.png',
-                          height: 200,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      Text(
-                        AppLocalizations.of(
-                          context,
-                        )!.translate('noChatHistory'),
-                        style: FTextStyle.defaultTextSemiBold,
-                      ),
-                    ],
-                  ),
-                )
-                : ListView.builder(
-                  itemCount: allChatHistory.length,
-                  itemBuilder: (context, index) {
-                    final chat = allChatHistory[index];
-
-                    // Works for both guest & logged user
-                    final chatID = chat['id'] ?? chat['chatId'];
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => GptScreen(chatId: chatID),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: AppColors.GlobalBG,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            chat['question'] ?? 'No question',
-                            style: FTextStyle.defaultText,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.gradientStart, width: 1.5),
+        color: Colors.white,
       ),
+      child:
+          isLoading
+              ? Center(
+                child: LoadingAnimationWidget.staggeredDotsWave(
+                  color: AppColors.gradientStart,
+                  size: 50,
+                ),
+              )
+              : allChatHistory.isEmpty
+              ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ClipOval(
+                      child: Image.asset(
+                        'assets/images/errorImage.png',
+                        height: 200,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      AppLocalizations.of(context)!.translate('noChatHistory'),
+                      style: FTextStyle.defaultTextSemiBold,
+                    ),
+                  ],
+                ),
+              )
+              : ListView.builder(
+                itemCount: allChatHistory.length,
+                itemBuilder: (context, index) {
+                  final chat = allChatHistory[index];
+
+                  // Works for both guest & logged user
+                  final chatID = chat['id'] ?? chat['chatId'];
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => GptScreen(chatId: chatID),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.GlobalBG,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          chat['question'] ?? 'No question',
+                          style: FTextStyle.defaultText,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
     );
   }
 }

@@ -18,8 +18,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   final RateMyApp _rateMyApp = RateMyApp(
-    minDays: 0,
-    minLaunches: 1,
+    minDays: 3,
+    minLaunches: 5,
     remindDays: 3,
     remindLaunches: 5,
     googlePlayIdentifier: 'com.divinearc.app',
@@ -92,7 +92,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    Expanded(
+                    SizedBox(
+                      width: 120,
                       child: OutlinedButton(
                         onPressed: () {
                           _rateMyApp.callEvent(
@@ -113,7 +114,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    Expanded(
+                    SizedBox(
+                      width: 120,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.gradientStart,
