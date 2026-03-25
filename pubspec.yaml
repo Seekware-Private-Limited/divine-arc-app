@@ -65,7 +65,6 @@ flutter:
   assets:
     - assets/fonts/
     - assets/images/
-    - assets/audio/
     - lib/l10n/
     - shorebird.yaml
 

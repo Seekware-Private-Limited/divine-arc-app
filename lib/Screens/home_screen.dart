@@ -18,8 +18,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   final RateMyApp _rateMyApp = RateMyApp(
-    minDays: 3,
-    minLaunches: 5,
+    minDays: 0,
+    minLaunches: 1,
     remindDays: 3,
     remindLaunches: 5,
     googlePlayIdentifier: 'com.divinearc.app',
