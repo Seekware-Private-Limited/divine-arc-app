@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:developer' as developer;
+
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:upgrader/upgrader.dart';
+import 'package:video_player/video_player.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -14,23 +16,45 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  static const _splashDelay = Duration(seconds: 3);
-  final Upgrader upgrader = Upgrader(
-    // debugLogging: true,
-    // debugDisplayAlways: true,
-  );
+  final Upgrader upgrader = Upgrader();
+
+  late VideoPlayerController _videoController;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
     super.initState();
+
     _setupForegroundNotification();
-    _initApp();
+    _initVideoAndApp();
   }
 
-  Future<void> _initApp() async {
+  Future<void> _initVideoAndApp() async {
+    _videoController = VideoPlayerController.asset(
+      'assets/videos/splash_video.mp4',
+    );
+
+    await _videoController.initialize();
+
+    _videoController.setLooping(false);
+
+    _videoController.addListener(() {
+      if (_videoController.value.isInitialized &&
+          _videoController.value.position >= _videoController.value.duration &&
+          !_hasNavigated) {
+        _hasNavigated = true;
+        _navigateUser();
+      }
+    });
+
+    if (mounted) {
+      setState(() {});
+    }
+
+    _videoController.play();
+
     await upgrader.initialize();
     await _registerFcmToken();
-    Timer(_splashDelay, _navigateUser);
   }
 
   void _setupForegroundNotification() {
@@ -74,14 +98,18 @@ class _SplashScreenState extends State<SplashScreen> {
       PrefUtils.setDeviceToken(token);
 
       developer.log('✅ FCM Token: $token');
+
       if (!mounted) return;
+
       BlocProvider.of<AuthFlowBloc>(context).add(
         SendDeviceTokenEvent(deviceToken: token, userID: PrefUtils.getID()),
       );
+
       developer.log('✅ Stored Device Token: ${PrefUtils.getDeviceToken()}');
 
       FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
         PrefUtils.setDeviceToken(newToken);
+
         developer.log('🔄 FCM Token refreshed: $newToken');
       });
     } catch (e, stackTrace) {
@@ -162,12 +190,6 @@ class _SplashScreenState extends State<SplashScreen> {
                           onPressed: () {
                             Navigator.of(dialogContext).pop();
                           },
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.orange),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
                           child: Text(
                             AppLocalizations.of(context)!.translate('later'),
                           ),
@@ -176,13 +198,6 @@ class _SplashScreenState extends State<SplashScreen> {
                     if (!upgrader.blocked()) const SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
                         onPressed: () {
                           upgrader.sendUserToAppStore();
                         },
@@ -212,27 +227,32 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   @override
+  void dispose() {
+    _videoController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MediaQuery(
       data: MediaQuery.of(
         context,
       ).copyWith(textScaler: const TextScaler.linear(1)),
       child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset('assets/images/bgGitaGPT.png', fit: BoxFit.cover),
-            Center(
-              child: Image.asset(
-                'assets/images/DivineArcLogo.png',
-                height: 200,
-                width: 200,
-                fit: BoxFit.cover,
-              ),
-            ),
-          ],
-        ),
+        backgroundColor: Colors.black,
+        body:
+            _videoController.value.isInitialized
+                ? SizedBox.expand(
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: SizedBox(
+                      width: _videoController.value.size.width,
+                      height: _videoController.value.size.height,
+                      child: VideoPlayer(_videoController),
+                    ),
+                  ),
+                )
+                : const SizedBox.shrink(),
       ),
     );
   }

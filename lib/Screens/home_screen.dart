@@ -65,9 +65,14 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Image.asset('assets/images/DivineArcLogo.png', height: 80),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(100),
+                  child: Image.asset(
+                    'assets/images/DivineArcLogo.png',
+                    height: 80,
+                  ),
+                ),
                 const SizedBox(height: 16),
-
                 Text(
                   AppLocalizations.of(context)!.translate('enjoyingdivinearc'),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(

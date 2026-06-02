@@ -69,7 +69,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -82,53 +81,57 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    // If guest → no bloc listener
-                    if (!isGuest)
-                      BlocListener<HomeFlowBloc, HomeFlowState>(
-                        listener: (context, state) {
-                          if (state is GetChatHistoryLoading) {
-                            setState(() {
-                              isLoading = true;
-                            });
-                          } else if (state is GetChatHistorySuccess) {
-                            final chats =
-                                state.successResponse['chats'] as List;
+                    Expanded(
+                      child:
+                          !isGuest
+                              ? BlocListener<HomeFlowBloc, HomeFlowState>(
+                                listener: (context, state) {
+                                  if (state is GetChatHistoryLoading) {
+                                    setState(() {
+                                      isLoading = true;
+                                    });
+                                  } else if (state is GetChatHistorySuccess) {
+                                    final chats =
+                                        state.successResponse['chats'] as List;
 
-                            setState(() {
-                              isLoading = false;
-                              allChatHistory =
-                                  chats
-                                      .map<Map<String, dynamic>>(
-                                        (item) => item as Map<String, dynamic>,
-                                      )
-                                      .toList();
-                            });
-                          } else if (state is GetChatHistoryFailure) {
-                            setState(() {
-                              isLoading = false;
-                            });
-                            CommonUtils.showErrorToast(
-                              state.failureResponse['message'],
-                            );
-                          } else if (state is CheckNetworkConnectionHomeFlow) {
-                            setState(() {
-                              isLoading = false;
-                            });
-                          } else if (state is SessionExpiredStateHome) {
-                            setState(() {
-                              isLoading = false;
-                            });
+                                    setState(() {
+                                      isLoading = false;
+                                      allChatHistory =
+                                          chats
+                                              .map<Map<String, dynamic>>(
+                                                (item) =>
+                                                    item
+                                                        as Map<String, dynamic>,
+                                              )
+                                              .toList();
+                                    });
+                                  } else if (state is GetChatHistoryFailure) {
+                                    setState(() {
+                                      isLoading = false;
+                                    });
+                                    CommonUtils.showErrorToast(
+                                      state.failureResponse['message'],
+                                    );
+                                  } else if (state
+                                      is CheckNetworkConnectionHomeFlow) {
+                                    setState(() {
+                                      isLoading = false;
+                                    });
+                                  } else if (state is SessionExpiredStateHome) {
+                                    setState(() {
+                                      isLoading = false;
+                                    });
 
-                            SessionExpiredSnackBar.show(
-                              context: context,
-                              message: state.message,
-                            );
-                          }
-                        },
-                        child: _historyContainer(),
-                      )
-                    else
-                      Expanded(child: _historyContainer()),
+                                    SessionExpiredSnackBar.show(
+                                      context: context,
+                                      message: state.message,
+                                    );
+                                  }
+                                },
+                                child: _historyContainer(),
+                              )
+                              : _historyContainer(),
+                    ),
                   ],
                 ),
               ),

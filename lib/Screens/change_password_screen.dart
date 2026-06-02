@@ -138,13 +138,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                   children: [
                                     const SizedBox(height: 20),
                                     Center(
-                                      child: Image.asset(
-                                        'assets/images/DivineArcLogo.png',
-                                        height: 100,
-                                        width: 100,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(
+                                          100,
+                                        ),
+                                        child: Image.asset(
+                                          'assets/images/DivineArcLogo.png',
+                                          height: 100,
+                                          width: 100,
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(height: 5),
+                                    const SizedBox(height: 16),
                                     Text(
                                       AppLocalizations.of(
                                         context,
