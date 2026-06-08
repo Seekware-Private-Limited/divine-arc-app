@@ -594,9 +594,10 @@ class GptScreenChatList extends StatelessWidget {
               final deepLink = 'https://divinearc.in/chat/$chatSessionId';
               final playStoreUrl =
                   'https://play.google.com/store/apps/details?id=com.divinearc.app';
-              final appStoreUrl = 'https://apps.apple.com/app/idYOUR_APP_ID';
+              final appStoreUrl =
+                  'https://apps.apple.com/us/app/divine-arc/id6758439307';
               final shareText =
-                  '''Open this chat in Divine ARC:\n$deepLink\n\nIf the app is not installed, install it here:\nAndroid: $playStoreUrl\niOS: $appStoreUrl''';
+                  '''Open this chat in Divine ARC App : \n$deepLink\n\nIf the app is not installed, install it here : \n\nAndroid :  $playStoreUrl\n\niOS :  $appStoreUrl''';
 
               final box = context.findRenderObject() as RenderBox?;
               final Rect? sharePositionOrigin =
