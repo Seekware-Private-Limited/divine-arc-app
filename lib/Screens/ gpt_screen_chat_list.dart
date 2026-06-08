@@ -3,6 +3,7 @@ import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 class GptScreenChatList extends StatelessWidget {
+  final String? chatId;
   final List<Map<String, dynamic>> chatHistory;
   final ScrollController scrollController;
   final Map<int, bool> responseLoadingStates;
@@ -27,6 +28,7 @@ class GptScreenChatList extends StatelessWidget {
 
   const GptScreenChatList({
     super.key,
+    required this.chatId,
     required this.chatHistory,
     required this.scrollController,
     required this.responseLoadingStates,
@@ -427,7 +429,7 @@ class GptScreenChatList extends StatelessWidget {
             const SizedBox(width: 10),
             _buildBookmarkButton(messageId, is_bookmarked, index),
             const SizedBox(width: 10),
-            _buildShareButton(context, question, answer),
+            _buildShareButton(context, index, question, answer),
           ],
         ),
       ],
@@ -567,6 +569,7 @@ class GptScreenChatList extends StatelessWidget {
 
   Widget _buildShareButton(
     BuildContext context,
+    int index,
     String question,
     String answer,
   ) {
@@ -575,9 +578,25 @@ class GptScreenChatList extends StatelessWidget {
         return GestureDetector(
           onTap: () async {
             if (question.isNotEmpty && answer.isNotEmpty) {
-              final shareText = '''Question: $question
+              final String chatSessionId =
+                  (chatHistory[index]['chatId']?.toString().trim().isNotEmpty ==
+                          true
+                      ? chatHistory[index]['chatId']?.toString().trim()
+                      : chatId?.trim()) ??
+                  '';
+              if (chatSessionId.isEmpty) {
+                CommonUtils.showErrorToast(
+                  'Cannot share: Chat ID is unavailable',
+                );
+                return;
+              }
 
-Answer: $answer''';
+              final deepLink = 'https://divinearc.in/chat/$chatSessionId';
+              final playStoreUrl =
+                  'https://play.google.com/store/apps/details?id=com.divinearc.app';
+              final appStoreUrl = 'https://apps.apple.com/app/idYOUR_APP_ID';
+              final shareText =
+                  '''Open this chat in Divine ARC:\n$deepLink\n\nIf the app is not installed, install it here:\nAndroid: $playStoreUrl\niOS: $appStoreUrl''';
 
               final box = context.findRenderObject() as RenderBox?;
               final Rect? sharePositionOrigin =

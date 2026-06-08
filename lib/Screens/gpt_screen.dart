@@ -272,6 +272,7 @@ class _GptScreenState extends State<GptScreen>
                                       ),
                                     )
                                     : GptScreenChatList(
+                                      chatId: widget.chatId,
                                       chatHistory: chatHistory,
                                       scrollController: scrollController,
                                       responseLoadingStates:

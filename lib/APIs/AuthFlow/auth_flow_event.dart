@@ -14,10 +14,16 @@ class SignupEventHandler extends AuthFlowEvent {
   final String name;
   final String email;
   final String password;
+  final String gender;
+  final String dateOfBirth;
+  final String placeOfBirth;
   SignupEventHandler({
     required this.name,
     required this.email,
     required this.password,
+    required this.gender,
+    required this.dateOfBirth,
+    required this.placeOfBirth,
   });
 }
 

@@ -124,6 +124,13 @@ class _SplashScreenState extends State<SplashScreen> {
   void _navigateUser() {
     if (!mounted) return;
 
+    if (Navigator.of(context).canPop()) {
+      debugPrint(
+        'Skipping splash navigation because a deep link or another route is already active.',
+      );
+      return;
+    }
+
     final isLoggedIn = PrefUtils.getIsLogin();
 
     final nextScreen =

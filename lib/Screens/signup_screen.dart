@@ -21,27 +21,40 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool emailError = false;
   bool passwordError = false;
   bool isLoading = false;
+
   String? nameErrorText;
   String? emailErrorText;
   String? passwordErrorText;
+  String? selectedGender;
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController dobController = TextEditingController();
+  final TextEditingController placeofbirthController = TextEditingController();
+  final TextEditingController genderController = TextEditingController();
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
-  // Name validation regex
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    dobController.dispose();
+    placeofbirthController.dispose();
+    genderController.dispose();
+    super.dispose();
+  }
+
   bool isValidName(String name) {
     return RegExp(r"^[A-Za-z ]{1,32}$").hasMatch(name);
   }
 
-  // Email validation regex
   bool isValidEmail(String email) {
     return email.length <= 255 &&
         RegExp(r"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$").hasMatch(email);
   }
 
-  // Password validation regex
   bool isValidPassword(String password) {
     return password.length >= 9 &&
         password.length <= 32 &&
@@ -61,7 +74,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           context,
         ).copyWith(textScaler: const TextScaler.linear(1)),
         child: Scaffold(
-          resizeToAvoidBottomInset: false,
+          resizeToAvoidBottomInset: true,
           body: Stack(
             children: [
               Positioned.fill(
@@ -86,8 +99,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           setState(() {
                             isLoading = false;
                           });
-                          print(state.email);
-                          print(state.id);
                           BlocProvider.of<AuthFlowBloc>(context).add(
                             SocialLoginEventHandler(
                               socialId: state.id,
@@ -161,7 +172,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           setState(() {
                             isLoading = false;
                           });
-                          print(state.failureMessage);
                           CommonUtils.showErrorToast(state.failureMessage);
                         } else if (state is SessionExpiredStateAuth) {
                           SessionExpiredSnackBar.show(
@@ -244,7 +254,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     textAlign: TextAlign.center,
                                   ),
                                   const SizedBox(height: 10),
-                                  // Name Field
                                   TextFormField(
                                     controller: nameController,
                                     style: FTextStyle.defaultText,
@@ -303,7 +312,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 10),
-                                  // Email Field
                                   TextFormField(
                                     controller: emailController,
                                     style: FTextStyle.defaultText,
@@ -363,10 +371,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 10),
-                                  // Password Field
                                   TextFormField(
                                     controller: passwordController,
                                     style: FTextStyle.defaultText,
+                                    obscureText: true,
                                     decoration: InputDecoration(
                                       hintText: AppLocalizations.of(
                                         context,
@@ -436,6 +444,224 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       ],
                                     ),
                                   ),
+                                  const SizedBox(height: 10),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.GlobalBG,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: selectedGender,
+                                        isExpanded: true,
+                                        dropdownColor: AppColors.GlobalBG,
+                                        hint: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.translate('gender'),
+                                          style: FTextStyle.defaultText
+                                              .copyWith(color: Colors.black),
+                                        ),
+                                        icon: Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          color: AppColors.gradientStart,
+                                        ),
+                                        style: FTextStyle.defaultText,
+                                        items: [
+                                          DropdownMenuItem(
+                                            value: 'Male',
+                                            child: Text(
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate('male'),
+                                            ),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'Female',
+                                            child: Text(
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate('female'),
+                                            ),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'Other',
+                                            child: Text(
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate('other'),
+                                            ),
+                                          ),
+                                        ],
+                                        onChanged: (value) {
+                                          setState(() {
+                                            selectedGender = value;
+                                            genderController.text = value ?? '';
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextFormField(
+                                    controller: dobController,
+                                    readOnly: true,
+                                    style: FTextStyle.defaultText,
+                                    decoration: InputDecoration(
+                                      hintText: AppLocalizations.of(
+                                        context,
+                                      )!.translate('date_of_birth'),
+                                      hintStyle: FTextStyle.defaultText,
+                                      filled: true,
+                                      fillColor: AppColors.GlobalBG,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 14,
+                                          ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      suffixIcon: Icon(
+                                        Icons.calendar_month_rounded,
+                                        color: AppColors.gradientStart,
+                                      ),
+                                    ),
+                                    onTap: () async {
+                                      FocusScope.of(context).unfocus();
+                                      final pickedDate = await showDatePicker(
+                                        context: context,
+                                        initialDate: DateTime.now(),
+                                        firstDate: DateTime(1900),
+                                        lastDate: DateTime.now(),
+                                        builder: (context, child) {
+                                          return Theme(
+                                            data: Theme.of(context).copyWith(
+                                              colorScheme:
+                                                  const ColorScheme.light(
+                                                    primary:
+                                                        AppColors.gradientStart,
+                                                    onPrimary: Colors.white,
+                                                    surface:
+                                                        AppColors.containerBG,
+                                                    onSurface: Colors.black,
+                                                  ),
+                                              scaffoldBackgroundColor:
+                                                  AppColors.containerBG,
+                                              dialogBackgroundColor:
+                                                  AppColors.containerBG,
+                                              textTheme: Theme.of(
+                                                context,
+                                              ).textTheme.copyWith(
+                                                headlineLarge:
+                                                    FTextStyle
+                                                        .defaultTextSemiBold,
+                                                headlineMedium:
+                                                    FTextStyle
+                                                        .defaultTextSemiBold,
+                                                titleLarge:
+                                                    FTextStyle
+                                                        .defaultTextSemiBold,
+                                                bodyLarge:
+                                                    FTextStyle.defaultText,
+                                                bodyMedium:
+                                                    FTextStyle.defaultText,
+                                                labelLarge:
+                                                    FTextStyle.defaultTextBold,
+                                              ),
+                                              textButtonTheme:
+                                                  TextButtonThemeData(
+                                                    style: TextButton.styleFrom(
+                                                      foregroundColor:
+                                                          AppColors
+                                                              .gradientStart,
+                                                      textStyle:
+                                                          FTextStyle
+                                                              .defaultTextBold,
+                                                    ),
+                                                  ),
+                                              datePickerTheme: DatePickerThemeData(
+                                                backgroundColor:
+                                                    AppColors.containerBG,
+                                                headerBackgroundColor:
+                                                    AppColors.gradientStart,
+                                                headerForegroundColor:
+                                                    Colors.white,
+                                                dayStyle:
+                                                    FTextStyle.defaultText,
+                                                yearStyle:
+                                                    FTextStyle.defaultText,
+                                                todayForegroundColor:
+                                                    WidgetStateProperty.all(
+                                                      Colors.black,
+                                                    ),
+                                                todayBorder: BorderSide(
+                                                  color: Colors.black,
+                                                  width: 1.5,
+                                                ),
+                                                confirmButtonStyle:
+                                                    TextButton.styleFrom(
+                                                      foregroundColor:
+                                                          AppColors
+                                                              .gradientStart,
+                                                      textStyle:
+                                                          FTextStyle
+                                                              .defaultTextBold,
+                                                    ),
+                                                cancelButtonStyle:
+                                                    TextButton.styleFrom(
+                                                      foregroundColor:
+                                                          AppColors
+                                                              .gradientStart,
+                                                      textStyle:
+                                                          FTextStyle
+                                                              .defaultTextBold,
+                                                    ),
+                                              ),
+                                            ),
+                                            child: child!,
+                                          );
+                                        },
+                                      );
+
+                                      if (pickedDate != null) {
+                                        setState(() {
+                                          dobController.text =
+                                              "${pickedDate.day.toString().padLeft(2, '0')}/"
+                                              "${pickedDate.month.toString().padLeft(2, '0')}/"
+                                              "${pickedDate.year}";
+                                        });
+                                      }
+                                    },
+                                  ),
+
+                                  const SizedBox(height: 10),
+                                  TextFormField(
+                                    controller: placeofbirthController,
+                                    style: FTextStyle.defaultText,
+                                    decoration: InputDecoration(
+                                      hintText: AppLocalizations.of(
+                                        context,
+                                      )!.translate('place_of_birth'),
+                                      hintStyle: FTextStyle.defaultText,
+                                      filled: true,
+                                      fillColor: AppColors.GlobalBG,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 14,
+                                          ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                  ),
+
                                   const SizedBox(height: 16),
                                   GestureDetector(
                                     onTap: () async {
@@ -555,7 +781,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         await _analytics.logEvent(
                                           name: 'SignUpButtonClicked',
                                           parameters: {
-                                            'name': nameController.text.trim,
+                                            'name': nameController.text.trim(),
                                             'email':
                                                 emailController.text.trim(),
                                             'password':
@@ -570,6 +796,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                             email: emailController.text.trim(),
                                             password:
                                                 passwordController.text.trim(),
+                                            gender:
+                                                genderController.text.trim(),
+                                            dateOfBirth:
+                                                dobController.text.trim(),
+                                            placeOfBirth:
+                                                placeofbirthController.text
+                                                    .trim(),
                                           ),
                                         );
                                       }
@@ -629,7 +862,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 40),
-                                  // Social Login Buttons (Google, Apple, Microsoft)
                                   Visibility(
                                     visible: widget.isisGoogleLoginEnabled,
                                     child: GestureDetector(

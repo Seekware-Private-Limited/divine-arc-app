@@ -539,12 +539,18 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
 
       setState(() {
         if (editingIndex != null) {
+          final String existingMessageId =
+              chatHistory[editingIndex!]['messageId']?.toString() ?? '';
+          final bool isSavedChat = existingMessageId.isNotEmpty;
+
           chatHistory[editingIndex!]['question'] = message;
           chatHistory[editingIndex!]['answer'] = '';
           chatHistory[editingIndex!]['hasError'] = false;
+          chatHistory[editingIndex!]['isEdited'] = isSavedChat;
+          chatHistory[editingIndex!]['isRegenerating'] = false;
           currentResponseIndex = editingIndex;
           responseLoadingStates[currentResponseIndex!] = true;
-          isEdited = true;
+          isEdited = isSavedChat;
         } else {
           final newChatItem = {
             'question': message,
@@ -556,6 +562,8 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
             'isDisliked': false,
             'isUserAudio': false,
             'hasError': false,
+            'isEdited': false,
+            'isRegenerating': false,
           };
           chatHistory.add(newChatItem);
           currentResponseIndex = chatHistory.length - 1;

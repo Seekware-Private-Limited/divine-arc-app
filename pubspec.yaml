@@ -47,6 +47,7 @@ dependencies:
   flutter_sound: 9.28.0
   audioplayers: 6.5.1
   share_plus: 12.0.0
+  app_links: ^7.0.0
   upgrader: ^12.5.0
   flutter_markdown: ^0.7.7+1
   bloc: ^9.2.0

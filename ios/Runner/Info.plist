@@ -36,6 +36,12 @@
 				<string>com.googleusercontent.apps.1072160672117-ot8a42d3ioarbn0norr7400q17to4851</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>divinearc</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>

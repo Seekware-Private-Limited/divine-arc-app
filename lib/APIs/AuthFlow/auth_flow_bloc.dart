@@ -79,15 +79,23 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
 
       emit(SignUpLoading());
 
-      final requestUrl = Uri.parse(
-        APIEndPoints.signup,
-      ); // Replace with actual URL
+      final requestUrl = Uri.parse(APIEndPoints.signup);
 
       final Map<String, dynamic> requestBody = {
         "name": event.name,
         "email": event.email,
         "password": event.password,
       };
+
+      if (event.gender != null && event.gender!.trim().isNotEmpty) {
+        requestBody["gender"] = event.gender!.trim();
+      }
+      if (event.dateOfBirth != null && event.dateOfBirth!.trim().isNotEmpty) {
+        requestBody["dateOfBirth"] = event.dateOfBirth!.trim();
+      }
+      if (event.placeOfBirth != null && event.placeOfBirth!.trim().isNotEmpty) {
+        requestBody["placeOfBirth"] = event.placeOfBirth!.trim();
+      }
 
       print("Signup API Request URL: $requestUrl");
       print("Signup API Request Body: ${jsonEncode(requestBody)}");
@@ -119,7 +127,6 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         print("Exception occurred: $e");
       }
     });
-
     // Login Bloc
     on<LoginEventHandler>((event, emit) async {
       if (!await ConnectivityService.isConnected()) {

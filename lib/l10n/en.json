@@ -112,5 +112,11 @@
   "ratenow":"Rate Now",
   "nothanks":"No Thanks",
   "update":"Update",
-  "update_available":"Update Available"
+  "update_available":"Update Available",
+  "date_of_birth":"Date Of Birth",
+  "place_of_birth":"Place Of Birth",
+  "gender":"Gender",
+  "male":"Male",
+  "female":"Female",
+  "other":"Other"
 }
