@@ -1326,7 +1326,18 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
       if (await ConnectivityService.isConnected()) {
         emit(ViewAllContentLoading());
 
-        final Uri requestUrl = Uri.parse(APIEndPoints.viewAllContent);
+        // 1. Extract the language from the event
+        final String selectedLanguage = event.language;
+
+        // 2. Append the language as a query parameter to the URI
+        final Uri baseUrl = Uri.parse(APIEndPoints.viewAllContent);
+        final Uri requestUrl = baseUrl.replace(
+          queryParameters: {
+            ...baseUrl.queryParameters,
+            'language': selectedLanguage, // Passing the language here
+          },
+        );
+
         print("Request URL: $requestUrl");
 
         try {
@@ -1370,7 +1381,6 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         print("No internet connection.");
       }
     });
-
     // Send Regenerate Chat API Response
     on<SendRegenerateAPIResponseEvent>((event, emit) async {
       // Check for internet connectivity

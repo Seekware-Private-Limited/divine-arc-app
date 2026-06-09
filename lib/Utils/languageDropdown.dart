@@ -1,12 +1,9 @@
 import 'package:divine_arc/Utils/app_imports.dart';
 
 class LanguageDropdown extends StatefulWidget {
-  final VoidCallback? onLanguageChanged; // Make the callback optional
+  final ValueChanged<String>? onLanguageChanged;
 
-  const LanguageDropdown({
-    super.key,
-    this.onLanguageChanged, // Optional parameter
-  });
+  const LanguageDropdown({super.key, this.onLanguageChanged});
 
   @override
   State<LanguageDropdown> createState() => _LanguageDropdownState();
@@ -97,8 +94,7 @@ class _LanguageDropdownState extends State<LanguageDropdown> {
         context,
       ).add(CreateSessionEvent(language: languageCode));
 
-      // Call the optional callback if provided
-      widget.onLanguageChanged?.call();
+      widget.onLanguageChanged?.call(languageCode);
     }
   }
 

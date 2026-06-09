@@ -271,7 +271,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                   style: FTextStyle.homeText,
                                 ),
                               ),
-                              LanguageDropdown(),
+                              LanguageDropdown(
+                                onLanguageChanged: (updatedLanguageCode) {
+                                  BlocProvider.of<HomeFlowBloc>(context).add(
+                                    ViewAllContent(
+                                      language: updatedLanguageCode,
+                                    ),
+                                  );
+                                },
+                              ),
                             ],
                           ),
                           const SizedBox(height: 20),

@@ -97,9 +97,7 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
 
                             Row(
                               children: [
-                                LanguageDropdown(
-                                  onLanguageChanged: _onLanguageChanged,
-                                ),
+                                LanguageDropdown(),
                                 const SizedBox(width: 8),
                                 FontSizeDropdown(
                                   currentScale: _fontSizeMultiplier,
