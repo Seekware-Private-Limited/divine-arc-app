@@ -17,6 +17,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? userName;
   String? userEmail;
   String? profilePictureUrl;
+  String? gender;
+  String? dob;
+  String? placeOfBirth;
 
   @override
   void initState() {
@@ -52,6 +55,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               userName = data['name'];
               userEmail = data['email'];
               profilePictureUrl = data['profile_picture'];
+              gender = data['gender'];
+              dob = data['date_of_birth'];
+              placeOfBirth = data['place_of_birth'];
             });
           }
 
@@ -266,6 +272,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                       profilePictureUrl:
                                                           profilePictureUrl ??
                                                           '',
+                                                      gender: gender,
+                                                      dob: dob,
+                                                      placeOfBirth:
+                                                          placeOfBirth,
                                                     ),
                                               ),
                                             );
@@ -275,6 +285,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                 userName = result['name'];
                                                 profilePictureUrl =
                                                     result['profile_picture'];
+                                                gender = result['gender'];
+                                                dob = result['date_of_birth'];
+                                                placeOfBirth =
+                                                    result['place_of_birth'];
                                               });
                                             }
                                           },

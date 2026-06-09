@@ -158,8 +158,17 @@ class ChatFeedbackEvent extends HomeFlowEvent {
 // Update Profile Name Event
 class UpdateProfileEvent extends HomeFlowEvent {
   final String name;
+  final String gender;
+  final String dateOfBirth;
+  final String placeOfBirth;
   final String profilePicture;
-  UpdateProfileEvent({required this.name, required this.profilePicture});
+  UpdateProfileEvent({
+    required this.name,
+    required this.gender,
+    required this.dateOfBirth,
+    required this.placeOfBirth,
+    required this.profilePicture,
+  });
 }
 
 // Get Single Chat History

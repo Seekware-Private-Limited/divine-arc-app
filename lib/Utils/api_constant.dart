@@ -46,4 +46,5 @@ class APIEndPoints {
   static const String appConfig = '$baseUrl/app-config';
   static const String trendingQuestions = '$baseUrl/trending-questions/random';
   static const String reportIssue = '$baseUrl/support';
+  static const String completeProfile = '$baseUrl/auth/complete-profile';
 }

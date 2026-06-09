@@ -741,14 +741,30 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         emit(UpdateProfileLoading());
 
         final Uri requestUrl = Uri.parse(APIEndPoints.updateProfile);
-        final requestBody = jsonEncode({
+
+        final Map<String, dynamic> bodyMap = {
           'name': event.name,
           'profile_picture': event.profilePicture,
-        });
+        };
+
+        if (event.gender != null && event.gender!.trim().isNotEmpty) {
+          bodyMap["gender"] = event.gender!.trim();
+        }
+        if (event.dateOfBirth != null && event.dateOfBirth!.trim().isNotEmpty) {
+          bodyMap["date_of_birth"] = event.dateOfBirth!.trim();
+        }
+        if (event.placeOfBirth != null &&
+            event.placeOfBirth!.trim().isNotEmpty) {
+          bodyMap["place_of_birth"] = event.placeOfBirth!.trim();
+        }
+
+        final requestBody = jsonEncode(bodyMap);
+
         print("🔵 Request URL: $requestUrl");
         print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
+        print("🟠 Request Body: $requestBody");
 
         try {
           final response = await http.post(
@@ -794,9 +810,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
-    });
-
-    // Get Single Chat Conversation History Bloc
+    }); // Get Single Chat Conversation History Bloc
     on<GetSingleChatHistoryEvent>((event, emit) async {
       // Check for internet connectivity
       if (await ConnectivityService.isConnected()) {

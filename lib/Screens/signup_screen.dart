@@ -5,11 +5,11 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 
 class SignUpScreen extends StatefulWidget {
   final bool isFacebookLoginEnabled;
-  final bool isisGoogleLoginEnabled;
+  final bool isGoogleLoginEnabled;
   const SignUpScreen({
     super.key,
     this.isFacebookLoginEnabled = false,
-    this.isisGoogleLoginEnabled = false,
+    this.isGoogleLoginEnabled = false,
   });
 
   @override
@@ -26,6 +26,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String? emailErrorText;
   String? passwordErrorText;
   String? selectedGender;
+  String? backendFormattedDob;
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -499,7 +500,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         onChanged: (value) {
                                           setState(() {
                                             selectedGender = value;
-                                            genderController.text = value ?? '';
+                                            genderController.text =
+                                                value != null
+                                                    ? value.toLowerCase()
+                                                    : '';
                                           });
                                         },
                                       ),
@@ -634,11 +638,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                               "${pickedDate.day.toString().padLeft(2, '0')}/"
                                               "${pickedDate.month.toString().padLeft(2, '0')}/"
                                               "${pickedDate.year}";
+                                          backendFormattedDob =
+                                              "${pickedDate.year}-"
+                                              "${pickedDate.month.toString().padLeft(2, '0')}-"
+                                              "${pickedDate.day.toString().padLeft(2, '0')}";
                                         });
                                       }
                                     },
                                   ),
-
                                   const SizedBox(height: 10),
                                   TextFormField(
                                     controller: placeofbirthController,
@@ -661,7 +668,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       ),
                                     ),
                                   ),
-
                                   const SizedBox(height: 16),
                                   GestureDetector(
                                     onTap: () async {
@@ -799,7 +805,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                             gender:
                                                 genderController.text.trim(),
                                             dateOfBirth:
-                                                dobController.text.trim(),
+                                                (backendFormattedDob ??
+                                                        dobController.text)
+                                                    .trim(),
                                             placeOfBirth:
                                                 placeofbirthController.text
                                                     .trim(),
@@ -863,7 +871,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   ),
                                   const SizedBox(height: 40),
                                   Visibility(
-                                    visible: widget.isisGoogleLoginEnabled,
+                                    visible: widget.isGoogleLoginEnabled,
                                     child: GestureDetector(
                                       onTap: () {
                                         BlocProvider.of<AuthFlowBloc>(

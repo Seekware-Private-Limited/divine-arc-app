@@ -91,10 +91,10 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         requestBody["gender"] = event.gender!.trim();
       }
       if (event.dateOfBirth != null && event.dateOfBirth!.trim().isNotEmpty) {
-        requestBody["dateOfBirth"] = event.dateOfBirth!.trim();
+        requestBody["date_of_birth"] = event.dateOfBirth!.trim();
       }
       if (event.placeOfBirth != null && event.placeOfBirth!.trim().isNotEmpty) {
-        requestBody["placeOfBirth"] = event.placeOfBirth!.trim();
+        requestBody["place_of_birth"] = event.placeOfBirth!.trim();
       }
 
       print("Signup API Request URL: $requestUrl");
@@ -495,6 +495,44 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         debugPrint("🔥 Exception: $e");
         debugPrint("📌 StackTrace: $stackTrace");
         emit(CommonServerFailure(e.toString()));
+      }
+    });
+
+    // Complete Profile When Social Login
+    on<CompleteProfileEvent>((event, emit) async {
+      if (!await ConnectivityService.isConnected()) {
+        emit(CheckNetworkConnectionAuthFlow());
+        return;
+      }
+      emit(CompleteProfileLoading());
+      final requestUrl = Uri.parse(APIEndPoints.completeProfile);
+      final Map<String, dynamic> requestBody = {
+        "gender": event.gender,
+        "date_of_birth": event.dateOfBirth,
+        "place_of_birth": event.placeOfBirth,
+      };
+
+      try {
+        final response = await http.post(
+          requestUrl,
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode(requestBody),
+        );
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        if (response.statusCode == 200) {
+          emit(CompleteProfileSuccess(responseData));
+        } else if (response.statusCode == 401) {
+          emit(
+            SessionExpiredStateAuth(
+              "You're not logged in. Please log in to access this feature.",
+            ),
+          );
+        } else {
+          emit(CompleteProfileFailure(responseData['message']));
+        }
+      } catch (e) {
+        emit(CommonServerFailure(e.toString()));
+        print("Exception occurred: $e");
       }
     });
   }

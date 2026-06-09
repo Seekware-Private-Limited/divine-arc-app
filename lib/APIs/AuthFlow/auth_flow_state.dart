@@ -128,6 +128,19 @@ class ViewAppConfigFailure extends AuthFlowState {
   ViewAppConfigFailure(this.failureResponse);
 }
 
+// Complete Profile When Social Login States
+class CompleteProfileLoading extends AuthFlowState {}
+
+class CompleteProfileSuccess extends AuthFlowState {
+  final Map<String, dynamic> successResponse;
+  CompleteProfileSuccess(this.successResponse);
+}
+
+class CompleteProfileFailure extends AuthFlowState {
+  final Map<String, dynamic> failureResponse;
+  CompleteProfileFailure(this.failureResponse);
+}
+
 class SessionExpiredStateAuth extends AuthFlowState {
   final String message;
   SessionExpiredStateAuth(this.message);

@@ -625,7 +625,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 child: SignUpScreen(
                                                   isFacebookLoginEnabled:
                                                       isFacebookLoginEnabled,
-                                                  isisGoogleLoginEnabled:
+                                                  isGoogleLoginEnabled:
                                                       isGoogleLoginEnabled,
                                                 ),
                                               ),

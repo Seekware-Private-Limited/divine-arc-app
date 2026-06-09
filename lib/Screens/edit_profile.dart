@@ -6,12 +6,18 @@ class EditProfileScreen extends StatefulWidget {
   final String name;
   final String email;
   final String profilePictureUrl;
+  final String? gender;
+  final String? dob;
+  final String? placeOfBirth;
 
   const EditProfileScreen({
     super.key,
     required this.name,
     required this.email,
     required this.profilePictureUrl,
+    this.gender,
+    this.dob,
+    this.placeOfBirth,
   });
 
   @override
@@ -21,11 +27,17 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
+  final TextEditingController dobController = TextEditingController();
+  final TextEditingController placeofbirthController = TextEditingController();
+  final TextEditingController genderController = TextEditingController();
+
   final ImagePicker _picker = ImagePicker();
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   File? _imageFile;
   String? uploadedImageUrl;
+  String? selectedGender;
+  String? backendFormattedDob;
 
   bool isUpdating = false;
   bool isImageUploading = false;
@@ -37,12 +49,41 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     nameController.text = widget.name;
     emailController.text = widget.email;
     uploadedImageUrl = widget.profilePictureUrl;
+
+    if (widget.gender != null && widget.gender!.isNotEmpty) {
+      genderController.text = widget.gender!.toLowerCase();
+      selectedGender =
+          widget.gender![0].toUpperCase() +
+          widget.gender!.substring(1).toLowerCase();
+    }
+
+    if (widget.dob != null && widget.dob!.isNotEmpty) {
+      try {
+        DateTime parsedDate = DateTime.parse(widget.dob!);
+        dobController.text =
+            "${parsedDate.day.toString().padLeft(2, '0')}/"
+            "${parsedDate.month.toString().padLeft(2, '0')}/"
+            "${parsedDate.year}";
+        backendFormattedDob =
+            "${parsedDate.year}-"
+            "${parsedDate.month.toString().padLeft(2, '0')}-"
+            "${parsedDate.day.toString().padLeft(2, '0')}";
+      } catch (_) {
+        dobController.text = widget.dob!;
+        backendFormattedDob = widget.dob!;
+      }
+    }
+
+    placeofbirthController.text = widget.placeOfBirth ?? '';
   }
 
   @override
   void dispose() {
     nameController.dispose();
     emailController.dispose();
+    dobController.dispose();
+    placeofbirthController.dispose();
+    genderController.dispose();
     super.dispose();
   }
 
@@ -79,6 +120,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       UpdateProfileEvent(
         name: nameController.text.trim(),
         profilePicture: uploadedImageUrl ?? '',
+        gender: genderController.text.trim(),
+        dateOfBirth: (backendFormattedDob ?? dobController.text).trim(),
+        placeOfBirth: placeofbirthController.text.trim(),
       ),
     );
   }
@@ -110,6 +154,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 Navigator.pop(context, {
                   'name': nameController.text.trim(),
                   'profile_picture': uploadedImageUrl,
+                  'gender': genderController.text.trim(),
+                  'date_of_birth':
+                      (backendFormattedDob ?? dobController.text).trim(),
+                  'place_of_birth': placeofbirthController.text.trim(),
                 });
               } else if (state is UpdateProfileError) {
                 setState(() => isUpdating = false);
@@ -147,22 +195,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             },
             child: Stack(
               children: [
-                /// Background
                 Positioned.fill(
                   child: Image.asset(
                     'assets/images/bgGitaGPT.png',
                     fit: BoxFit.cover,
                   ),
                 ),
-
-                /// Content
                 SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        /// Header
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -210,7 +254,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             child: SingleChildScrollView(
                               child: Column(
                                 children: [
-                                  /// Profile Image
                                   Stack(
                                     alignment: Alignment.center,
                                     children: [
@@ -261,7 +304,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                                   const SizedBox(height: 40),
 
-                                  /// Name
                                   TextFormField(
                                     controller: nameController,
                                     style: FTextStyle.defaultText,
@@ -278,7 +320,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                                   const SizedBox(height: 16),
 
-                                  /// Email (FIXED)
                                   TextFormField(
                                     controller: emailController,
                                     readOnly: true,
@@ -296,9 +337,237 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     ),
                                   ),
 
+                                  const SizedBox(height: 10),
+
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.GlobalBG,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<String>(
+                                        value: selectedGender,
+                                        isExpanded: true,
+                                        dropdownColor: AppColors.GlobalBG,
+                                        hint: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.translate('gender'),
+                                          style: FTextStyle.defaultText
+                                              .copyWith(color: Colors.black),
+                                        ),
+                                        icon: Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          color: AppColors.gradientStart,
+                                        ),
+                                        style: FTextStyle.defaultText,
+                                        items: [
+                                          DropdownMenuItem(
+                                            value: 'Male',
+                                            child: Text(
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate('male'),
+                                            ),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'Female',
+                                            child: Text(
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate('female'),
+                                            ),
+                                          ),
+                                          DropdownMenuItem(
+                                            value: 'Other',
+                                            child: Text(
+                                              AppLocalizations.of(
+                                                context,
+                                              )!.translate('other'),
+                                            ),
+                                          ),
+                                        ],
+                                        onChanged: (value) {
+                                          setState(() {
+                                            selectedGender = value;
+                                            genderController.text =
+                                                value != null
+                                                    ? value.toLowerCase()
+                                                    : '';
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 10),
+
+                                  TextFormField(
+                                    controller: dobController,
+                                    readOnly: true,
+                                    style: FTextStyle.defaultText,
+                                    decoration: InputDecoration(
+                                      hintText: AppLocalizations.of(
+                                        context,
+                                      )!.translate('date_of_birth'),
+                                      hintStyle: FTextStyle.defaultText,
+                                      filled: true,
+                                      fillColor: AppColors.GlobalBG,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 14,
+                                          ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      suffixIcon: Icon(
+                                        Icons.calendar_month_rounded,
+                                        color: AppColors.gradientStart,
+                                      ),
+                                    ),
+                                    onTap: () async {
+                                      FocusScope.of(context).unfocus();
+                                      final pickedDate = await showDatePicker(
+                                        context: context,
+                                        initialDate: DateTime.now(),
+                                        firstDate: DateTime(1900),
+                                        lastDate: DateTime.now(),
+                                        builder: (context, child) {
+                                          return Theme(
+                                            data: Theme.of(context).copyWith(
+                                              colorScheme:
+                                                  const ColorScheme.light(
+                                                    primary:
+                                                        AppColors.gradientStart,
+                                                    onPrimary: Colors.white,
+                                                    surface:
+                                                        AppColors.containerBG,
+                                                    onSurface: Colors.black,
+                                                  ),
+                                              scaffoldBackgroundColor:
+                                                  AppColors.containerBG,
+                                              dialogBackgroundColor:
+                                                  AppColors.containerBG,
+                                              textTheme: Theme.of(
+                                                context,
+                                              ).textTheme.copyWith(
+                                                headlineLarge:
+                                                    FTextStyle
+                                                        .defaultTextSemiBold,
+                                                headlineMedium:
+                                                    FTextStyle
+                                                        .defaultTextSemiBold,
+                                                titleLarge:
+                                                    FTextStyle
+                                                        .defaultTextSemiBold,
+                                                bodyLarge:
+                                                    FTextStyle.defaultText,
+                                                bodyMedium:
+                                                    FTextStyle.defaultText,
+                                                labelLarge:
+                                                    FTextStyle.defaultTextBold,
+                                              ),
+                                              textButtonTheme:
+                                                  TextButtonThemeData(
+                                                    style: TextButton.styleFrom(
+                                                      foregroundColor:
+                                                          AppColors
+                                                              .gradientStart,
+                                                      textStyle:
+                                                          FTextStyle
+                                                              .defaultTextBold,
+                                                    ),
+                                                  ),
+                                              datePickerTheme: DatePickerThemeData(
+                                                backgroundColor:
+                                                    AppColors.containerBG,
+                                                headerBackgroundColor:
+                                                    AppColors.gradientStart,
+                                                headerForegroundColor:
+                                                    Colors.white,
+                                                dayStyle:
+                                                    FTextStyle.defaultText,
+                                                yearStyle:
+                                                    FTextStyle.defaultText,
+                                                todayForegroundColor:
+                                                    WidgetStateProperty.all(
+                                                      Colors.black,
+                                                    ),
+                                                todayBorder: BorderSide(
+                                                  color: Colors.black,
+                                                  width: 1.5,
+                                                ),
+                                                confirmButtonStyle:
+                                                    TextButton.styleFrom(
+                                                      foregroundColor:
+                                                          AppColors
+                                                              .gradientStart,
+                                                      textStyle:
+                                                          FTextStyle
+                                                              .defaultTextBold,
+                                                    ),
+                                                cancelButtonStyle:
+                                                    TextButton.styleFrom(
+                                                      foregroundColor:
+                                                          AppColors
+                                                              .gradientStart,
+                                                      textStyle:
+                                                          FTextStyle
+                                                              .defaultTextBold,
+                                                    ),
+                                              ),
+                                            ),
+                                            child: child!,
+                                          );
+                                        },
+                                      );
+
+                                      if (pickedDate != null) {
+                                        setState(() {
+                                          dobController.text =
+                                              "${pickedDate.day.toString().padLeft(2, '0')}/"
+                                              "${pickedDate.month.toString().padLeft(2, '0')}/"
+                                              "${pickedDate.year}";
+                                          backendFormattedDob =
+                                              "${pickedDate.year}-"
+                                              "${pickedDate.month.toString().padLeft(2, '0')}-"
+                                              "${pickedDate.day.toString().padLeft(2, '0')}";
+                                        });
+                                      }
+                                    },
+                                  ),
+
+                                  const SizedBox(height: 10),
+
+                                  TextFormField(
+                                    controller: placeofbirthController,
+                                    style: FTextStyle.defaultText,
+                                    decoration: InputDecoration(
+                                      hintText: AppLocalizations.of(
+                                        context,
+                                      )!.translate('place_of_birth'),
+                                      hintStyle: FTextStyle.defaultText,
+                                      filled: true,
+                                      fillColor: AppColors.GlobalBG,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 14,
+                                          ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                  ),
+
                                   const SizedBox(height: 30),
 
-                                  /// Save Button
                                   GestureDetector(
                                     onTap: isUpdating ? null : _onSave,
                                     child: Container(
@@ -338,10 +607,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                   ),
                 ),
-
-                /// Full Screen Loader
                 if (isUpdating)
-                  Container(color: Colors.black.withOpacity(0.15)),
+                  Container(color: Colors.black.withValues(alpha: .15)),
               ],
             ),
           ),

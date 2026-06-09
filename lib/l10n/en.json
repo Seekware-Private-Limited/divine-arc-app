@@ -118,5 +118,6 @@
   "gender":"Gender",
   "male":"Male",
   "female":"Female",
-  "other":"Other"
+  "other":"Other",
+  "completeProfile":"Complete Profile"
 }
