@@ -42,6 +42,7 @@ class APIEndPoints {
   static const String uploadfile = '$baseUrl/users/upload';
   static const String viewProfile = '$baseUrl/users/me';
   static const String viewAllContent = '$baseUrl/content';
+  static String viewContentById(String id) => '$baseUrl/content/$id';
   static const String sendDeviceToken = '$baseUrl/device-token';
   static const String appConfig = '$baseUrl/app-config';
   static const String trendingQuestions = '$baseUrl/trending-questions/random';

@@ -422,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       itemCount: allPrayers.length,
                                       itemBuilder: (context, index) {
                                         final item = allPrayers[index];
-
+                                        final contentId = item['id'];
                                         final contentImage =
                                             item['content_image'] ??
                                             'https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png';
@@ -431,8 +431,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                         final contentDescription =
                                             item['content_description'] ??
                                             'No Description';
-                                        final contentAudio =
-                                            item['audio'] ?? '';
 
                                         return Padding(
                                           padding: const EdgeInsets.only(
@@ -448,18 +446,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 context,
                                                 MaterialPageRoute(
                                                   builder:
-                                                      (
-                                                        context,
-                                                      ) => ChalisaScreen(
-                                                        contentName:
-                                                            contentName,
-                                                        contentImage:
-                                                            contentImage,
-                                                        contentDescription:
-                                                            contentDescription,
-                                                        contentAudio:
-                                                            contentAudio,
-                                                      ),
+                                                      (context) =>
+                                                          ChalisaScreen(
+                                                            contentId:
+                                                                contentId,
+                                                          ),
                                                 ),
                                               );
                                             },
@@ -545,14 +536,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                                               (
                                                                 context,
                                                               ) => ChalisaScreen(
-                                                                contentName:
-                                                                    contentName,
-                                                                contentImage:
-                                                                    contentImage,
-                                                                contentDescription:
-                                                                    contentDescription,
-                                                                contentAudio:
-                                                                    contentAudio,
+                                                                contentId:
+                                                                    contentId,
                                                               ),
                                                         ),
                                                       );

@@ -211,6 +211,13 @@ class ViewAllContent extends HomeFlowEvent {
   ViewAllContent({required this.language});
 }
 
+// View Content By Id
+class ViewContentById extends HomeFlowEvent {
+  final String id;
+  final String language;
+  ViewContentById({required this.id, required this.language});
+}
+
 // Send Regenerate Chat API Response Event
 class SendRegenerateAPIResponseEvent extends HomeFlowEvent {
   final String messageId;

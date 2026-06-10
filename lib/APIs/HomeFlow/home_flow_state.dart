@@ -303,6 +303,19 @@ class ViewAllContentError extends HomeFlowState {
   ViewAllContentError(this.failureResponse);
 }
 
+// View Content By Id States
+class ViewContentByIdLoading extends HomeFlowState {}
+
+class ViewContentByIdLoaded extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  ViewContentByIdLoaded(this.successResponse);
+}
+
+class ViewContentByIdError extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  ViewContentByIdError(this.failureResponse);
+}
+
 // Send Regenerate Chat API Response States
 class SendRegenerateAPIResponseLoading extends HomeFlowState {}
 

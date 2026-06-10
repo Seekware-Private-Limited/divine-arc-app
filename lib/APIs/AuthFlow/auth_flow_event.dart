@@ -73,15 +73,3 @@ class SendDeviceTokenEvent extends AuthFlowEvent {
 
 // View App Config Event
 class ViewAppConfigEvent extends AuthFlowEvent {}
-
-// Complete Profile When Social Login
-class CompleteProfileEvent extends AuthFlowEvent {
-  final String gender;
-  final String dateOfBirth;
-  final String placeOfBirth;
-  CompleteProfileEvent({
-    required this.gender,
-    required this.dateOfBirth,
-    required this.placeOfBirth,
-  });
-}
