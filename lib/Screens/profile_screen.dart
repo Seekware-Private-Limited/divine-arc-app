@@ -20,6 +20,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? gender;
   String? dob;
   String? placeOfBirth;
+  Future<void> _requestAccountDeletion() async {
+    final subject = Uri.encodeComponent(
+      'Request for Divine ARC Account Deletion',
+    );
+
+    final body = Uri.encodeComponent('''
+Hello Divine ARC Team,
+
+I would like to request the permanent deletion of my Divine ARC account.
+
+App Name: Divine ARC – Chalisa, Aarti & Stotra
+
+Please delete all data associated with my account in accordance with your privacy policy.
+
+Thank you.
+''');
+
+    final uri = Uri.parse(
+      'mailto:contact@divinearc.in?subject=$subject&body=$body',
+    );
+
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
 
   @override
   void initState() {
@@ -340,6 +363,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             ),
                                           );
                                         },
+                                      ),
+                                      ListTile(
+                                        leading: Image.asset(
+                                          'assets/images/delete.png',
+                                          height: 24,
+                                          width: 24,
+                                        ),
+                                        title: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.translate('delete_account'),
+                                          style: FTextStyle.defaultText,
+                                        ),
+                                        onTap: _requestAccountDeletion,
                                       ),
                                       ListTile(
                                         leading: Image.asset(
