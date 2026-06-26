@@ -20,7 +20,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? gender;
   String? dob;
   String? placeOfBirth;
+
   Future<void> _requestAccountDeletion() async {
+    final String name = PrefUtils.getName();
+    final String email = PrefUtils.getEmail();
+
     final subject = Uri.encodeComponent(
       'Request for Divine ARC Account Deletion',
     );
@@ -29,6 +33,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 Hello Divine ARC Team,
 
 I would like to request the permanent deletion of my Divine ARC account.
+
+User Details:
+Name: $name
+Email: $email
 
 App Name: Divine ARC – Chalisa, Aarti & Stotra
 
