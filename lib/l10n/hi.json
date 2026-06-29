@@ -110,13 +110,14 @@
   "later": "बाद में",
   "ratenow": "अभी रेट करें",
   "nothanks": "नहीं धन्यवाद",
-   "update": "अपडेट",
+  "update": "अपडेट",
   "update_available": "अपडेट उपलब्ध है",
-    "date_of_birth":"जन्म तिथि",
-  "place_of_birth":"जन्म स्थान",
-  "gender":"लिंग",
-    "male":"पुरुष",
-  "female":"महिला",
-  "other":"अन्य",
-   "completeProfile":"संपूर्ण प्रोफ़ाइल"
+  "date_of_birth": "जन्म तिथि",
+  "place_of_birth": "जन्म स्थान",
+  "gender": "लिंग",
+  "male": "पुरुष",
+  "female": "महिला",
+  "other": "अन्य",
+  "completeProfile": "संपूर्ण प्रोफ़ाइल",
+  "delete_account": "खाता हटा दो"
 }
