@@ -120,5 +120,10 @@
   "female": "Female",
   "other": "Other",
   "completeProfile": "Complete Profile",
-  "delete_account": "Delete Account"
+  "delete_account": "Delete Account",
+  "submit_request": "Submit Request",
+  "delete_account_subtitle": "Submitting this will permanently delete your account and all associated data.",
+  "delete_account_success_description": "Your account deletion request has been submitted successfully.\n\nOur support team will review your details and contact you if any verification is required.\n\nYour account is typically processed within 24–48 hours.",
+  "request_submitted": "Request Submitted",
+  "go_back": "Go Back"
 }
