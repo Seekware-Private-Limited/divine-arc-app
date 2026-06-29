@@ -1,3 +1,4 @@
+import 'package:divine_arc/Screens/delete_account.dart';
 import 'package:divine_arc/Screens/edit_profile.dart';
 import 'package:divine_arc/Screens/change_password_screen.dart';
 import 'package:divine_arc/Screens/report_issue.dart';
@@ -20,37 +21,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? gender;
   String? dob;
   String? placeOfBirth;
-
-  Future<void> _requestAccountDeletion() async {
-    final String name = PrefUtils.getName();
-    final String email = PrefUtils.getEmail();
-
-    final subject = Uri.encodeComponent(
-      'Request for Divine ARC Account Deletion',
-    );
-
-    final body = Uri.encodeComponent('''
-Hello Divine ARC Team,
-
-I would like to request the permanent deletion of my Divine ARC account.
-
-User Details:
-Name: $name
-Email: $email
-
-App Name: Divine ARC – Chalisa, Aarti & Stotra
-
-Please delete all data associated with my account in accordance with your privacy policy.
-
-Thank you.
-''');
-
-    final uri = Uri.parse(
-      'mailto:contact@divinearc.in?subject=$subject&body=$body',
-    );
-
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
 
   @override
   void initState() {
@@ -384,7 +354,16 @@ Thank you.
                                           )!.translate('delete_account'),
                                           style: FTextStyle.defaultText,
                                         ),
-                                        onTap: _requestAccountDeletion,
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (context) =>
+                                                      DeleteAccountScreen(),
+                                            ),
+                                          );
+                                        },
                                       ),
                                       ListTile(
                                         leading: Image.asset(
