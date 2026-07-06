@@ -66,18 +66,23 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSAppleMusicUsageDescription</key>
-	<string>We need access to media files for audio selection.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>We need camera access to take profile pictures.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>We need microphone access to record audio.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>We need permission to save images to your photo library.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We need access to your photo library to select images.</string>
-	<key>NSUserNotificationUsageDescription</key>
-	<string>We use notifications to keep you updated.</string>
+<key>NSCameraUsageDescription</key>
+<string>Allow camera access to capture and update your profile picture.</string>
+
+<key>NSMicrophoneUsageDescription</key>
+<string>Allow microphone access to record voice questions for the AI Assistant.</string>
+
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Allow photo library access to select and upload your profile picture.</string>
+
+<key>NSPhotoLibraryAddUsageDescription</key>
+<string>Allow access to save images to your photo library.</string>
+
+<key>NSAppleMusicUsageDescription</key>
+<string>Allow media library access to select audio for supported features.</string>
+
+<key>NSUserNotificationUsageDescription</key>
+<string>Allow notifications for devotional reminders and important updates.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

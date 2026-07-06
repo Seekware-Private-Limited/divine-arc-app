@@ -1,5 +1,7 @@
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Screens/forgot_password.dart';
+import 'package:divine_arc/Screens/privacy_policy.dart';
+import 'package:divine_arc/Screens/terms_conditions.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -674,6 +676,75 @@ class _LoginScreenState extends State<LoginScreen> {
                                           decoration: TextDecoration.underline,
                                         ),
                                       ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  RichText(
+                                    textAlign: TextAlign.center,
+                                    text: TextSpan(
+                                      style: FTextStyle.rateNowBlack,
+                                      children: [
+                                        const TextSpan(
+                                          text:
+                                              'By continuing, you agree to our ',
+                                        ),
+                                        WidgetSpan(
+                                          alignment:
+                                              PlaceholderAlignment.middle,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder:
+                                                      (_) =>
+                                                          const TermsConditionsScreen(),
+                                                ),
+                                              );
+                                            },
+                                            child: Text(
+                                              'Terms & Conditions',
+                                              style: FTextStyle.rateNowBlack
+                                                  .copyWith(
+                                                    color:
+                                                        AppColors.gradientStart,
+                                                    decoration:
+                                                        TextDecoration
+                                                            .underline,
+                                                  ),
+                                            ),
+                                          ),
+                                        ),
+                                        const TextSpan(text: ' and '),
+                                        WidgetSpan(
+                                          alignment:
+                                              PlaceholderAlignment.middle,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder:
+                                                      (_) =>
+                                                          const PrivacyPolicyScreen(),
+                                                ),
+                                              );
+                                            },
+                                            child: Text(
+                                              'Privacy Policy',
+                                              style: FTextStyle.rateNowBlack
+                                                  .copyWith(
+                                                    color:
+                                                        AppColors.gradientStart,
+                                                    decoration:
+                                                        TextDecoration
+                                                            .underline,
+                                                  ),
+                                            ),
+                                          ),
+                                        ),
+                                        const TextSpan(text: '.'),
+                                      ],
                                     ),
                                   ),
                                   const SizedBox(height: 24),
