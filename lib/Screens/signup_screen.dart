@@ -23,6 +23,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool emailError = false;
   bool passwordError = false;
   bool isLoading = false;
+  bool isChecked = false;
 
   String? nameErrorText;
   String? emailErrorText;
@@ -184,7 +185,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         }
                       },
                       child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Column(
                           children: [
                             Row(
@@ -216,7 +217,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         style: FTextStyle.defaultTextBold,
                                       ),
                                       const SizedBox(width: 4),
-                                      Icon(Icons.skip_next, size: 18),
+                                      const Icon(Icons.skip_next, size: 18),
                                     ],
                                   ),
                                 ),
@@ -232,7 +233,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 ),
                                 color: AppColors.containerBG,
                               ),
-                              padding: EdgeInsets.all(25),
+                              padding: const EdgeInsets.all(25),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment:
@@ -267,10 +268,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       hintStyle: FTextStyle.defaultText,
                                       filled: true,
                                       fillColor: AppColors.GlobalBG,
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 14,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 14,
+                                          ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                         borderSide: BorderSide.none,
@@ -326,10 +328,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       hintStyle: FTextStyle.defaultText,
                                       filled: true,
                                       fillColor: AppColors.GlobalBG,
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 14,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 14,
+                                          ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                         borderSide: BorderSide.none,
@@ -385,10 +388,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       hintStyle: FTextStyle.defaultText,
                                       filled: true,
                                       fillColor: AppColors.GlobalBG,
-                                      contentPadding: EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 14,
-                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 14,
+                                          ),
                                       border: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(8),
                                         borderSide: BorderSide.none,
@@ -605,7 +609,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                                     WidgetStateProperty.all(
                                                       Colors.black,
                                                     ),
-                                                todayBorder: BorderSide(
+                                                todayBorder: const BorderSide(
                                                   color: Colors.black,
                                                   width: 1.5,
                                                 ),
@@ -671,6 +675,100 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 16),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(
+                                        height: 24,
+                                        width: 24,
+                                        child: Checkbox(
+                                          value: isChecked,
+                                          activeColor: AppColors.gradientStart,
+                                          onChanged: (bool? value) {
+                                            setState(() {
+                                              isChecked = value ?? false;
+                                            });
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: RichText(
+                                          text: TextSpan(
+                                            style: FTextStyle.rateNowBlack,
+                                            children: [
+                                              const TextSpan(
+                                                text: 'I agree to the ',
+                                              ),
+                                              WidgetSpan(
+                                                alignment:
+                                                    PlaceholderAlignment.middle,
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder:
+                                                            (_) =>
+                                                                const TermsConditionsScreen(),
+                                                      ),
+                                                    );
+                                                  },
+                                                  child: Text(
+                                                    'Terms & Conditions',
+                                                    style: FTextStyle
+                                                        .rateNowBlack
+                                                        .copyWith(
+                                                          color:
+                                                              AppColors
+                                                                  .gradientStart,
+                                                          decoration:
+                                                              TextDecoration
+                                                                  .underline,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const TextSpan(text: ' and '),
+                                              WidgetSpan(
+                                                alignment:
+                                                    PlaceholderAlignment.middle,
+                                                child: GestureDetector(
+                                                  onTap: () {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder:
+                                                            (_) =>
+                                                                const PrivacyPolicyScreen(),
+                                                      ),
+                                                    );
+                                                  },
+                                                  child: Text(
+                                                    'Privacy Policy',
+                                                    style: FTextStyle
+                                                        .rateNowBlack
+                                                        .copyWith(
+                                                          color:
+                                                              AppColors
+                                                                  .gradientStart,
+                                                          decoration:
+                                                              TextDecoration
+                                                                  .underline,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const TextSpan(text: '.'),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+
                                   GestureDetector(
                                     onTap: () async {
                                       bool hasError = false;
@@ -785,6 +883,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         hasError = true;
                                       }
 
+                                      // Check if terms are accepted before triggering bloc events
+                                      if (!isChecked) {
+                                        CommonUtils.showErrorToast(
+                                          'Please accept the Terms & Conditions and Privacy Policy to continue.',
+                                        );
+                                        return;
+                                      }
+
                                       if (!hasError) {
                                         await _analytics.logEvent(
                                           name: 'SignUpButtonClicked',
@@ -847,7 +953,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => LoginScreen(),
+                                          builder:
+                                              (context) => const LoginScreen(),
                                         ),
                                       );
                                     },
@@ -872,79 +979,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 24),
-                                  RichText(
-                                    textAlign: TextAlign.center,
-                                    text: TextSpan(
-                                      style: FTextStyle.rateNowBlack,
-                                      children: [
-                                        const TextSpan(
-                                          text:
-                                              'By continuing, you agree to our ',
-                                        ),
-                                        WidgetSpan(
-                                          alignment:
-                                              PlaceholderAlignment.middle,
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder:
-                                                      (_) =>
-                                                          const TermsConditionsScreen(),
-                                                ),
-                                              );
-                                            },
-                                            child: Text(
-                                              'Terms & Conditions',
-                                              style: FTextStyle.rateNowBlack
-                                                  .copyWith(
-                                                    color:
-                                                        AppColors.gradientStart,
-                                                    decoration:
-                                                        TextDecoration
-                                                            .underline,
-                                                  ),
-                                            ),
-                                          ),
-                                        ),
-                                        const TextSpan(text: ' and '),
-                                        WidgetSpan(
-                                          alignment:
-                                              PlaceholderAlignment.middle,
-                                          child: GestureDetector(
-                                            onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder:
-                                                      (_) =>
-                                                          const PrivacyPolicyScreen(),
-                                                ),
-                                              );
-                                            },
-                                            child: Text(
-                                              'Privacy Policy',
-                                              style: FTextStyle.rateNowBlack
-                                                  .copyWith(
-                                                    color:
-                                                        AppColors.gradientStart,
-                                                    decoration:
-                                                        TextDecoration
-                                                            .underline,
-                                                  ),
-                                            ),
-                                          ),
-                                        ),
-                                        const TextSpan(text: '.'),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 24),
                                   Visibility(
                                     visible: widget.isGoogleLoginEnabled,
                                     child: GestureDetector(
                                       onTap: () {
+                                        if (!isChecked) {
+                                          CommonUtils.showErrorToast(
+                                            'Please accept the Terms & Conditions and Privacy Policy to continue.',
+                                          );
+                                          return;
+                                        }
                                         BlocProvider.of<AuthFlowBloc>(
                                           context,
                                         ).add(GoogleLoginEventHandler());
@@ -990,6 +1034,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     visible: widget.isFacebookLoginEnabled,
                                     child: GestureDetector(
                                       onTap: () {
+                                        if (!isChecked) {
+                                          CommonUtils.showErrorToast(
+                                            'Please accept the Terms & Conditions and Privacy Policy to continue.',
+                                          );
+                                          return;
+                                        }
                                         BlocProvider.of<AuthFlowBloc>(
                                           context,
                                         ).add(FacebookLoginEventHandler());

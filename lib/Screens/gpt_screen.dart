@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:divine_arc/Screens/%20gpt_screen_chat_list.dart';
+import 'package:divine_arc/Screens/privacy_policy.dart';
+import 'package:divine_arc/Screens/terms_conditions.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:record/record.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
@@ -96,6 +98,8 @@ class _GptScreenState extends State<GptScreen>
   @override
   final Map<int, String> responseAudioUrlMap = {};
 
+  bool _isConsentDialogVisible = false;
+
   // Current voice conversation
   @override
   String? currentUserAudioUrl;
@@ -143,10 +147,153 @@ class _GptScreenState extends State<GptScreen>
     });
 
     initializeChatHistory();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted &&
+          !_isConsentDialogVisible &&
+          !PrefUtils.getAiPrivacyConsent()) {
+        showAiConsentDialog();
+      }
+    });
   }
 
   Future<void> _initialize() async {
     await _analytics.logEvent(name: 'UserIsOnGPTScreen');
+  }
+
+  @override
+  void showAiConsentDialog() {
+    if (_isConsentDialogVisible || PrefUtils.getAiPrivacyConsent()) {
+      return;
+    }
+
+    if (!mounted) return;
+
+    final currentContext = context;
+    _isConsentDialogVisible = true;
+    showDialog(
+      context: currentContext,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.GlobalBG,
+          insetPadding: const EdgeInsets.all(20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'AI Privacy Notice',
+            style: FTextStyle.boldText.copyWith(color: Colors.black),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'To provide AI-powered responses, the information you submit may be securely processed by our AI service provider.',
+                  style: FTextStyle.defaultText,
+                ),
+                const SizedBox(height: 10),
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(color: Colors.black87, fontSize: 14),
+                    children: [
+                      const TextSpan(
+                        text: 'By continuing, you agree to our ',
+                        style: FTextStyle.defaultText,
+                      ),
+                      WidgetSpan(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(dialogContext).pop();
+                            Navigator.of(currentContext).push(
+                              MaterialPageRoute(
+                                builder: (_) => const TermsConditionsScreen(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'Terms & Conditions',
+                            style: FTextStyle.defaultText.copyWith(
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const TextSpan(
+                        text: '  and ',
+                        style: FTextStyle.defaultText,
+                      ),
+                      WidgetSpan(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(dialogContext).pop();
+                            Navigator.of(currentContext).push(
+                              MaterialPageRoute(
+                                builder: (_) => const PrivacyPolicyScreen(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'Privacy Policy',
+                            style: FTextStyle.defaultText.copyWith(
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const TextSpan(text: '.'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (Navigator.of(dialogContext).canPop()) {
+                  Navigator.of(dialogContext).pop();
+                }
+                _isConsentDialogVisible = false;
+                if (mounted) setState(() {});
+              },
+              child: Text('Decline', style: FTextStyle.defaultText),
+            ),
+            FilledButton(
+              onPressed: () {
+                PrefUtils.setAiPrivacyConsent(true);
+                if (Navigator.of(dialogContext).canPop()) {
+                  Navigator.of(dialogContext).pop();
+                }
+                _isConsentDialogVisible = false;
+                if (mounted) setState(() {});
+              },
+              child: Text(
+                'I Agree',
+                style: FTextStyle.defaultText.copyWith(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    ).then((_) {
+      if (mounted) {
+        _isConsentDialogVisible = false;
+      }
+    });
+  }
+
+  void handleSendMessage() {
+    if (!PrefUtils.getAiPrivacyConsent()) {
+      showAiConsentDialog();
+      return;
+    }
+
+    handleUserMessage();
   }
 
   @override
@@ -365,7 +512,7 @@ class _GptScreenState extends State<GptScreen>
                             isConvertingAudio: isConvertingAudio,
                             animationController: animationController,
                             scaleAnimation: scaleAnimation,
-                            onSendMessage: handleUserMessage,
+                            onSendMessage: handleSendMessage,
                             onStartRecording: startRecording,
                             onStopRecording: () async {
                               setState(() {
