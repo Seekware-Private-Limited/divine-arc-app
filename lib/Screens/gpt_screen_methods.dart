@@ -74,6 +74,8 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
   String? get searchQueryFromAskAnythingScreen;
   String? get chatId;
 
+  void showAiConsentDialog();
+
   // NEW: Method to reset audio state
   void _resetAudioState() {
     if (mounted) {
@@ -108,6 +110,10 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
       }
 
       if (searchQueryFromAskAnythingScreen?.trim().isNotEmpty == true) {
+        if (!PrefUtils.getAiPrivacyConsent()) {
+          showAiConsentDialog();
+          return;
+        }
         handleInitialQuery();
       }
     } catch (e) {
@@ -141,6 +147,11 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
   }
 
   void handleInitialQuery() {
+    if (!PrefUtils.getAiPrivacyConsent()) {
+      showAiConsentDialog();
+      return;
+    }
+
     final query = searchQueryFromAskAnythingScreen!.trim();
     if (query.isEmpty) return;
 
