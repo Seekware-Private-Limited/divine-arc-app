@@ -521,7 +521,6 @@ class _GptScreenState extends State<GptScreen>
                               await stopRecording();
                             },
                           ),
-                          const SizedBox(height: 10),
                         ],
                       ),
                     ),

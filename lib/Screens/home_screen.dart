@@ -2,6 +2,7 @@ import 'package:divine_arc/Screens/chalisa_screen.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:rate_my_app/rate_my_app.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -31,6 +32,13 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _initialize();
     _initRateMyApp();
+  }
+
+  String _extractQuoteOnly(String rawResponse) {
+    if (rawResponse.trim().isEmpty) return rawResponse;
+    final withoutCitation = rawResponse.split('—').first;
+    final withoutNewlines = withoutCitation.split('\n').first;
+    return withoutNewlines.trim();
   }
 
   Future<void> _initRateMyApp() async {
@@ -285,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(height: 20),
 
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
@@ -295,11 +303,10 @@ class _HomeScreenState extends State<HomeScreen> {
                               color: Colors.white,
                             ),
                             child: Container(
-                              height: 200,
+                              height: 180,
                               width: double.infinity,
                               decoration: BoxDecoration(
                                 color: AppColors.GlobalBG,
-                                borderRadius: BorderRadius.circular(16),
                               ),
                               child: Stack(
                                 children: [
@@ -335,16 +342,20 @@ class _HomeScreenState extends State<HomeScreen> {
                                         else
                                           Text(
                                             quoteResponse.isNotEmpty
-                                                ? quoteResponse
+                                                ? '" ${_extractQuoteOnly(quoteResponse)} "'
                                                 : AppLocalizations.of(
                                                   context,
                                                 )!.translate('dummyText'),
-                                            style: FTextStyle.defaultText,
+                                            style: FTextStyle.defaultText
+                                                .copyWith(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
                                             textAlign: TextAlign.center,
                                           ),
-                                        const SizedBox(height: 10),
+                                        const SizedBox(height: 20),
                                         Container(
-                                          height: 50,
+                                          height: 45,
                                           decoration: BoxDecoration(
                                             color: Colors.white,
                                             borderRadius: BorderRadius.circular(
@@ -507,6 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                                     FontWeight
                                                                         .w600,
                                                               ),
+                                                          maxLines: 1,
                                                         ),
                                                         const SizedBox(
                                                           height: 10,
@@ -545,10 +557,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                     child: Container(
                                                       height: 30,
                                                       width: 30,
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                            8,
-                                                          ),
+
                                                       decoration: BoxDecoration(
                                                         color:
                                                             AppColors
@@ -558,10 +567,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                                               5,
                                                             ),
                                                       ),
-                                                      child: Image.asset(
-                                                        'assets/images/whiteArrow.png',
-                                                        height: 8,
-                                                        width: 8,
+                                                      child: Icon(
+                                                        LucideIcons
+                                                            .arrowUpRight,
+                                                        size: 20,
+                                                        color: Colors.white,
                                                       ),
                                                     ),
                                                   ),

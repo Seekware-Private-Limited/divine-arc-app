@@ -1,6 +1,7 @@
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-class GptScreenInputSection extends StatelessWidget {
+class GptScreenInputSection extends StatefulWidget {
   final TextEditingController inputController;
   final bool isRecording;
   final bool isApiProcessing;
@@ -25,9 +26,39 @@ class GptScreenInputSection extends StatelessWidget {
   });
 
   @override
+  State<GptScreenInputSection> createState() => _GptScreenInputSectionState();
+}
+
+class _GptScreenInputSectionState extends State<GptScreenInputSection> {
+  bool _shouldShowMicButton = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _shouldShowMicButton = widget.inputController.text.trim().isEmpty;
+    widget.inputController.addListener(_handleTextChanged);
+  }
+
+  void _handleTextChanged() {
+    final shouldShowMicButton = widget.inputController.text.trim().isEmpty;
+
+    if (_shouldShowMicButton != shouldShowMicButton) {
+      setState(() {
+        _shouldShowMicButton = shouldShowMicButton;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.inputController.removeListener(_handleTextChanged);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: AppColors.gradientStart),
@@ -37,7 +68,7 @@ class GptScreenInputSection extends StatelessWidget {
         children: [
           Expanded(
             child: TextFormField(
-              controller: inputController,
+              controller: widget.inputController,
               maxLength: 500,
               buildCounter: (
                 context, {
@@ -58,8 +89,10 @@ class GptScreenInputSection extends StatelessWidget {
               maxLines: 4,
             ),
           ),
-          const SizedBox(width: 8),
-          _buildMicrophoneButton(),
+          if (_shouldShowMicButton) ...[
+            const SizedBox(width: 8),
+            _buildMicrophoneButton(),
+          ],
           const SizedBox(width: 8),
           _buildSendButton(),
         ],
@@ -71,22 +104,22 @@ class GptScreenInputSection extends StatelessWidget {
     return Stack(
       alignment: Alignment.center,
       children: [
-        if (isRecording)
+        if (widget.isRecording)
           AnimatedBuilder(
-            animation: animationController,
+            animation: widget.animationController,
             builder: (context, child) {
               return Container(
-                height: 35 + (animationController.value * 5),
-                width: 35 + (animationController.value * 5),
+                height: 35 + (widget.animationController.value * 5),
+                width: 35 + (widget.animationController.value * 5),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [
                       AppColors.gradientStart.withOpacity(
-                        0.3 * (1 - animationController.value),
+                        0.3 * (1 - widget.animationController.value),
                       ),
                       AppColors.gradientEnd.withOpacity(
-                        0.3 * (1 - animationController.value),
+                        0.3 * (1 - widget.animationController.value),
                       ),
                     ],
                   ),
@@ -96,17 +129,20 @@ class GptScreenInputSection extends StatelessWidget {
           ),
         ScaleTransition(
           scale:
-              isRecording ? scaleAnimation : const AlwaysStoppedAnimation(1.0),
+              widget.isRecording
+                  ? widget.scaleAnimation
+                  : const AlwaysStoppedAnimation(1.0),
           child: Container(
             height: 34,
             width: 34,
             decoration: BoxDecoration(
               border: Border.all(
-                color: isRecording ? Colors.white : AppColors.gradientStart,
+                color:
+                    widget.isRecording ? Colors.white : AppColors.gradientStart,
               ),
               borderRadius: BorderRadius.circular(40),
               gradient:
-                  isRecording
+                  widget.isRecording
                       ? LinearGradient(
                         colors: [
                           AppColors.gradientStart,
@@ -114,23 +150,24 @@ class GptScreenInputSection extends StatelessWidget {
                         ],
                       )
                       : null,
-              color: isRecording ? null : Colors.white,
+              color: widget.isRecording ? null : Colors.white,
             ),
             child: IconButton(
               padding: EdgeInsets.zero,
               icon: Icon(
-                isRecording ? Icons.stop : Icons.mic,
+                widget.isRecording ? Icons.stop : Icons.mic,
                 size: 21,
-                color: isRecording ? Colors.white : AppColors.gradientStart,
+                color:
+                    widget.isRecording ? Colors.white : AppColors.gradientStart,
               ),
               onPressed:
-                  (isApiProcessing || isConvertingAudio)
+                  (widget.isApiProcessing || widget.isConvertingAudio)
                       ? null
                       : () async {
-                        if (isRecording) {
-                          onStopRecording();
+                        if (widget.isRecording) {
+                          widget.onStopRecording();
                         } else {
-                          onStartRecording();
+                          widget.onStartRecording();
                         }
                       },
             ),
@@ -143,9 +180,11 @@ class GptScreenInputSection extends StatelessWidget {
   Widget _buildSendButton() {
     return GestureDetector(
       onTap:
-          (isApiProcessing || isRecording || isConvertingAudio)
+          (widget.isApiProcessing ||
+                  widget.isRecording ||
+                  widget.isConvertingAudio)
               ? null
-              : onSendMessage,
+              : widget.onSendMessage,
       child: Container(
         height: 35,
         width: 35,
@@ -156,9 +195,11 @@ class GptScreenInputSection extends StatelessWidget {
           ),
         ),
         child: Icon(
-          Icons.send,
+          LucideIcons.arrowUp,
           color:
-              (isApiProcessing || isRecording || isConvertingAudio)
+              (widget.isApiProcessing ||
+                      widget.isRecording ||
+                      widget.isConvertingAudio)
                   ? Colors.grey
                   : Colors.white,
           size: 18,

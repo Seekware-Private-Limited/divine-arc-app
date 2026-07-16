@@ -1,5 +1,6 @@
 import 'package:divine_arc/Utils/custompopup.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class CustomBottomNavBar extends StatefulWidget {
   const CustomBottomNavBar({super.key});
@@ -11,18 +12,11 @@ class CustomBottomNavBar extends StatefulWidget {
 class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
   int _selectedIndex = 0;
 
-  final List<String> _selectedImages = [
-    'assets/images/homeSelected.svg',
-    'assets/images/bookmarkSelected.svg',
-    'assets/images/historySelected.svg',
-    'assets/images/profileSelected.svg',
-  ];
-
-  final List<String> _unselectedImages = [
-    'assets/images/homeUnselected.svg',
-    'assets/images/bookmarkUnselected.svg',
-    'assets/images/historyUnselected.svg',
-    'assets/images/profileUnselected.svg',
+  final List<IconData> _icons = [
+    LucideIcons.house,
+    LucideIcons.bookmark,
+    LucideIcons.history,
+    LucideIcons.user,
   ];
 
   final List<Widget> _screens = [
@@ -83,7 +77,12 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
           body: _screens[_selectedIndex],
 
           bottomNavigationBar: Container(
-            margin: EdgeInsets.fromLTRB(20, 0, 20, 20 + safeBottom),
+            margin: EdgeInsets.fromLTRB(
+              20,
+              0,
+              20,
+              Platform.isAndroid ? 20 + safeBottom : 0,
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(10),
@@ -130,18 +129,19 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            SvgPicture.asset(
-                              isSelected
-                                  ? _selectedImages[index]
-                                  : _unselectedImages[index],
-                              height: 16,
-                              width: 16,
+                            Icon(
+                              _icons[index],
+                              size: 16,
+                              color:
+                                  isSelected
+                                      ? Colors.white
+                                      : Colors.grey.shade700,
                             ),
                             if (isSelected) ...[
                               const SizedBox(width: 8),
                               Text(
                                 labels[index],
-                                style: FTextStyle.tabbarTextStyle,
+                                style: FTextStyle.tabbarTextStyle1,
                               ),
                             ],
                           ],

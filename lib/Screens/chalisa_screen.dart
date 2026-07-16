@@ -4,6 +4,7 @@ import 'package:divine_arc/Utils/FontSizeDropdown.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class ChalisaScreen extends StatefulWidget {
   final String contentId;
@@ -19,11 +20,10 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
   bool isPlaying = false;
 
-  // State variables for fetched API content data
+  // State variables for fetched API content
   bool isLoading = false;
   String title = '';
   String description = '';
-  String contentImage = '';
   String contentAudio = '';
   String currentLanguage = 'en';
 
@@ -50,7 +50,6 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
       currentLanguage = language;
     });
 
-    // Call API On Init State
     BlocProvider.of<HomeFlowBloc>(
       context,
     ).add(ViewContentById(id: widget.contentId, language: currentLanguage));
@@ -76,29 +75,28 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
         backgroundColor: AppColors.GlobalBG,
         body: Stack(
           children: [
+            // Background Image
             Positioned.fill(
               child: Image.asset(
                 'assets/images/bgGitaGPT.png',
                 fit: BoxFit.cover,
               ),
             ),
+
             SafeArea(
               child: BlocListener<HomeFlowBloc, HomeFlowState>(
                 listener: (context, state) {
-                  // Adjust these state classes matching your HomeFlowBloc definitions
                   if (state is ViewContentByIdLoading) {
                     setState(() => isLoading = true);
                   } else if (state is ViewContentByIdLoaded) {
                     setState(() {
                       isLoading = false;
-                      // Mapping JSON values out of response structure safely
                       final data =
                           state.successResponse['data'] ??
                           state.successResponse;
                       title = data['content_name'] ?? 'No Title';
                       description = data['content_description'] ?? '';
-                      contentImage = data['content_image'] ?? '';
-                      contentAudio = data['content_audio'] ?? '';
+                      contentAudio = data['audio'] ?? '';
                     });
                   } else if (state is ViewContentByIdError) {
                     setState(() => isLoading = false);
@@ -122,150 +120,167 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                     );
                   }
                 },
-                child: Stack(
+                child: Column(
                   children: [
+                    // Header
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
-                        vertical: 10,
+                        vertical: 12,
                       ),
-                      child: Column(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          GestureDetector(
+                            onTap: () => Navigator.of(context).pop(),
+                            child: const Icon(
+                              Icons.arrow_back_ios_new,
+                              color: Colors.black,
+                              size: 24,
+                            ),
+                          ),
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context).pop();
+                              LanguageDropdown(
+                                onLanguageChanged: (updatedLanguageCode) {
+                                  setState(() {
+                                    currentLanguage = updatedLanguageCode;
+                                  });
+                                  BlocProvider.of<HomeFlowBloc>(context).add(
+                                    ViewContentById(
+                                      id: widget.contentId,
+                                      language: updatedLanguageCode,
+                                    ),
+                                  );
                                 },
-                                child: const Icon(
-                                  Icons.arrow_back_ios_new,
-                                  color: Colors.black,
-                                  size: 22,
-                                ),
                               ),
-                              Row(
-                                children: [
-                                  LanguageDropdown(
-                                    onLanguageChanged: (updatedLanguageCode) {
-                                      setState(() {
-                                        currentLanguage = updatedLanguageCode;
-                                      });
-                                      // Call API again as the user changes the language
-                                      BlocProvider.of<HomeFlowBloc>(
-                                        context,
-                                      ).add(
-                                        ViewContentById(
-                                          id: widget.contentId,
-                                          language: updatedLanguageCode,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  const SizedBox(width: 8),
-                                  FontSizeDropdown(
-                                    currentScale: _fontSizeMultiplier,
-                                    onFontSizeChanged: (newScale) {
-                                      setState(
-                                        () => _fontSizeMultiplier = newScale,
-                                      );
-                                    },
-                                  ),
-                                ],
+                              const SizedBox(width: 10),
+                              FontSizeDropdown(
+                                currentScale: _fontSizeMultiplier,
+                                onFontSizeChanged: (newScale) {
+                                  setState(
+                                    () => _fontSizeMultiplier = newScale,
+                                  );
+                                },
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 10),
-                          Expanded(
-                            child:
-                                isLoading
-                                    ? Center(
-                                      child:
-                                          LoadingAnimationWidget.staggeredDotsWave(
-                                            color: AppColors.gradientStart,
-                                            size: 50,
-                                          ),
-                                    )
-                                    : SingleChildScrollView(
-                                      child: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.all(16),
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                          border: Border.all(
-                                            color: AppColors.gradientStart,
-                                            width: 1.5,
-                                          ),
-                                          color: Colors.white,
-                                        ),
-                                        child: Column(
-                                          children: [
-                                            ClipOval(
-                                              child:
-                                                  contentImage.isNotEmpty
-                                                      ? Image.network(
-                                                        contentImage,
-                                                        height: 100,
-                                                        width: 100,
-                                                        fit: BoxFit.cover,
-                                                        errorBuilder:
-                                                            (
-                                                              context,
-                                                              error,
-                                                              stackTrace,
-                                                            ) => Image.asset(
-                                                              'assets/images/errorImage.png',
-                                                              height: 100,
-                                                              width: 100,
-                                                              fit: BoxFit.cover,
-                                                            ),
-                                                      )
-                                                      : Image.asset(
-                                                        'assets/images/errorImage.png',
-                                                        height: 100,
-                                                        width: 100,
-                                                        fit: BoxFit.cover,
-                                                      ),
-                                            ),
-                                            const SizedBox(height: 15),
-                                            Text(
-                                              title.isNotEmpty
-                                                  ? title
-                                                  : 'Loading...',
-                                              style: FTextStyle.boldText,
-                                            ),
-                                            const SizedBox(height: 10),
-                                            if (description.isNotEmpty) ...[
-                                              const SizedBox(height: 10),
-                                              Text(
-                                                description,
-                                                style:
-                                                    FTextStyle
-                                                        .defaultTextSemiBold,
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                    ),
                           ),
                         ],
                       ),
                     ),
-                    if (!isLoading && contentAudio.trim().isNotEmpty)
-                      Positioned(
-                        left: 20,
-                        right: 20,
-                        bottom: 30,
-                        child: AudioPlayerWidget(audioPath: contentAudio),
-                      ),
+
+                    // Main Content
+                    Expanded(
+                      child:
+                          isLoading
+                              ? Center(
+                                child: LoadingAnimationWidget.staggeredDotsWave(
+                                  color: AppColors.gradientStart,
+                                  size: 50,
+                                ),
+                              )
+                              : SingleChildScrollView(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+
+                                    color: Colors.white.withOpacity(0.95),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.08),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Title
+                                      Center(
+                                        child: Text(
+                                          title.isNotEmpty
+                                              ? title
+                                              : 'Loading...',
+                                          textAlign: TextAlign.center,
+                                          style: FTextStyle.boldText,
+                                        ),
+                                      ),
+
+                                      const Divider(
+                                        height: 32,
+                                        thickness: 0.5,
+                                        color: Colors.grey,
+                                      ),
+
+                                      // Description using Markdown
+                                      if (description.isNotEmpty)
+                                        MarkdownBody(
+                                          data: description,
+                                          selectable: true,
+                                          styleSheet: MarkdownStyleSheet(
+                                            p: FTextStyle.defaultTextSemiBold
+                                                .copyWith(
+                                                  height: 1.85,
+                                                  color: Colors.black87,
+                                                  fontSize: 14,
+                                                ),
+                                            h1: FTextStyle.boldText.copyWith(
+                                              fontSize: 20,
+                                              color: Colors.black,
+                                            ),
+                                            h2: FTextStyle.boldText.copyWith(
+                                              fontSize: 22,
+                                              color: Colors.black,
+                                            ),
+                                            h3: FTextStyle.boldText.copyWith(
+                                              fontSize: 20,
+                                              color: Colors.black,
+                                            ),
+                                            strong: FTextStyle.boldText
+                                                .copyWith(color: Colors.black),
+                                            em: FTextStyle.defaultTextSemiBold
+                                                .copyWith(
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                            listBullet:
+                                                FTextStyle.defaultTextSemiBold,
+                                            horizontalRuleDecoration:
+                                                const BoxDecoration(
+                                                  border: Border(
+                                                    top: BorderSide(
+                                                      color: Colors.grey,
+                                                      width: 0.8,
+                                                    ),
+                                                  ),
+                                                ),
+                                            blockSpacing: 18,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                    ),
                   ],
                 ),
               ),
             ),
+
+            // Audio Player
+            if (!isLoading && contentAudio.trim().isNotEmpty)
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 10,
+                child: AudioPlayerWidget(audioPath: contentAudio),
+              ),
           ],
         ),
       ),
