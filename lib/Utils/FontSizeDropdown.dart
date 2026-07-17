@@ -20,8 +20,8 @@ class _FontSizeDropdownState extends State<FontSizeDropdown> {
   final List<String> _fontSizes = ['Small', 'Medium', 'Large'];
   final Map<String, double> _sizeMap = {
     'Small': 1.0,
-    'Medium': 1.25,
-    'Large': 1.5,
+    'Medium': 1.15,
+    'Large': 1.35,
   };
 
   final GlobalKey _dropdownKey = GlobalKey();

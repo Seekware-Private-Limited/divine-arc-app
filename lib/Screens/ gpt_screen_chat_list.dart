@@ -1,6 +1,7 @@
 import 'package:divine_arc/Screens/CustomAudioPlayer.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class GptScreenChatList extends StatelessWidget {
   final String? chatId;
@@ -110,7 +111,7 @@ class GptScreenChatList extends StatelessWidget {
       children: [
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(10),
           margin: const EdgeInsets.only(bottom: 20),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -121,7 +122,9 @@ class GptScreenChatList extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildQuestionHeader(context, index, question, isUserAudio),
-              const SizedBox(height: 16),
+              const SizedBox(height: 5),
+              const Divider(color: Colors.grey, thickness: 0.2),
+              const SizedBox(height: 5),
               _buildAnswerSection(
                 context,
                 index,
@@ -133,7 +136,9 @@ class GptScreenChatList extends StatelessWidget {
                 isUserAudio,
                 hasError,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 5),
+              const Divider(color: Colors.grey, thickness: 0.2),
+              const SizedBox(height: 5),
               // Only show action buttons when response is complete and not loading
               if (!isUserAudio &&
                   !isLoading &&
@@ -441,11 +446,13 @@ class GptScreenChatList extends StatelessWidget {
       onTap: () => onRegenerate(index),
       child: Row(
         children: [
-          Image.asset('assets/images/refresh.png', height: 14, width: 14),
+          Icon(LucideIcons.rotateCw, size: 16, color: Colors.black),
           const SizedBox(width: 10),
           Text(
             AppLocalizations.of(context)!.translate('regenerate'),
-            style: FTextStyle.selectedRadioColorText,
+            style: FTextStyle.selectedRadioColorText.copyWith(
+              color: Colors.black,
+            ),
           ),
         ],
       ),
@@ -458,9 +465,11 @@ class GptScreenChatList extends StatelessWidget {
     bool isDisliked,
     int index,
   ) {
+    final bool isInactive = isLiked || isDisliked;
+
     return GestureDetector(
       onTap:
-          (isLiked || isDisliked)
+          isInactive
               ? null
               : () {
                 if (messageId.isNotEmpty) {
@@ -472,13 +481,11 @@ class GptScreenChatList extends StatelessWidget {
                 }
               },
       child: Opacity(
-        opacity: (isLiked || isDisliked) ? 0.5 : 1.0,
-        child: Image.asset(
-          isLiked
-              ? 'assets/images/thumbsuplike.png'
-              : 'assets/images/thumbsupunlike.png',
-          height: 16,
-          width: 16,
+        opacity: isInactive ? 0.5 : 1.0,
+        child: Icon(
+          LucideIcons.thumbsUp,
+          size: 16,
+          color: isLiked ? AppColors.gradientStart : Colors.black,
         ),
       ),
     );
@@ -490,11 +497,11 @@ class GptScreenChatList extends StatelessWidget {
     bool isDisliked,
     int index,
   ) {
-    final double iconSize = isDisliked ? 15 : 17;
+    final bool isInactive = isLiked || isDisliked;
 
     return GestureDetector(
       onTap:
-          (isLiked || isDisliked)
+          isInactive
               ? null
               : () {
                 if (messageId.isNotEmpty) {
@@ -506,13 +513,11 @@ class GptScreenChatList extends StatelessWidget {
                 }
               },
       child: Opacity(
-        opacity: (isLiked || isDisliked) ? 0.5 : 1.0,
-        child: Image.asset(
-          isDisliked
-              ? 'assets/images/thumbsdownlike.png'
-              : 'assets/images/thumbsdownunlike.png',
-          height: iconSize,
-          width: iconSize,
+        opacity: isInactive ? 0.5 : 1.0,
+        child: Icon(
+          LucideIcons.thumbsDown,
+          size: 16,
+          color: isDisliked ? AppColors.gradientStart : Colors.black,
         ),
       ),
     );
@@ -528,18 +533,11 @@ class GptScreenChatList extends StatelessWidget {
           );
         }
       },
-      child: Image.asset('assets/images/unsave.png', height: 16, width: 16),
+      child: Icon(LucideIcons.copy, size: 16, color: Colors.black),
     );
   }
 
   Widget _buildBookmarkButton(String messageId, bool is_bookmarked, int index) {
-    // if (kDebugMode) {
-    //   debugPrint('📚 Bookmark Button Debug:');
-    //   debugPrint('  - Index: $index');
-    //   debugPrint('  - Message ID: $messageId');
-    //   debugPrint('  - is_bookmarked: $is_bookmarked');
-    // }
-
     return GestureDetector(
       onTap: () {
         if (messageId.isNotEmpty) {
@@ -548,7 +546,6 @@ class GptScreenChatList extends StatelessWidget {
               '🎯 Bookmark tapped: ${is_bookmarked ? 'UNBOOKMARK' : 'BOOKMARK'}',
             );
           }
-          // Don't change state optimistically - let the API response handle it
           onBookmark(messageId, index, is_bookmarked);
         } else {
           if (kDebugMode) {
@@ -557,12 +554,10 @@ class GptScreenChatList extends StatelessWidget {
           CommonUtils.showErrorToast('Cannot bookmark: Message ID is missing');
         }
       },
-      child: Image.asset(
-        is_bookmarked
-            ? 'assets/images/bookmark.png'
-            : 'assets/images/unbookmark.png',
-        height: 14,
-        width: 14,
+      child: Icon(
+        LucideIcons.bookmark,
+        size: 16,
+        color: is_bookmarked ? AppColors.gradientStart : Colors.black,
       ),
     );
   }
@@ -622,11 +617,7 @@ class GptScreenChatList extends StatelessWidget {
               );
             }
           },
-          child: Image.asset(
-            'assets/images/unshare.png',
-            height: 14,
-            width: 14,
-          ),
+          child: Icon(LucideIcons.share2, size: 16, color: Colors.black),
         );
       },
     );

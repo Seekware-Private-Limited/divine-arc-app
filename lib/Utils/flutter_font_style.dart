@@ -70,6 +70,12 @@ class FTextStyle {
     fontWeight: FontWeight.w400,
     color: Colors.black,
   );
+  static const tabbarTextStyle1 = TextStyle(
+    fontFamily: 'DM_Sans',
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    color: Colors.white,
+  );
   static const tabbarTextStyle = TextStyle(
     fontFamily: 'DM_Sans',
     fontSize: 12,

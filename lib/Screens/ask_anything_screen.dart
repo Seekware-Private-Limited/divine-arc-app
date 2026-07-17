@@ -324,13 +324,7 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  AppLocalizations.of(
-                                    context,
-                                  )!.translate('bhagwatGeeta'),
-                                  style: FTextStyle.boldText,
-                                ),
+
                                 const SizedBox(height: 16),
 
                                 Container(
@@ -346,7 +340,7 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                     children: [
                                       Padding(
                                         padding: const EdgeInsets.only(
-                                          right: 60,
+                                          right: 40,
                                         ),
                                         child: TextFormField(
                                           controller: askAnythingController,
@@ -367,8 +361,8 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                         ),
                                       ),
                                       Positioned(
-                                        top: 8,
-                                        right: 8,
+                                        top: 14,
+                                        right: 14,
                                         child: Container(
                                           height: 35,
                                           width: 35,
