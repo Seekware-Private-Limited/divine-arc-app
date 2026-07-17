@@ -123,7 +123,7 @@ class GptScreenChatList extends StatelessWidget {
             children: [
               _buildQuestionHeader(context, index, question, isUserAudio),
               const SizedBox(height: 5),
-              const Divider(color: Colors.grey, thickness: 0.2),
+              const Divider(color: Colors.grey, thickness: 0.5),
               const SizedBox(height: 5),
               _buildAnswerSection(
                 context,

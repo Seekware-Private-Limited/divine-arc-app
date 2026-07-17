@@ -131,11 +131,11 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                           children: [
                             Icon(
                               _icons[index],
-                              size: 16,
+                              size: 20,
                               color:
                                   isSelected
                                       ? Colors.white
-                                      : Colors.grey.shade700,
+                                      : AppColors.gradientStart,
                             ),
                             if (isSelected) ...[
                               const SizedBox(width: 8),

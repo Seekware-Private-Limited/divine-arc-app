@@ -179,16 +179,15 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                                   size: 50,
                                 ),
                               )
-                              : SingleChildScrollView(
+                              : Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 20,
                                 ),
                                 child: Container(
                                   width: double.infinity,
-                                  padding: const EdgeInsets.all(10),
+                                  padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(16),
-
                                     color: Colors.white.withOpacity(0.95),
                                     boxShadow: [
                                       BoxShadow(
@@ -202,7 +201,7 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      // Title
+                                      // Fixed Title inside the container
                                       Center(
                                         child: Text(
                                           title.isNotEmpty
@@ -219,48 +218,63 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                                         color: Colors.grey,
                                       ),
 
-                                      // Description using Markdown
+                                      // Scrollable Text Section
                                       if (description.isNotEmpty)
-                                        MarkdownBody(
-                                          data: description,
-                                          selectable: true,
-                                          styleSheet: MarkdownStyleSheet(
-                                            p: FTextStyle.defaultTextSemiBold
-                                                .copyWith(
-                                                  height: 1.85,
-                                                  color: Colors.black87,
-                                                  fontSize: 14,
-                                                ),
-                                            h1: FTextStyle.boldText.copyWith(
-                                              fontSize: 20,
-                                              color: Colors.black,
-                                            ),
-                                            h2: FTextStyle.boldText.copyWith(
-                                              fontSize: 22,
-                                              color: Colors.black,
-                                            ),
-                                            h3: FTextStyle.boldText.copyWith(
-                                              fontSize: 20,
-                                              color: Colors.black,
-                                            ),
-                                            strong: FTextStyle.boldText
-                                                .copyWith(color: Colors.black),
-                                            em: FTextStyle.defaultTextSemiBold
-                                                .copyWith(
-                                                  fontStyle: FontStyle.italic,
-                                                ),
-                                            listBullet:
-                                                FTextStyle.defaultTextSemiBold,
-                                            horizontalRuleDecoration:
-                                                const BoxDecoration(
-                                                  border: Border(
-                                                    top: BorderSide(
-                                                      color: Colors.grey,
-                                                      width: 0.8,
+                                        Expanded(
+                                          child: SingleChildScrollView(
+                                            physics:
+                                                const BouncingScrollPhysics(),
+                                            child: MarkdownBody(
+                                              data: description,
+                                              selectable: true,
+                                              styleSheet: MarkdownStyleSheet(
+                                                p: FTextStyle
+                                                    .defaultTextSemiBold
+                                                    .copyWith(
+                                                      height: 1.85,
+                                                      color: Colors.black87,
+                                                      fontSize: 14,
                                                     ),
-                                                  ),
-                                                ),
-                                            blockSpacing: 18,
+                                                h1: FTextStyle.boldText
+                                                    .copyWith(
+                                                      fontSize: 20,
+                                                      color: Colors.black,
+                                                    ),
+                                                h2: FTextStyle.boldText
+                                                    .copyWith(
+                                                      fontSize: 22,
+                                                      color: Colors.black,
+                                                    ),
+                                                h3: FTextStyle.boldText
+                                                    .copyWith(
+                                                      fontSize: 20,
+                                                      color: Colors.black,
+                                                    ),
+                                                strong: FTextStyle.boldText
+                                                    .copyWith(
+                                                      color: Colors.black,
+                                                    ),
+                                                em: FTextStyle
+                                                    .defaultTextSemiBold
+                                                    .copyWith(
+                                                      fontStyle:
+                                                          FontStyle.italic,
+                                                    ),
+                                                listBullet:
+                                                    FTextStyle
+                                                        .defaultTextSemiBold,
+                                                horizontalRuleDecoration:
+                                                    const BoxDecoration(
+                                                      border: Border(
+                                                        top: BorderSide(
+                                                          color: Colors.grey,
+                                                          width: 0.8,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                blockSpacing: 18,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                     ],
@@ -268,12 +282,17 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                                 ),
                               ),
                     ),
+
+                    // Adds safety spacing at the bottom of the column if audio is present
+                    // to prevent the white layout box from slipping under the audio player bar.
+                    if (!isLoading && contentAudio.trim().isNotEmpty)
+                      const SizedBox(height: 90),
                   ],
                 ),
               ),
             ),
 
-            // Audio Player
+            // Audio Player Component
             if (!isLoading && contentAudio.trim().isNotEmpty)
               Positioned(
                 left: 20,
