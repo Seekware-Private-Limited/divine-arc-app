@@ -295,72 +295,169 @@ class _HomeScreenState extends State<HomeScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(18),
                               border: Border.all(
-                                color: AppColors.gradientStart,
-                                width: 1.5,
+                                color: AppColors.gradientStart.withValues(
+                                  alpha: 0.4,
+                                ),
+                                width: 1,
                               ),
-                              color: Colors.white,
+                              color: const Color(0xFFFFFDF9),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.gradientStart.withValues(
+                                    alpha: 0.14,
+                                  ),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
                             ),
                             child: Container(
                               height: 180,
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: AppColors.GlobalBG,
+                                borderRadius: BorderRadius.circular(16),
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Colors.white,
+                                    AppColors.GlobalBG,
+                                    AppColors.gradientStart.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                  ],
+                                ),
                               ),
-                              child: Stack(
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: Opacity(
-                                      opacity: 0.2,
-                                      child: Image.asset(
-                                        'assets/images/homeImage.png',
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                    ),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        if (isLoading)
-                                          Center(
-                                            child:
-                                                LoadingAnimationWidget.staggeredDotsWave(
-                                                  color:
-                                                      AppColors.gradientStart,
-                                                  size: 50,
-                                                ),
-                                          )
-                                        else
-                                          Text(
-                                            quoteResponse.isNotEmpty
-                                                ? '" ${_extractQuoteOnly(quoteResponse)} "'
-                                                : AppLocalizations.of(
-                                                  context,
-                                                )!.translate('dummyText'),
-                                            style: FTextStyle.defaultText
-                                                .copyWith(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        const SizedBox(height: 20),
-                                        Container(
-                                          height: 45,
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(
-                                              8,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    if (isLoading)
+                                      Center(
+                                        child:
+                                            LoadingAnimationWidget.staggeredDotsWave(
+                                              color: AppColors.gradientStart,
+                                              size: 50,
                                             ),
+                                      )
+                                    else
+                                      Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          Positioned(
+                                            top: -4,
+                                            right: -4,
+                                            child: SizedBox(
+                                              height: 30,
+                                              child: OverflowBox(
+                                                maxHeight: 56,
+                                                alignment: Alignment.center,
+                                                child: Text(
+                                                  '”',
+                                                  style: TextStyle(
+                                                    fontSize: 46,
+                                                    fontWeight: FontWeight.w900,
+                                                    color: AppColors
+                                                        .gradientStart
+                                                        .withValues(
+                                                          alpha: 0.35,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(
+                                            width: double.infinity,
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  AppLocalizations.of(context)!
+                                                      .translate(
+                                                        'quoteOfTheDay',
+                                                      )
+                                                      .toUpperCase(),
+                                                  style: FTextStyle.defaultText
+                                                      .copyWith(
+                                                        fontSize: 11,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        letterSpacing: 1.2,
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                ),
+                                                const SizedBox(height: 10),
+                                                Text(
+                                                  quoteResponse.isNotEmpty
+                                                      ? _extractQuoteOnly(
+                                                        quoteResponse,
+                                                      )
+                                                      : AppLocalizations.of(
+                                                        context,
+                                                      )!.translate('dummyText'),
+                                                  style: FTextStyle.defaultText
+                                                      .copyWith(
+                                                        fontSize: 17,
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        height: 1.35,
+                                                      ),
+                                                  textAlign: TextAlign.left,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    const SizedBox(height: 20),
+                                    Material(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: InkWell(
+                                        borderRadius: BorderRadius.circular(12),
+                                        onTap: () async {
+                                          await _analytics.logEvent(
+                                            name:
+                                                'AskAnythingTextFieldTappedOnHomeScreen',
+                                          );
+                                          if (!mounted) return;
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (context) =>
+                                                      AskAnythingScreen(),
+                                            ),
+                                          );
+                                        },
+                                        child: Container(
+                                          constraints: const BoxConstraints(
+                                            minHeight: 48,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                            border: Border.all(
+                                              color: AppColors.gradientStart
+                                                  .withValues(alpha: 0.3),
+                                              width: 1.2,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: AppColors.gradientStart
+                                                    .withValues(alpha: 0.12),
+                                                blurRadius: 12,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
                                           ),
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 16,
@@ -374,45 +471,40 @@ class _HomeScreenState extends State<HomeScreen> {
                                               ),
                                               const SizedBox(width: 8),
                                               Expanded(
-                                                child: TextField(
-                                                  controller: searchController,
-                                                  textInputAction:
-                                                      TextInputAction.search,
-                                                  onTap: () async {
-                                                    await _analytics.logEvent(
-                                                      name:
-                                                          'AskAnythingTextFieldTappedOnHomeScreen',
-                                                    );
-                                                    Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder:
-                                                            (context) =>
-                                                                AskAnythingScreen(),
-                                                      ),
-                                                    );
-                                                  },
-                                                  readOnly: true,
-                                                  decoration: InputDecoration(
-                                                    hintText:
-                                                        AppLocalizations.of(
-                                                          context,
-                                                        )!.translate(
-                                                          'askAnything',
-                                                        ),
-                                                    hintStyle:
-                                                        FTextStyle.defaultText,
-                                                    border: InputBorder.none,
+                                                child: IgnorePointer(
+                                                  child: TextField(
+                                                    controller:
+                                                        searchController,
+                                                    readOnly: true,
+                                                    decoration: InputDecoration(
+                                                      hintText:
+                                                          AppLocalizations.of(
+                                                            context,
+                                                          )!.translate(
+                                                            'askAnything',
+                                                          ),
+                                                      hintStyle:
+                                                          FTextStyle
+                                                              .defaultText,
+                                                      border: InputBorder.none,
+                                                      isDense: true,
+                                                    ),
                                                   ),
                                                 ),
+                                              ),
+                                              Icon(
+                                                Icons.chevron_right,
+                                                size: 20,
+                                                color: AppColors.gradientStart
+                                                    .withValues(alpha: 0.6),
                                               ),
                                             ],
                                           ),
                                         ),
-                                      ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -445,137 +537,165 @@ class _HomeScreenState extends State<HomeScreen> {
 
                                         return Padding(
                                           padding: const EdgeInsets.only(
-                                            bottom: 15,
+                                            bottom: 14,
                                           ),
-                                          child: GestureDetector(
-                                            onTap: () async {
-                                              await _analytics.logEvent(
-                                                name:
-                                                    'ChalisaViewTappedOnHomeScreen',
-                                              );
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder:
-                                                      (context) =>
-                                                          ChalisaScreen(
-                                                            contentId:
-                                                                contentId,
-                                                          ),
+                                          child: Material(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              14,
+                                            ),
+                                            child: InkWell(
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              onTap: () async {
+                                                await _analytics.logEvent(
+                                                  name:
+                                                      'ChalisaViewTappedOnHomeScreen',
+                                                );
+                                                if (!mounted) return;
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder:
+                                                        (context) =>
+                                                            ChalisaScreen(
+                                                              contentId:
+                                                                  contentId,
+                                                            ),
+                                                  ),
+                                                );
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.all(
+                                                  12,
                                                 ),
-                                              );
-                                            },
-                                            child: Container(
-                                              height: 100,
-                                              padding: const EdgeInsets.all(10),
-                                              decoration: BoxDecoration(
-                                                color: AppColors.GlobalBG,
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  ClipRRect(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          8,
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(14),
+                                                  border: Border.all(
+                                                    color: AppColors
+                                                        .gradientStart
+                                                        .withValues(
+                                                          alpha: 0.12,
                                                         ),
-                                                    child: Image.network(
-                                                      contentImage,
-                                                      height: 80,
-                                                      width: 80,
-                                                      fit: BoxFit.cover,
-                                                      errorBuilder:
-                                                          (
-                                                            context,
-                                                            error,
-                                                            stackTrace,
-                                                          ) => Image.asset(
-                                                            'assets/images/errorImage.png',
-                                                            height: 80,
-                                                            width: 80,
-                                                            fit: BoxFit.cover,
+                                                    width: 1,
+                                                  ),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: AppColors
+                                                          .gradientStart
+                                                          .withValues(
+                                                            alpha: 0.08,
                                                           ),
+                                                      blurRadius: 12,
+                                                      offset: const Offset(
+                                                        0,
+                                                        4,
+                                                      ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(width: 10),
-                                                  Expanded(
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .center,
-                                                      children: [
-                                                        Text(
-                                                          contentName,
-                                                          style: FTextStyle
-                                                              .defaultText
-                                                              .copyWith(
-                                                                fontSize: 14,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                              ),
-                                                          maxLines: 1,
-                                                        ),
-                                                        const SizedBox(
-                                                          height: 10,
-                                                        ),
-                                                        Text(
-                                                          contentDescription,
-                                                          style: FTextStyle
-                                                              .defaultText
-                                                              .copyWith(
-                                                                fontSize: 12,
-                                                              ),
-                                                          maxLines: 2,
-                                                          overflow:
-                                                              TextOverflow
-                                                                  .ellipsis,
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                  const SizedBox(width: 10),
-                                                  GestureDetector(
-                                                    onTap: () {
-                                                      Navigator.push(
-                                                        context,
-                                                        MaterialPageRoute(
-                                                          builder:
-                                                              (
-                                                                context,
-                                                              ) => ChalisaScreen(
-                                                                contentId:
-                                                                    contentId,
-                                                              ),
-                                                        ),
-                                                      );
-                                                    },
-                                                    child: Container(
-                                                      height: 30,
-                                                      width: 30,
-
-                                                      decoration: BoxDecoration(
-                                                        color:
-                                                            AppColors
-                                                                .gradientStart,
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              5,
+                                                  ],
+                                                ),
+                                                child: Row(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.center,
+                                                  children: [
+                                                    ClipRRect(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            10,
+                                                          ),
+                                                      child: Image.network(
+                                                        contentImage,
+                                                        height: 72,
+                                                        width: 72,
+                                                        fit: BoxFit.cover,
+                                                        errorBuilder:
+                                                            (
+                                                              context,
+                                                              error,
+                                                              stackTrace,
+                                                            ) => Image.asset(
+                                                              'assets/images/errorImage.png',
+                                                              height: 72,
+                                                              width: 72,
+                                                              fit: BoxFit.cover,
                                                             ),
                                                       ),
-                                                      child: Icon(
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
+                                                        children: [
+                                                          Text(
+                                                            contentName,
+                                                            style: FTextStyle
+                                                                .defaultText
+                                                                .copyWith(
+                                                                  fontSize: 15,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w700,
+                                                                ),
+                                                            maxLines: 1,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                          const SizedBox(
+                                                            height: 6,
+                                                          ),
+                                                          Text(
+                                                            contentDescription,
+                                                            style: FTextStyle
+                                                                .defaultText
+                                                                .copyWith(
+                                                                  fontSize:
+                                                                      12.5,
+                                                                  color:
+                                                                      Colors
+                                                                          .grey[600],
+                                                                  height: 1.3,
+                                                                ),
+                                                            maxLines: 2,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 10),
+                                                    Container(
+                                                      height: 34,
+                                                      width: 34,
+                                                      decoration: BoxDecoration(
+                                                        gradient: LinearGradient(
+                                                          colors: [
+                                                            AppColors
+                                                                .gradientStart,
+                                                            AppColors
+                                                                .gradientEnd,
+                                                          ],
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius.circular(
+                                                              9,
+                                                            ),
+                                                      ),
+                                                      child: const Icon(
                                                         LucideIcons
                                                             .arrowUpRight,
-                                                        size: 20,
+                                                        size: 18,
                                                         color: Colors.white,
                                                       ),
                                                     ),
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               ),
                                             ),
                                           ),

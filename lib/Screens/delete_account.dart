@@ -160,17 +160,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: const Icon(
-                  Icons.arrow_back_ios_new,
-                  color: Colors.black,
-                  size: 22,
-                ),
-              ),
-              const LanguageDropdown(),
-            ],
+            children: [const CustomBackButton(), const LanguageDropdown()],
           ),
           const SizedBox(height: 40),
           Text(

@@ -104,16 +104,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: Icon(
-                                    Icons.arrow_back_ios_new,
-                                    color: Colors.black,
-                                    size: 22,
-                                  ),
-                                ),
+                                const CustomBackButton(),
                                 const LanguageDropdown(),
                               ],
                             ),

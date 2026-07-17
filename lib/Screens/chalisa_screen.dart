@@ -131,14 +131,7 @@ class _ChalisaScreenState extends State<ChalisaScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          GestureDetector(
-                            onTap: () => Navigator.of(context).pop(),
-                            child: const Icon(
-                              Icons.arrow_back_ios_new,
-                              color: Colors.black,
-                              size: 24,
-                            ),
-                          ),
+                          const CustomBackButton(),
                           Row(
                             children: [
                               LanguageDropdown(

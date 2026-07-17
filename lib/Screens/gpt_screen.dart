@@ -382,14 +382,7 @@ class _GptScreenState extends State<GptScreen>
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              GestureDetector(
-                                onTap: () => Navigator.of(context).pop(),
-                                child: const Icon(
-                                  Icons.arrow_back_ios_new,
-                                  color: Colors.black,
-                                  size: 22,
-                                ),
-                              ),
+                              const CustomBackButton(),
                               const LanguageDropdown(),
                             ],
                           ),
