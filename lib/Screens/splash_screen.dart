@@ -18,8 +18,9 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   final Upgrader upgrader = Upgrader();
 
-  late VideoPlayerController _videoController;
+  VideoPlayerController? _videoController;
   bool _hasNavigated = false;
+  Timer? _splashSafetyTimer;
 
   @override
   void initState() {
@@ -27,33 +28,58 @@ class _SplashScreenState extends State<SplashScreen> {
 
     _setupForegroundNotification();
     _initVideoAndApp();
-  }
 
-  Future<void> _initVideoAndApp() async {
-    _videoController = VideoPlayerController.asset(
-      'assets/videos/splash_video.mp4',
-    );
-
-    await _videoController.initialize();
-
-    _videoController.setLooping(false);
-
-    _videoController.addListener(() {
-      if (_videoController.value.isInitialized &&
-          _videoController.value.position >= _videoController.value.duration &&
-          !_hasNavigated) {
+    // Absolute safety net: navigation must never depend solely on the video
+    // subsystem succeeding. If video init/playback hangs or throws on a
+    // device/OS combo we haven't seen, this guarantees the app still moves
+    // past the splash screen instead of sitting frozen (which App Store
+    // review — rightly — treats as indistinguishable from a crash).
+    _splashSafetyTimer = Timer(const Duration(seconds: 8), () {
+      if (!_hasNavigated) {
         _hasNavigated = true;
         _navigateUser();
       }
     });
+  }
 
-    if (mounted) {
-      setState(() {});
+  Future<void> _initVideoAndApp() async {
+    try {
+      final controller = VideoPlayerController.asset(
+        'assets/videos/splash_video.mp4',
+      );
+      _videoController = controller;
+
+      await controller.initialize().timeout(const Duration(seconds: 4));
+
+      controller.setLooping(false);
+
+      controller.addListener(() {
+        if (controller.value.isInitialized &&
+            controller.value.position >= controller.value.duration &&
+            !_hasNavigated) {
+          _hasNavigated = true;
+          _navigateUser();
+        }
+      });
+
+      if (mounted) {
+        setState(() {});
+      }
+
+      unawaited(controller.play());
+    } catch (e, stackTrace) {
+      debugPrint('Splash video failed to init or play: $e\n$stackTrace');
+      if (!_hasNavigated) {
+        _hasNavigated = true;
+        _navigateUser();
+      }
     }
 
-    _videoController.play();
-
-    await upgrader.initialize();
+    try {
+      await upgrader.initialize();
+    } catch (e) {
+      debugPrint('Upgrader init failed: $e');
+    }
     await _registerFcmToken();
   }
 
@@ -235,12 +261,15 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   void dispose() {
-    _videoController.dispose();
+    _splashSafetyTimer?.cancel();
+    _videoController?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final controller = _videoController;
+
     return MediaQuery(
       data: MediaQuery.of(
         context,
@@ -248,14 +277,14 @@ class _SplashScreenState extends State<SplashScreen> {
       child: Scaffold(
         backgroundColor: Colors.black,
         body:
-            _videoController.value.isInitialized
+            controller != null && controller.value.isInitialized
                 ? SizedBox.expand(
                   child: FittedBox(
                     fit: BoxFit.contain,
                     child: SizedBox(
-                      width: _videoController.value.size.width,
-                      height: _videoController.value.size.height,
-                      child: VideoPlayer(_videoController),
+                      width: controller.value.size.width,
+                      height: controller.value.size.height,
+                      child: VideoPlayer(controller),
                     ),
                   ),
                 )
