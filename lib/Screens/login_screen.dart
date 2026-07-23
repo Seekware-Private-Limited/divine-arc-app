@@ -90,9 +90,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             isLoading = true;
                           });
                         } else if (state is GoogleLoginSuccess) {
-                          setState(() {
-                            isLoading = false;
-                          });
                           BlocProvider.of<AuthFlowBloc>(context).add(
                             SocialLoginEventHandler(
                               socialId: state.id,
@@ -107,9 +104,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           });
                           CommonUtils.showErrorToast(state.errorMessage);
                         } else if (state is FacebookLoginSuccess) {
-                          setState(() {
-                            isLoading = false;
-                          });
                           BlocProvider.of<AuthFlowBloc>(context).add(
                             SocialLoginEventHandler(
                               socialId: state.id,
@@ -884,6 +878,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+              if (isLoading)
+                Container(
+                  color: Colors.black.withValues(alpha: .5),
+                  child: Center(
+                    child: LoadingAnimationWidget.staggeredDotsWave(
+                      color: AppColors.gradientStart,
+                      size: 50,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
