@@ -46,7 +46,7 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         await FacebookAuth.instance.logOut();
 
         final LoginResult result = await FacebookAuth.instance.login(
-          permissions: ['email', 'public_profile'],
+          permissions: const ['email', 'public_profile'],
         );
 
         if (result.status != LoginStatus.success) {
@@ -56,6 +56,10 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
           return;
         }
 
+        // Fetch profile directly from Facebook Graph API
+        final Map<String, dynamic> userData = await FacebookAuth.instance
+            .getUserData(fields: "id,name,email,picture.width(300)");
+
         final OAuthCredential credential = FacebookAuthProvider.credential(
           result.accessToken!.tokenString,
         );
@@ -63,26 +67,36 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         final UserCredential userCredential = await FirebaseAuth.instance
             .signInWithCredential(credential);
 
-        final User? user = userCredential.user;
+        final User? firebaseUser = userCredential.user;
 
-        if (user == null) {
+        if (firebaseUser == null) {
           emit(FacebookLoginFailure("Unable to fetch Facebook user."));
           return;
         }
 
-        emit(
-          FacebookLoginSuccess(
-            user.displayName ?? "",
-            user.email ?? "",
-            user.photoURL ?? "",
-            user.uid,
-          ),
-        );
+        final String facebookId =
+            userData["id"]?.toString() ?? firebaseUser.uid;
 
-        debugPrint("Facebook UID: ${user.uid}");
-        debugPrint("Facebook Name: ${user.displayName}");
-        debugPrint("Facebook Email: ${user.email}");
-        debugPrint("Facebook Photo: ${user.photoURL}");
+        final String name =
+            userData["name"]?.toString() ?? firebaseUser.displayName ?? "";
+
+        final String email =
+            userData["email"]?.toString() ?? firebaseUser.email ?? "";
+
+        final String photo =
+            userData["picture"]?["data"]?["url"]?.toString() ??
+            firebaseUser.photoURL ??
+            "";
+
+        debugPrint("Facebook Graph API:");
+        debugPrint(userData.toString());
+
+        debugPrint("Facebook UID: $facebookId");
+        debugPrint("Facebook Name: $name");
+        debugPrint("Facebook Email: $email");
+        debugPrint("Facebook Photo: $photo");
+
+        emit(FacebookLoginSuccess(name, email, photo, facebookId));
       } on FirebaseAuthException catch (e) {
         emit(FacebookLoginFailure(e.message ?? e.code));
       } catch (e) {
@@ -339,11 +353,15 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
 
       final requestUrl = Uri.parse(APIEndPoints.socialLogin);
       final Map<String, dynamic> requestBody = {
-        "email": event.email,
         "name": event.name,
         "social_id": event.socialId,
         "social_type": event.socialType,
       };
+
+      // Add email only if it exists
+      if (event.email.trim().isNotEmpty) {
+        requestBody["email"] = event.email.trim();
+      }
 
       print("Login API Request URL: $requestUrl");
       print("Login API Request Body: ${jsonEncode(requestBody)}");

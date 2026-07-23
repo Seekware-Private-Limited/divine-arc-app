@@ -5,6 +5,7 @@ import 'package:divine_arc/Screens/splash_screen.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/notification_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -17,7 +18,8 @@ Future<void> main() async {
       };
 
       WidgetsFlutterBinding.ensureInitialized();
-
+      // Load environment variables
+      await dotenv.load(fileName: ".env");
       // Firebase (splash screen listens on FirebaseMessaging.onMessage immediately)
       // and Prefs (PrefUtils is read synchronously by splash/deep-link handling)
       // both have to be ready before the first frame — everything else below is
@@ -107,8 +109,16 @@ class _MyAppState extends State<MyApp> {
     // The custom-scheme form puts the route name in the host, not pathSegments —
     // reading pathSegments.first unconditionally misses it.
     final bool isCustomScheme = uri.scheme == 'divinearc';
-    final String? route = isCustomScheme ? uri.host : (uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null);
-    final List<String> idSegments = isCustomScheme ? uri.pathSegments : (uri.pathSegments.length > 1 ? uri.pathSegments.sublist(1) : const []);
+    final String? route =
+        isCustomScheme
+            ? uri.host
+            : (uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null);
+    final List<String> idSegments =
+        isCustomScheme
+            ? uri.pathSegments
+            : (uri.pathSegments.length > 1
+                ? uri.pathSegments.sublist(1)
+                : const []);
 
     if (route != 'chat') {
       return;
