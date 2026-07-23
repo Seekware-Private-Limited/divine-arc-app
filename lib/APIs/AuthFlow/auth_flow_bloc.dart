@@ -41,34 +41,54 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
     // Facebook Login Bloc
     on<FacebookLoginEventHandler>((event, emit) async {
       emit(FacebookLoginLoading());
+
       try {
-        final LoginResult result = await FacebookAuth.instance.login();
+        await FacebookAuth.instance.logOut();
 
-        if (result.status == LoginStatus.success) {
-          final userData = await FacebookAuth.instance.getUserData();
+        final LoginResult result = await FacebookAuth.instance.login(
+          permissions: ['email', 'public_profile'],
+        );
 
-          final String name = userData['name'] ?? '';
-          final String email = userData['email'] ?? '';
-          final String profileImage = userData['picture']['data']['url'] ?? '';
-          final String id = userData['id'] ?? '';
-
-          emit(FacebookLoginSuccess(name, email, profileImage, id));
-
-          print('Facebook Name: $name');
-          print('Facebook Email: $email');
-          print('Facebook Picture: $profileImage');
-          print('Facebook ID: $id');
-        } else {
-          emit(FacebookLoginFailure(result.message ?? 'Login failed'));
+        if (result.status != LoginStatus.success) {
+          emit(
+            FacebookLoginFailure(result.message ?? "Facebook login cancelled"),
+          );
+          return;
         }
+
+        final OAuthCredential credential = FacebookAuthProvider.credential(
+          result.accessToken!.tokenString,
+        );
+
+        final UserCredential userCredential = await FirebaseAuth.instance
+            .signInWithCredential(credential);
+
+        final User? user = userCredential.user;
+
+        if (user == null) {
+          emit(FacebookLoginFailure("Unable to fetch Facebook user."));
+          return;
+        }
+
+        emit(
+          FacebookLoginSuccess(
+            user.displayName ?? "",
+            user.email ?? "",
+            user.photoURL ?? "",
+            user.uid,
+          ),
+        );
+
+        debugPrint("Facebook UID: ${user.uid}");
+        debugPrint("Facebook Name: ${user.displayName}");
+        debugPrint("Facebook Email: ${user.email}");
+        debugPrint("Facebook Photo: ${user.photoURL}");
+      } on FirebaseAuthException catch (e) {
+        emit(FacebookLoginFailure(e.message ?? e.code));
       } catch (e) {
-        if (kDebugMode) {
-          print("Facebook login error: $e");
-        }
         emit(FacebookLoginFailure(e.toString()));
       }
     });
-
     // SignUp Bloc
     on<SignupEventHandler>((event, emit) async {
       if (!await ConnectivityService.isConnected()) {

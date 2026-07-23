@@ -103,94 +103,79 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
               children: List.generate(labels.length, (index) {
                 final bool isSelected = _selectedIndex == index;
 
-                return Material(
-                  color: Colors.transparent,
+                return InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: () {
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  onTap: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-                      if (_selectedIndex == index) return;
+                    if (_selectedIndex == index) return;
 
-                      setState(() {
-                        _selectedIndex = index;
-                      });
-                    },
-                    child: SizedBox(
-                      height: 55,
-                      width: isSelected ? null : 60,
-                      child: Center(
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeOut,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isSelected ? 16 : 0,
-                            vertical: 10,
-                          ),
-                          decoration:
-                              isSelected
-                                  ? BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        AppColors.gradientStart,
-                                        AppColors.gradientEnd,
-                                      ],
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: AppColors.gradientStart
-                                            .withValues(alpha: 0.35),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                    ],
-                                  )
-                                  : null,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _icons[index],
-                                size: 20,
-                                color:
-                                    isSelected
-                                        ? Colors.white
-                                        : AppColors.gradientStart,
-                                shadows:
-                                    isSelected
-                                        ? [
-                                          Shadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.25,
-                                            ),
-                                            blurRadius: 3,
-                                            offset: const Offset(0, 1),
-                                          ),
-                                        ]
-                                        : null,
-                              ),
-                              if (isSelected) ...[
-                                const SizedBox(width: 8),
-                                Text(
-                                  labels[index],
-                                  style: FTextStyle.tabbarTextStyle1.copyWith(
-                                    fontSize: 14,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.25,
-                                        ),
-                                        blurRadius: 3,
-                                        offset: const Offset(0, 1),
-                                      ),
+                    setState(() {
+                      _selectedIndex = index;
+                    });
+                  },
+                  child: SizedBox(
+                    height: 55,
+                    width: isSelected ? null : 60,
+                    child: Center(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOut,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isSelected ? 10 : 0,
+                          vertical: 10,
+                        ),
+                        decoration:
+                            isSelected
+                                ? BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.gradientStart,
+                                      AppColors.gradientEnd,
                                     ],
                                   ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.gradientStart.withValues(
+                                        alpha: 0.35,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                )
+                                : null,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _icons[index],
+                              size: 20,
+                              color:
+                                  isSelected
+                                      ? Colors.white
+                                      : AppColors.gradientStart,
+                            ),
+                            if (isSelected) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                labels[index],
+                                style: FTextStyle.tabbarTextStyle1.copyWith(
+                                  fontSize: 13,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                      blurRadius: 3,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ],
-                          ),
+                          ],
                         ),
                       ),
                     ),

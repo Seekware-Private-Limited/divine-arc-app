@@ -120,13 +120,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           setState(() {
                             isLoading = false;
                           });
-                          CommonUtils.showSuccessToast(
-                            'Logged In As - ${state.name}',
-                          );
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CustomBottomNavBar(),
+                          BlocProvider.of<AuthFlowBloc>(context).add(
+                            SocialLoginEventHandler(
+                              socialId: state.id,
+                              socialType: 'facebook',
+                              email: state.email,
+                              name: state.name,
                             ),
                           );
                         } else if (state is FacebookLoginFailure) {

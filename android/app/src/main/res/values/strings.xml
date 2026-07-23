@@ -1,9 +1,7 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="facebook_app_id">1782497495950827</string>
-    <string name="fb_login_protocol_scheme">fb1782497495950827</string>
-    <string name="facebook_client_token">78e7849e3c6656ab85bf02b5b9165af5</string>
+    <string name="facebook_app_id">620269016650864</string>
+    <string name="fb_login_protocol_scheme">fb620269016650864</string>
+    <string name="facebook_client_token">9b05c6ca97546e8c4135a69494f49cf9</string>
     <string name="app_name">Divine ARC</string>
 </resources>
-
-

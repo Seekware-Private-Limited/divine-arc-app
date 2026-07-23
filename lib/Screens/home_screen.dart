@@ -1,8 +1,9 @@
 import 'package:divine_arc/Screens/chalisa_screen.dart';
+import 'package:divine_arc/Screens/prayer_list_tile.dart';
+import 'package:divine_arc/Screens/quote_of_the_day.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:rate_my_app/rate_my_app.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -39,6 +40,35 @@ class _HomeScreenState extends State<HomeScreen> {
     final withoutCitation = rawResponse.split('—').first;
     final withoutNewlines = withoutCitation.split('\n').first;
     return withoutNewlines.trim();
+  }
+
+  List<dynamic> _sortPrayersByPriority(List<dynamic> rawList) {
+    int getPriorityScore(String name) {
+      final title = name.toLowerCase().trim();
+
+      if (title.contains('hanuman chalisa')) return 1;
+      if (title.contains('shiv') && title.contains('aarti')) return 2;
+      if (title.contains('ganesh') && title.contains('aarti')) return 3;
+      if (title.contains('durga chalisa')) return 4;
+
+      return 5;
+    }
+
+    final sortedList = List<dynamic>.from(rawList);
+    sortedList.sort((a, b) {
+      final nameA = a['content_name'] ?? '';
+      final nameB = b['content_name'] ?? '';
+
+      final priorityA = getPriorityScore(nameA);
+      final priorityB = getPriorityScore(nameB);
+
+      if (priorityA != priorityB) {
+        return priorityA.compareTo(priorityB);
+      }
+      return nameA.compareTo(nameB);
+    });
+
+    return sortedList;
   }
 
   Future<void> _initRateMyApp() async {
@@ -90,7 +120,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
-
                 Text(
                   AppLocalizations.of(
                     context,
@@ -101,7 +130,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -155,7 +183,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
-
                 TextButton(
                   onPressed: () {
                     _rateMyApp.callEvent(RateMyAppEventType.noButtonPressed);
@@ -233,7 +260,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         setState(() {
                           isContentLoading = false;
                           allPrayers.clear();
-                          allPrayers.addAll(state.successResponse['data']);
+                          final rawData = state.successResponse['data'] ?? [];
+                          allPrayers.addAll(_sortPrayersByPriority(rawData));
                         });
                       } else if (state is ViewAllContentError) {
                         setState(() => isContentLoading = false);
@@ -264,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
-                        vertical: 16,
+                        vertical: 10,
                       ),
                       child: Column(
                         children: [
@@ -291,222 +319,22 @@ class _HomeScreenState extends State<HomeScreen> {
                             ],
                           ),
                           const SizedBox(height: 20),
-
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(18),
-                              border: Border.all(
-                                color: AppColors.gradientStart.withValues(
-                                  alpha: 0.4,
+                          QuoteOfTheDayCard(
+                            isLoading: isLoading,
+                            quoteText: _extractQuoteOnly(quoteResponse),
+                            searchController: searchController,
+                            onSearchTap: () async {
+                              await _analytics.logEvent(
+                                name: 'AskAnythingTextFieldTappedOnHomeScreen',
+                              );
+                              if (!mounted) return;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AskAnythingScreen(),
                                 ),
-                                width: 1,
-                              ),
-                              color: const Color(0xFFFFFDF9),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.gradientStart.withValues(
-                                    alpha: 0.14,
-                                  ),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: Container(
-                              height: 180,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(16),
-                                gradient: LinearGradient(
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                  colors: [
-                                    Colors.white,
-                                    AppColors.GlobalBG,
-                                    AppColors.gradientStart.withValues(
-                                      alpha: 0.3,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                ),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (isLoading)
-                                      Center(
-                                        child:
-                                            LoadingAnimationWidget.staggeredDotsWave(
-                                              color: AppColors.gradientStart,
-                                              size: 50,
-                                            ),
-                                      )
-                                    else
-                                      Stack(
-                                        clipBehavior: Clip.none,
-                                        children: [
-                                          Positioned(
-                                            top: -4,
-                                            right: -4,
-                                            child: SizedBox(
-                                              height: 30,
-                                              child: OverflowBox(
-                                                maxHeight: 56,
-                                                alignment: Alignment.center,
-                                                child: Text(
-                                                  '”',
-                                                  style: TextStyle(
-                                                    fontSize: 46,
-                                                    fontWeight: FontWeight.w900,
-                                                    color: AppColors
-                                                        .gradientStart
-                                                        .withValues(
-                                                          alpha: 0.35,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            width: double.infinity,
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  AppLocalizations.of(context)!
-                                                      .translate(
-                                                        'quoteOfTheDay',
-                                                      )
-                                                      .toUpperCase(),
-                                                  style: FTextStyle.defaultText
-                                                      .copyWith(
-                                                        fontSize: 11,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        letterSpacing: 1.2,
-                                                        color: Colors.grey[600],
-                                                      ),
-                                                ),
-                                                const SizedBox(height: 10),
-                                                Text(
-                                                  quoteResponse.isNotEmpty
-                                                      ? _extractQuoteOnly(
-                                                        quoteResponse,
-                                                      )
-                                                      : AppLocalizations.of(
-                                                        context,
-                                                      )!.translate('dummyText'),
-                                                  style: FTextStyle.defaultText
-                                                      .copyWith(
-                                                        fontSize: 17,
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        height: 1.35,
-                                                      ),
-                                                  textAlign: TextAlign.left,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    const SizedBox(height: 20),
-                                    Material(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: InkWell(
-                                        borderRadius: BorderRadius.circular(12),
-                                        onTap: () async {
-                                          await _analytics.logEvent(
-                                            name:
-                                                'AskAnythingTextFieldTappedOnHomeScreen',
-                                          );
-                                          if (!mounted) return;
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder:
-                                                  (context) =>
-                                                      AskAnythingScreen(),
-                                            ),
-                                          );
-                                        },
-                                        child: Container(
-                                          constraints: const BoxConstraints(
-                                            minHeight: 48,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                            border: Border.all(
-                                              color: AppColors.gradientStart
-                                                  .withValues(alpha: 0.3),
-                                              width: 1.2,
-                                            ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: AppColors.gradientStart
-                                                    .withValues(alpha: 0.12),
-                                                blurRadius: 12,
-                                                offset: const Offset(0, 4),
-                                              ),
-                                            ],
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                          ),
-                                          child: Row(
-                                            children: [
-                                              Image.asset(
-                                                'assets/images/searchIcon.png',
-                                                height: 16,
-                                                width: 16,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                child: IgnorePointer(
-                                                  child: TextField(
-                                                    controller:
-                                                        searchController,
-                                                    readOnly: true,
-                                                    decoration: InputDecoration(
-                                                      hintText:
-                                                          AppLocalizations.of(
-                                                            context,
-                                                          )!.translate(
-                                                            'askAnything',
-                                                          ),
-                                                      hintStyle:
-                                                          FTextStyle
-                                                              .defaultText,
-                                                      border: InputBorder.none,
-                                                      isDense: true,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                              Icon(
-                                                Icons.chevron_right,
-                                                size: 20,
-                                                color: AppColors.gradientStart
-                                                    .withValues(alpha: 0.6),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                              );
+                            },
                           ),
 
                           const SizedBox(height: 20),
@@ -525,180 +353,24 @@ class _HomeScreenState extends State<HomeScreen> {
                                       itemCount: allPrayers.length,
                                       itemBuilder: (context, index) {
                                         final item = allPrayers[index];
-                                        final contentId = item['id'];
-                                        final contentImage =
-                                            item['content_image'] ??
-                                            'https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png';
-                                        final contentName =
-                                            item['content_name'] ?? 'No Title';
-                                        final contentDescription =
-                                            item['content_description'] ??
-                                            'No Description';
-
-                                        return Padding(
-                                          padding: const EdgeInsets.only(
-                                            bottom: 14,
-                                          ),
-                                          child: Material(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(
-                                              14,
-                                            ),
-                                            child: InkWell(
-                                              borderRadius:
-                                                  BorderRadius.circular(14),
-                                              onTap: () async {
-                                                await _analytics.logEvent(
-                                                  name:
-                                                      'ChalisaViewTappedOnHomeScreen',
-                                                );
-                                                if (!mounted) return;
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder:
-                                                        (context) =>
-                                                            ChalisaScreen(
-                                                              contentId:
-                                                                  contentId,
-                                                            ),
-                                                  ),
-                                                );
-                                              },
-                                              child: Container(
-                                                padding: const EdgeInsets.all(
-                                                  12,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.circular(14),
-                                                  border: Border.all(
-                                                    color: AppColors
-                                                        .gradientStart
-                                                        .withValues(
-                                                          alpha: 0.12,
-                                                        ),
-                                                    width: 1,
-                                                  ),
-                                                  boxShadow: [
-                                                    BoxShadow(
-                                                      color: AppColors
-                                                          .gradientStart
-                                                          .withValues(
-                                                            alpha: 0.08,
-                                                          ),
-                                                      blurRadius: 12,
-                                                      offset: const Offset(
-                                                        0,
-                                                        4,
-                                                      ),
+                                        return PrayerListItemTile(
+                                          item: item,
+                                          onTap: () async {
+                                            await _analytics.logEvent(
+                                              name:
+                                                  'ChalisaViewTappedOnHomeScreen',
+                                            );
+                                            if (!mounted) return;
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder:
+                                                    (context) => ChalisaScreen(
+                                                      contentId: item['id'],
                                                     ),
-                                                  ],
-                                                ),
-                                                child: Row(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.center,
-                                                  children: [
-                                                    ClipRRect(
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            10,
-                                                          ),
-                                                      child: Image.network(
-                                                        contentImage,
-                                                        height: 72,
-                                                        width: 72,
-                                                        fit: BoxFit.cover,
-                                                        errorBuilder:
-                                                            (
-                                                              context,
-                                                              error,
-                                                              stackTrace,
-                                                            ) => Image.asset(
-                                                              'assets/images/errorImage.png',
-                                                              height: 72,
-                                                              width: 72,
-                                                              fit: BoxFit.cover,
-                                                            ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 12),
-                                                    Expanded(
-                                                      child: Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        mainAxisSize:
-                                                            MainAxisSize.min,
-                                                        children: [
-                                                          Text(
-                                                            contentName,
-                                                            style: FTextStyle
-                                                                .defaultText
-                                                                .copyWith(
-                                                                  fontSize: 15,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w700,
-                                                                ),
-                                                            maxLines: 1,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                          ),
-                                                          const SizedBox(
-                                                            height: 6,
-                                                          ),
-                                                          Text(
-                                                            contentDescription,
-                                                            style: FTextStyle
-                                                                .defaultText
-                                                                .copyWith(
-                                                                  fontSize:
-                                                                      12.5,
-                                                                  color:
-                                                                      Colors
-                                                                          .grey[600],
-                                                                  height: 1.3,
-                                                                ),
-                                                            maxLines: 2,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .ellipsis,
-                                                          ),
-                                                        ],
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 10),
-                                                    Container(
-                                                      height: 34,
-                                                      width: 34,
-                                                      decoration: BoxDecoration(
-                                                        gradient: LinearGradient(
-                                                          colors: [
-                                                            AppColors
-                                                                .gradientStart,
-                                                            AppColors
-                                                                .gradientEnd,
-                                                          ],
-                                                        ),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              9,
-                                                            ),
-                                                      ),
-                                                      child: const Icon(
-                                                        LucideIcons
-                                                            .arrowUpRight,
-                                                        size: 18,
-                                                        color: Colors.white,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
                                               ),
-                                            ),
-                                          ),
+                                            );
+                                          },
                                         );
                                       },
                                     ),
