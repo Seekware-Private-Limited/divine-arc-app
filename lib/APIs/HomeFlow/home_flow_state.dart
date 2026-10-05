@@ -303,6 +303,19 @@ class ViewAllContentError extends HomeFlowState {
   ViewAllContentError(this.failureResponse);
 }
 
+// View Content By Id States
+class ViewContentByIdLoading extends HomeFlowState {}
+
+class ViewContentByIdLoaded extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  ViewContentByIdLoaded(this.successResponse);
+}
+
+class ViewContentByIdError extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  ViewContentByIdError(this.failureResponse);
+}
+
 // Send Regenerate Chat API Response States
 class SendRegenerateAPIResponseLoading extends HomeFlowState {}
 
@@ -327,6 +340,19 @@ class TrendingQuestionsLoaded extends HomeFlowState {
 class TrendingQuestionsFailure extends HomeFlowState {
   final Map<String, dynamic> failureResponse;
   TrendingQuestionsFailure(this.failureResponse);
+}
+
+// Report An Issue States
+class ReportIssueLoading extends HomeFlowState {}
+
+class ReportIssueLoaded extends HomeFlowState {
+  final Map<String, dynamic> successResponse;
+  ReportIssueLoaded(this.successResponse);
+}
+
+class ReportIssueFailure extends HomeFlowState {
+  final Map<String, dynamic> failureResponse;
+  ReportIssueFailure(this.failureResponse);
 }
 
 // Common Server Failure State

@@ -1,5 +1,8 @@
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
+import 'package:divine_arc/Screens/privacy_policy.dart';
+import 'package:divine_arc/Screens/terms_conditions.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class AskAnythingScreen extends StatefulWidget {
   const AskAnythingScreen({super.key});
@@ -10,15 +13,20 @@ class AskAnythingScreen extends StatefulWidget {
 
 class _AskAnythingScreenState extends State<AskAnythingScreen> {
   final TextEditingController askAnythingController = TextEditingController();
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
   bool isLoading = false;
   bool isTrendingQuestionsLoading = false;
   bool commonserverfailure = false;
+  bool _isConsentDialogVisible = false;
+  String? _pendingQuery;
+  bool _navigateAfterConsent = false;
 
   List<Map<String, dynamic>> trendingQuestions = [];
 
   @override
   void initState() {
     super.initState();
+    _initialize();
     askAnythingController.clear();
 
     BlocProvider.of<HomeFlowBloc>(
@@ -27,11 +35,142 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
     BlocProvider.of<HomeFlowBloc>(context).add(FetchAllTrendingQuestionEvent());
   }
 
+  Future<void> _initialize() async {
+    await _analytics.logEvent(name: 'UserIsOnAskAnythingScreen');
+  }
+
   @override
   void dispose() {
     askAnythingController.clear();
     askAnythingController.dispose();
     super.dispose();
+  }
+
+  void showAiConsentDialog(String query, bool shouldNavigate) {
+    if (_isConsentDialogVisible || PrefUtils.getAiPrivacyConsent()) {
+      return;
+    }
+
+    if (!mounted) return;
+    _isConsentDialogVisible = true;
+    final currentContext = context;
+    _pendingQuery = query;
+    _navigateAfterConsent = shouldNavigate;
+
+    showDialog(
+      context: currentContext,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.GlobalBG,
+          insetPadding: const EdgeInsets.all(20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'AI Privacy Notice',
+            style: FTextStyle.boldText.copyWith(color: Colors.black),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'To provide AI-powered responses, the information you submit may be securely processed by our AI service provider.',
+                  style: FTextStyle.defaultText,
+                ),
+                const SizedBox(height: 10),
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(color: Colors.black87, fontSize: 14),
+                    children: [
+                      const TextSpan(
+                        text: 'By continuing, you agree to our ',
+                        style: FTextStyle.defaultText,
+                      ),
+                      WidgetSpan(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(dialogContext).pop();
+                            Navigator.of(currentContext).push(
+                              MaterialPageRoute(
+                                builder: (_) => const TermsConditionsScreen(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'Terms & Conditions',
+                            style: FTextStyle.defaultText.copyWith(
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const TextSpan(
+                        text: '  and ',
+                        style: FTextStyle.defaultText,
+                      ),
+                      WidgetSpan(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(dialogContext).pop();
+                            Navigator.of(currentContext).push(
+                              MaterialPageRoute(
+                                builder: (_) => const PrivacyPolicyScreen(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'Privacy Policy',
+                            style: FTextStyle.defaultText.copyWith(
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const TextSpan(text: '.'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                if (Navigator.of(dialogContext).canPop()) {
+                  Navigator.of(dialogContext).pop();
+                }
+                _isConsentDialogVisible = false;
+                if (mounted) setState(() {});
+              },
+              child: Text('Decline', style: FTextStyle.defaultText),
+            ),
+            FilledButton(
+              onPressed: () {
+                PrefUtils.setAiPrivacyConsent(true);
+                if (Navigator.of(dialogContext).canPop()) {
+                  Navigator.of(dialogContext).pop();
+                }
+                _isConsentDialogVisible = false;
+                if (mounted) setState(() {});
+              },
+              child: Text(
+                'I Agree',
+                style: FTextStyle.defaultText.copyWith(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    ).then((_) {
+      if (mounted) {
+        _isConsentDialogVisible = false;
+      }
+    });
   }
 
   @override
@@ -63,6 +202,13 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                           isLoading = false;
                           commonserverfailure = false;
                         });
+                      }
+                      if (!PrefUtils.getAiPrivacyConsent()) {
+                        showAiConsentDialog(
+                          askAnythingController.text.trim(),
+                          false,
+                        );
+                        return;
                       }
                       final response = state.successResponse;
                       final chatId = response['id'];
@@ -136,14 +282,7 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              GestureDetector(
-                                onTap: () => Navigator.of(context).pop(),
-                                child: const Icon(
-                                  Icons.arrow_back_ios_new,
-                                  color: Colors.black,
-                                  size: 22,
-                                ),
-                              ),
+                              const CustomBackButton(),
                               const LanguageDropdown(),
                             ],
                           ),
@@ -172,19 +311,13 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                   child: ClipOval(
                                     child: Image.asset(
                                       'assets/images/DivineArcLogo.png',
-                                      height: 50,
-                                      width: 50,
+                                      height: 100,
+                                      width: 100,
                                       fit: BoxFit.cover,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 10),
-                                Text(
-                                  AppLocalizations.of(
-                                    context,
-                                  )!.translate('bhagwatGeeta'),
-                                  style: FTextStyle.boldText,
-                                ),
+
                                 const SizedBox(height: 16),
 
                                 Container(
@@ -200,7 +333,7 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                     children: [
                                       Padding(
                                         padding: const EdgeInsets.only(
-                                          right: 60,
+                                          right: 40,
                                         ),
                                         child: TextFormField(
                                           controller: askAnythingController,
@@ -221,8 +354,8 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                         ),
                                       ),
                                       Positioned(
-                                        top: 8,
-                                        right: 8,
+                                        top: 14,
+                                        right: 14,
                                         child: Container(
                                           height: 35,
                                           width: 35,
@@ -262,6 +395,14 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                               if (commonserverfailure) {
                                                 CommonUtils.showErrorToast(
                                                   'Something went wrong. Please try again later.',
+                                                );
+                                                return;
+                                              }
+
+                                              if (!PrefUtils.getAiPrivacyConsent()) {
+                                                showAiConsentDialog(
+                                                  query,
+                                                  true,
                                                 );
                                                 return;
                                               }
@@ -388,7 +529,13 @@ class _AskAnythingScreenState extends State<AskAnythingScreen> {
                                                   },
                                                 ),
                                                 const SizedBox(width: 16),
-                                                Expanded(child: Text(question)),
+                                                Expanded(
+                                                  child: Text(
+                                                    question,
+                                                    style:
+                                                        FTextStyle.defaultText,
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                           ),

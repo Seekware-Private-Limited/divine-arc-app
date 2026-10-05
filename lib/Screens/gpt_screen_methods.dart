@@ -74,6 +74,8 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
   String? get searchQueryFromAskAnythingScreen;
   String? get chatId;
 
+  void showAiConsentDialog();
+
   // NEW: Method to reset audio state
   void _resetAudioState() {
     if (mounted) {
@@ -108,6 +110,10 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
       }
 
       if (searchQueryFromAskAnythingScreen?.trim().isNotEmpty == true) {
+        if (!PrefUtils.getAiPrivacyConsent()) {
+          showAiConsentDialog();
+          return;
+        }
         handleInitialQuery();
       }
     } catch (e) {
@@ -141,6 +147,11 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
   }
 
   void handleInitialQuery() {
+    if (!PrefUtils.getAiPrivacyConsent()) {
+      showAiConsentDialog();
+      return;
+    }
+
     final query = searchQueryFromAskAnythingScreen!.trim();
     if (query.isEmpty) return;
 
@@ -539,12 +550,18 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
 
       setState(() {
         if (editingIndex != null) {
+          final String existingMessageId =
+              chatHistory[editingIndex!]['messageId']?.toString() ?? '';
+          final bool isSavedChat = existingMessageId.isNotEmpty;
+
           chatHistory[editingIndex!]['question'] = message;
           chatHistory[editingIndex!]['answer'] = '';
           chatHistory[editingIndex!]['hasError'] = false;
+          chatHistory[editingIndex!]['isEdited'] = isSavedChat;
+          chatHistory[editingIndex!]['isRegenerating'] = false;
           currentResponseIndex = editingIndex;
           responseLoadingStates[currentResponseIndex!] = true;
-          isEdited = true;
+          isEdited = isSavedChat;
         } else {
           final newChatItem = {
             'question': message,
@@ -556,6 +573,8 @@ mixin GptScreenMethods<T extends StatefulWidget> on State<T> {
             'isDisliked': false,
             'isUserAudio': false,
             'hasError': false,
+            'isEdited': false,
+            'isRegenerating': false,
           };
           chatHistory.add(newChatItem);
           currentResponseIndex = chatHistory.length - 1;

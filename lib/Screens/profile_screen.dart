@@ -1,6 +1,9 @@
+import 'package:divine_arc/Screens/delete_account.dart';
 import 'package:divine_arc/Screens/edit_profile.dart';
 import 'package:divine_arc/Screens/change_password_screen.dart';
+import 'package:divine_arc/Screens/report_issue.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,16 +14,29 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool isLoading = false;
-
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
   String? userName;
   String? userEmail;
   String? profilePictureUrl;
+  String? gender;
+  String? dob;
+  String? placeOfBirth;
 
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initialize();
+    });
+  }
+
+  Future<void> _initialize() async {
+    await _analytics.logEvent(name: 'UserIsOnProfileScreen');
+
     if (!PrefUtils.getIsGuest()) {
-      BlocProvider.of<HomeFlowBloc>(context).add(ViewUserProfile());
+      if (!mounted) return;
+      context.read<HomeFlowBloc>().add(ViewUserProfile());
     }
   }
 
@@ -40,6 +56,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               userName = data['name'];
               userEmail = data['email'];
               profilePictureUrl = data['profile_picture'];
+              gender = data['gender'];
+              dob = data['date_of_birth'];
+              placeOfBirth = data['place_of_birth'];
             });
           }
 
@@ -49,6 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
 
           if (state is LogoutSuccess) {
+            _analytics.logEvent(name: 'UserClickedLogout');
             PrefUtils.clearAll();
             Navigator.pushAndRemoveUntil(
               context,
@@ -68,7 +88,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
                 child: Column(
                   children: [
                     Row(
@@ -253,6 +276,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                       profilePictureUrl:
                                                           profilePictureUrl ??
                                                           '',
+                                                      gender: gender,
+                                                      dob: dob,
+                                                      placeOfBirth:
+                                                          placeOfBirth,
                                                     ),
                                               ),
                                             );
@@ -262,6 +289,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                 userName = result['name'];
                                                 profilePictureUrl =
                                                     result['profile_picture'];
+                                                gender = result['gender'];
+                                                dob = result['date_of_birth'];
+                                                placeOfBirth =
+                                                    result['place_of_birth'];
                                               });
                                             }
                                           },
@@ -291,7 +322,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                             );
                                           },
                                         ),
-
+                                      ListTile(
+                                        leading: Image.asset(
+                                          'assets/images/feedback.png',
+                                          height: 24,
+                                          width: 24,
+                                        ),
+                                        title: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.translate('report_issue_title'),
+                                          style: FTextStyle.defaultText,
+                                        ),
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (_) =>
+                                                      const ReportIssueScreen(),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      ListTile(
+                                        leading: Image.asset(
+                                          'assets/images/delete.png',
+                                          height: 24,
+                                          width: 24,
+                                        ),
+                                        title: Text(
+                                          AppLocalizations.of(
+                                            context,
+                                          )!.translate('delete_account'),
+                                          style: FTextStyle.defaultText,
+                                        ),
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder:
+                                                  (context) =>
+                                                      DeleteAccountScreen(),
+                                            ),
+                                          );
+                                        },
+                                      ),
                                       ListTile(
                                         leading: Image.asset(
                                           'assets/images/logout.png',

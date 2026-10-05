@@ -204,30 +204,39 @@ extension GptScreenBlocListener on GptScreenMethods {
       final latestQuestion = chatHistory[currentResponseIndex!]['question'];
       final bool isRegeneration =
           chatHistory[currentResponseIndex!]['isRegenerating'] == true;
+      final bool isEdited =
+          chatHistory[currentResponseIndex!]['isEdited'] == true &&
+          (chatHistory[currentResponseIndex!]['messageId']?.toString() ?? '')
+              .isNotEmpty;
+      final String messageId =
+          chatHistory[currentResponseIndex!]['messageId']?.toString() ??
+          PrefUtils.getEdittedMessageID();
 
       if (latestQuestion != null && latestQuestion.isNotEmpty) {
-        isRegeneration
-            ? BlocProvider.of<HomeFlowBloc>(context).add(
-              StoreEdittedChatEvent(
-                message: latestQuestion,
-                modelName: 'Atlas',
-                searchEngine: 'Search',
-                edited: true,
-                sender: 'user',
-                chatId: getCurrentChatId(),
-                messageId: PrefUtils.getEdittedMessageID(),
-              ),
-            )
-            : BlocProvider.of<HomeFlowBloc>(context).add(
-              StoreChatEvent(
-                message: latestQuestion,
-                modelName: 'Atlas',
-                searchEngine: 'Search',
-                edited: false,
-                sender: 'user',
-                chatId: getCurrentChatId(),
-              ),
-            );
+        if (isEdited || isRegeneration) {
+          BlocProvider.of<HomeFlowBloc>(context).add(
+            StoreEdittedChatEvent(
+              message: latestQuestion,
+              modelName: 'Atlas',
+              searchEngine: 'Search',
+              edited: true,
+              sender: 'user',
+              chatId: getCurrentChatId(),
+              messageId: messageId,
+            ),
+          );
+        } else {
+          BlocProvider.of<HomeFlowBloc>(context).add(
+            StoreChatEvent(
+              message: latestQuestion,
+              modelName: 'Atlas',
+              searchEngine: 'Search',
+              edited: false,
+              sender: 'user',
+              chatId: getCurrentChatId(),
+            ),
+          );
+        }
       }
     }
   }
@@ -362,16 +371,15 @@ extension GptScreenBlocListener on GptScreenMethods {
       final latestAnswer = chatHistory[currentResponseIndex!]['answer'];
       final existingMessageId =
           chatHistory[currentResponseIndex!]['messageId']?.toString() ?? '';
-      final bool isRegeneration =
-          chatHistory[currentResponseIndex!]['isRegenerating'] == true;
-      final messageIdToUse =
-          isRegeneration && existingMessageId.isNotEmpty
-              ? existingMessageId
-              : newMessageId;
+      final String messageIdToUse =
+          existingMessageId.isNotEmpty ? existingMessageId : newMessageId;
 
       if (messageIdToUse.isNotEmpty &&
           latestAnswer != null &&
           latestAnswer.isNotEmpty) {
+        chatHistory[currentResponseIndex!]['messageId'] = messageIdToUse;
+        PrefUtils.setChatHistory(chatHistory);
+
         BlocProvider.of<HomeFlowBloc>(context).add(
           SendRegenerateAPIResponseEvent(
             messageId: messageIdToUse,

@@ -1,7 +1,10 @@
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Screens/forgot_password.dart';
+import 'package:divine_arc/Screens/privacy_policy.dart';
+import 'package:divine_arc/Screens/terms_conditions.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   String get currentPlatform {
     if (Platform.isAndroid) {
@@ -86,9 +90,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             isLoading = true;
                           });
                         } else if (state is GoogleLoginSuccess) {
-                          setState(() {
-                            isLoading = false;
-                          });
                           BlocProvider.of<AuthFlowBloc>(context).add(
                             SocialLoginEventHandler(
                               socialId: state.id,
@@ -103,9 +104,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           });
                           CommonUtils.showErrorToast(state.errorMessage);
                         } else if (state is FacebookLoginSuccess) {
-                          setState(() {
-                            isLoading = false;
-                          });
                           BlocProvider.of<AuthFlowBloc>(context).add(
                             SocialLoginEventHandler(
                               socialId: state.id,
@@ -278,7 +276,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               children: [
                                 const LanguageDropdown(),
                                 GestureDetector(
-                                  onTap: () {
+                                  onTap: () async {
+                                    await _analytics.logEvent(
+                                      name: 'SkipButtonTapped',
+                                    );
                                     PrefUtils.setIsGuest(true);
                                     Navigator.push(
                                       context,
@@ -293,7 +294,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                         CrossAxisAlignment.center,
                                     children: [
                                       Text(
-                                        'Skip',
+                                        AppLocalizations.of(
+                                          context,
+                                        )!.translate('skip'),
                                         style: FTextStyle.defaultTextBold,
                                       ),
                                       const SizedBox(width: 4),
@@ -321,13 +324,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                 children: [
                                   const SizedBox(height: 20),
                                   Center(
-                                    child: Image.asset(
-                                      'assets/images/DivineArcLogo.png',
-                                      height: 100,
-                                      width: 100,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(100),
+                                      child: Image.asset(
+                                        'assets/images/DivineArcLogo.png',
+                                        height: 100,
+                                        width: 100,
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(height: 5),
+                                  const SizedBox(height: 16),
                                   Center(
                                     child: Text(
                                       AppLocalizations.of(
@@ -475,7 +481,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   const SizedBox(height: 16),
                                   GestureDetector(
-                                    onTap: () {
+                                    onTap: () async {
                                       bool hasError = false;
                                       if (emailController.text.isEmpty) {
                                         setState(() {
@@ -557,6 +563,16 @@ class _LoginScreenState extends State<LoginScreen> {
                                         hasError = true;
                                       }
                                       if (!hasError) {
+                                        await _analytics.logEvent(
+                                          name: 'LoginButtonClicked',
+                                          parameters: {
+                                            'email':
+                                                emailController.text.trim(),
+                                            'password':
+                                                passwordController.text.trim(),
+                                          },
+                                        );
+
                                         BlocProvider.of<AuthFlowBloc>(
                                           context,
                                         ).add(
@@ -605,7 +621,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                                 child: SignUpScreen(
                                                   isFacebookLoginEnabled:
                                                       isFacebookLoginEnabled,
-                                                  isisGoogleLoginEnabled:
+                                                  isGoogleLoginEnabled:
                                                       isGoogleLoginEnabled,
                                                 ),
                                               ),
@@ -654,6 +670,75 @@ class _LoginScreenState extends State<LoginScreen> {
                                           decoration: TextDecoration.underline,
                                         ),
                                       ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  RichText(
+                                    textAlign: TextAlign.center,
+                                    text: TextSpan(
+                                      style: FTextStyle.rateNowBlack,
+                                      children: [
+                                        const TextSpan(
+                                          text:
+                                              'By continuing, you agree to our ',
+                                        ),
+                                        WidgetSpan(
+                                          alignment:
+                                              PlaceholderAlignment.middle,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder:
+                                                      (_) =>
+                                                          const TermsConditionsScreen(),
+                                                ),
+                                              );
+                                            },
+                                            child: Text(
+                                              'Terms & Conditions',
+                                              style: FTextStyle.rateNowBlack
+                                                  .copyWith(
+                                                    color:
+                                                        AppColors.gradientStart,
+                                                    decoration:
+                                                        TextDecoration
+                                                            .underline,
+                                                  ),
+                                            ),
+                                          ),
+                                        ),
+                                        const TextSpan(text: ' and '),
+                                        WidgetSpan(
+                                          alignment:
+                                              PlaceholderAlignment.middle,
+                                          child: GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder:
+                                                      (_) =>
+                                                          const PrivacyPolicyScreen(),
+                                                ),
+                                              );
+                                            },
+                                            child: Text(
+                                              'Privacy Policy',
+                                              style: FTextStyle.rateNowBlack
+                                                  .copyWith(
+                                                    color:
+                                                        AppColors.gradientStart,
+                                                    decoration:
+                                                        TextDecoration
+                                                            .underline,
+                                                  ),
+                                            ),
+                                          ),
+                                        ),
+                                        const TextSpan(text: '.'),
+                                      ],
                                     ),
                                   ),
                                   const SizedBox(height: 24),
@@ -793,6 +878,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+              if (isLoading)
+                Container(
+                  color: Colors.black.withValues(alpha: .5),
+                  child: Center(
+                    child: LoadingAnimationWidget.staggeredDotsWave(
+                      color: AppColors.gradientStart,
+                      size: 50,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

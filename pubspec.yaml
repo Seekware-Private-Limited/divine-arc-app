@@ -2,7 +2,7 @@ name: divine_arc
 description: "A new Flutter project."
 publish_to: "none"
 
-version: 1.0.0+10
+version: 1.0.3+15
 
 environment:
   sdk: ^3.7.2
@@ -18,12 +18,12 @@ dependencies:
   firebase_core: ^4.1.1
   firebase_auth: ^6.1.0
   firebase_messaging: ^16.0.2
+  firebase_analytics: 
   flutter_local_notifications: ^19.5.0
 
   # Authentication
   google_sign_in: ^6.3.0
-  sign_in_with_apple: ^7.0.1
-  flutter_facebook_auth: ^7.1.2
+  flutter_facebook_auth: ^7.1.8
 
   # State management & UI
   flutter_bloc: ^9.1.1
@@ -39,15 +39,21 @@ dependencies:
   flutter_svg: 2.2.1
   image_picker: 1.2.0
   record: 6.1.1
-  just_audio: 0.10.5
   http: 1.5.0
+  rate_my_app: ^2.3.2
   path_provider: ^2.1.5
   flutter_sound: 9.28.0
   audioplayers: 6.5.1
   share_plus: 12.0.0
+  app_links: ^7.0.0
+  video_player: ^2.10.0
+  upgrader: ^12.5.0
   flutter_markdown: ^0.7.7+1
   bloc: ^9.2.0
+  flutter_dotenv: ^6.0.1
+  flutter_glass_morphism: ^1.0.2
   provider: ^6.1.5+1
+  lucide_icons_flutter: ^3.1.15
   flutter_localizations:
     sdk: flutter
 
@@ -62,9 +68,10 @@ flutter:
   assets:
     - assets/fonts/
     - assets/images/
-    - assets/audio/
+    - assets/videos/
     - lib/l10n/
     - shorebird.yaml
+    - .env
 
   fonts:
     - family: Warnes-Regular

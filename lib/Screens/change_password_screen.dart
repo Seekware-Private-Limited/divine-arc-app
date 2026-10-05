@@ -1,6 +1,7 @@
 import 'package:divine_arc/APIs/AuthFlow/auth_flow_bloc.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:divine_arc/Utils/session_expired_snackbar.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -18,6 +19,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final TextEditingController currentPasswordController =
       TextEditingController();
   final TextEditingController newPasswordController = TextEditingController();
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   // Password validation regex
   bool isValidPassword(String password) {
@@ -26,6 +28,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         RegExp(
           r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{9,32}$',
         ).hasMatch(password);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    await _analytics.logEvent(name: 'UserIsOnChangePasswordScreen');
   }
 
   @override
@@ -94,16 +106,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: Icon(
-                                    Icons.arrow_back_ios_new,
-                                    color: Colors.black,
-                                    size: 22,
-                                  ),
-                                ),
+                                const CustomBackButton(),
                                 const LanguageDropdown(),
                               ],
                             ),
@@ -126,13 +129,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                                   children: [
                                     const SizedBox(height: 20),
                                     Center(
-                                      child: Image.asset(
-                                        'assets/images/DivineArcLogo.png',
-                                        height: 100,
-                                        width: 100,
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(
+                                          100,
+                                        ),
+                                        child: Image.asset(
+                                          'assets/images/DivineArcLogo.png',
+                                          height: 100,
+                                          width: 100,
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(height: 5),
+                                    const SizedBox(height: 16),
                                     Text(
                                       AppLocalizations.of(
                                         context,

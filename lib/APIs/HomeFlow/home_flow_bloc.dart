@@ -741,14 +741,30 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         emit(UpdateProfileLoading());
 
         final Uri requestUrl = Uri.parse(APIEndPoints.updateProfile);
-        final requestBody = jsonEncode({
+
+        final Map<String, dynamic> bodyMap = {
           'name': event.name,
           'profile_picture': event.profilePicture,
-        });
+        };
+
+        if (event.gender != null && event.gender!.trim().isNotEmpty) {
+          bodyMap["gender"] = event.gender!.trim();
+        }
+        if (event.dateOfBirth != null && event.dateOfBirth!.trim().isNotEmpty) {
+          bodyMap["date_of_birth"] = event.dateOfBirth!.trim();
+        }
+        if (event.placeOfBirth != null &&
+            event.placeOfBirth!.trim().isNotEmpty) {
+          bodyMap["place_of_birth"] = event.placeOfBirth!.trim();
+        }
+
+        final requestBody = jsonEncode(bodyMap);
+
         print("🔵 Request URL: $requestUrl");
         print(
           "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
         );
+        print("🟠 Request Body: $requestBody");
 
         try {
           final response = await http.post(
@@ -794,9 +810,7 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
         emit(CheckNetworkConnectionHomeFlow());
         print("❗ No internet connection.");
       }
-    });
-
-    // Get Single Chat Conversation History Bloc
+    }); // Get Single Chat Conversation History Bloc
     on<GetSingleChatHistoryEvent>((event, emit) async {
       // Check for internet connectivity
       if (await ConnectivityService.isConnected()) {
@@ -1312,7 +1326,18 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
       if (await ConnectivityService.isConnected()) {
         emit(ViewAllContentLoading());
 
-        final Uri requestUrl = Uri.parse(APIEndPoints.viewAllContent);
+        // 1. Extract the language from the event
+        final String selectedLanguage = event.language;
+
+        // 2. Append the language as a query parameter to the URI
+        final Uri baseUrl = Uri.parse(APIEndPoints.viewAllContent);
+        final Uri requestUrl = baseUrl.replace(
+          queryParameters: {
+            ...baseUrl.queryParameters,
+            'language': selectedLanguage, // Passing the language here
+          },
+        );
+
         print("Request URL: $requestUrl");
 
         try {
@@ -1338,6 +1363,63 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
           } else {
             final errorData = jsonDecode(response.body);
             emit(ViewAllContentError(errorData));
+            print("Error Response: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnectionHomeFlow());
+          print("SocketException: No internet connection.");
+        } catch (e) {
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
+          print("Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnectionHomeFlow());
+        print("No internet connection.");
+      }
+    });
+
+    // View Content By ID Bloc
+    on<ViewContentById>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(ViewContentByIdLoading());
+        final Uri baseUrl = Uri.parse(APIEndPoints.viewContentById(event.id));
+        final Uri requestUrl = baseUrl.replace(
+          queryParameters: {
+            ...baseUrl.queryParameters,
+            'language': event.language,
+          },
+        );
+
+        print("Request URL: $requestUrl");
+
+        try {
+          final response = await http.get(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+          );
+
+          if (response.statusCode == 200) {
+            final responseData = jsonDecode(response.body);
+            emit(ViewContentByIdLoaded(responseData));
+            print("Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
+            );
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(ViewContentByIdError(errorData));
             print("Error Response: $errorData");
           }
         } on SocketException {
@@ -1551,6 +1633,70 @@ class HomeFlowBloc extends Bloc<HomeFlowEvent, HomeFlowState> {
       } else {
         emit(CheckNetworkConnectionHomeFlow());
         print("No internet connection.");
+      }
+    });
+
+    // Report An Issue Bloc
+    on<ReportIssue>((event, emit) async {
+      // Check for internet connectivity
+      if (await ConnectivityService.isConnected()) {
+        emit(ReportIssueLoading());
+
+        final Uri requestUrl = Uri.parse(APIEndPoints.reportIssue);
+        final requestBody = jsonEncode({
+          'title': event.title,
+          'description': event.description,
+        });
+
+        print("🔵 Request URL: $requestUrl");
+        print(
+          "🟡 Request Headers: ${{'accept': 'application/json', 'Content-Type': 'application/json', 'Cookie': PrefUtils.getToken()}}",
+        );
+        print("🟠 Request Body: $requestBody");
+
+        try {
+          final response = await http.post(
+            requestUrl,
+            headers: {
+              'accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Cookie': PrefUtils.getToken(),
+            },
+            body: requestBody,
+          );
+
+          print("🟣 Response Status Code: ${response.statusCode}");
+          print("🟤 Raw Response Body: ${response.body}");
+
+          if (response.statusCode == 201) {
+            final Map<String, dynamic> responseData = jsonDecode(response.body);
+            emit(ReportIssueLoaded(responseData));
+            print("✅ Parsed Response Data: $responseData");
+          } else if (response.statusCode == 401) {
+            emit(
+              SessionExpiredStateHome(
+                "You're not logged in. Please log in to access this feature.",
+              ),
+            );
+          } else {
+            final errorData = jsonDecode(response.body);
+            emit(ReportIssueFailure(errorData));
+            print("❌ Error Response Data: $errorData");
+          }
+        } on SocketException {
+          emit(CheckNetworkConnectionHomeFlow());
+          print("❗ SocketException: No internet connection.");
+        } catch (e) {
+          emit(
+            CommonServerFailureHome(
+              'Something went wrong, Please try again later',
+            ),
+          );
+          print("❗ Exception: $e");
+        }
+      } else {
+        emit(CheckNetworkConnectionHomeFlow());
+        print("❗ No internet connection.");
       }
     });
   }

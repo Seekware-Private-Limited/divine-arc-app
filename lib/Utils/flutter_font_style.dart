@@ -32,6 +32,12 @@ class FTextStyle {
     fontWeight: FontWeight.w400,
     color: Colors.black,
   );
+  static const rateNowBlack = TextStyle(
+    fontFamily: 'DM_Sans',
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: Colors.black,
+  );
   static const defaultTextBold = TextStyle(
     fontFamily: 'DM_Sans',
     fontSize: 14,
@@ -64,9 +70,21 @@ class FTextStyle {
     fontWeight: FontWeight.w400,
     color: Colors.black,
   );
+  static const tabbarTextStyle1 = TextStyle(
+    fontFamily: 'DM_Sans',
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    color: Colors.white,
+  );
   static const tabbarTextStyle = TextStyle(
     fontFamily: 'DM_Sans',
     fontSize: 12,
+    fontWeight: FontWeight.w400,
+    color: Colors.white,
+  );
+  static const rateNowWhite = TextStyle(
+    fontFamily: 'DM_Sans',
+    fontSize: 14,
     fontWeight: FontWeight.w400,
     color: Colors.white,
   );

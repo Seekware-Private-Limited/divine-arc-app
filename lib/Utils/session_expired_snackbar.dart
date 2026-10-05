@@ -69,12 +69,7 @@ class _SessionExpiredContent extends StatelessWidget {
             size: 24,
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              message,
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-            ),
-          ),
+          Expanded(child: Text(message, style: FTextStyle.tabbarTextStyle)),
           SizedBox(
             height: 40,
             child: TextButton(
@@ -83,10 +78,7 @@ class _SessionExpiredContent extends StatelessWidget {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              child: const Text(
-                'Login',
-                style: TextStyle(color: Colors.white, fontSize: 12),
-              ),
+              child: const Text('Login', style: FTextStyle.tabbarTextStyle),
             ),
           ),
         ],

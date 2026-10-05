@@ -41,34 +41,68 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
     // Facebook Login Bloc
     on<FacebookLoginEventHandler>((event, emit) async {
       emit(FacebookLoginLoading());
+
       try {
-        final LoginResult result = await FacebookAuth.instance.login();
+        await FacebookAuth.instance.logOut();
 
-        if (result.status == LoginStatus.success) {
-          final userData = await FacebookAuth.instance.getUserData();
+        final LoginResult result = await FacebookAuth.instance.login(
+          permissions: const ['email', 'public_profile'],
+        );
 
-          final String name = userData['name'] ?? '';
-          final String email = userData['email'] ?? '';
-          final String profileImage = userData['picture']['data']['url'] ?? '';
-          final String id = userData['id'] ?? '';
-
-          emit(FacebookLoginSuccess(name, email, profileImage, id));
-
-          print('Facebook Name: $name');
-          print('Facebook Email: $email');
-          print('Facebook Picture: $profileImage');
-          print('Facebook ID: $id');
-        } else {
-          emit(FacebookLoginFailure(result.message ?? 'Login failed'));
+        if (result.status != LoginStatus.success) {
+          emit(
+            FacebookLoginFailure(result.message ?? "Facebook login cancelled"),
+          );
+          return;
         }
+
+        // Fetch profile directly from Facebook Graph API
+        final Map<String, dynamic> userData = await FacebookAuth.instance
+            .getUserData(fields: "id,name,email,picture.width(300)");
+
+        final OAuthCredential credential = FacebookAuthProvider.credential(
+          result.accessToken!.tokenString,
+        );
+
+        final UserCredential userCredential = await FirebaseAuth.instance
+            .signInWithCredential(credential);
+
+        final User? firebaseUser = userCredential.user;
+
+        if (firebaseUser == null) {
+          emit(FacebookLoginFailure("Unable to fetch Facebook user."));
+          return;
+        }
+
+        final String facebookId =
+            userData["id"]?.toString() ?? firebaseUser.uid;
+
+        final String name =
+            userData["name"]?.toString() ?? firebaseUser.displayName ?? "";
+
+        final String email =
+            userData["email"]?.toString() ?? firebaseUser.email ?? "";
+
+        final String photo =
+            userData["picture"]?["data"]?["url"]?.toString() ??
+            firebaseUser.photoURL ??
+            "";
+
+        debugPrint("Facebook Graph API:");
+        debugPrint(userData.toString());
+
+        debugPrint("Facebook UID: $facebookId");
+        debugPrint("Facebook Name: $name");
+        debugPrint("Facebook Email: $email");
+        debugPrint("Facebook Photo: $photo");
+
+        emit(FacebookLoginSuccess(name, email, photo, facebookId));
+      } on FirebaseAuthException catch (e) {
+        emit(FacebookLoginFailure(e.message ?? e.code));
       } catch (e) {
-        if (kDebugMode) {
-          print("Facebook login error: $e");
-        }
         emit(FacebookLoginFailure(e.toString()));
       }
     });
-
     // SignUp Bloc
     on<SignupEventHandler>((event, emit) async {
       if (!await ConnectivityService.isConnected()) {
@@ -79,15 +113,23 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
 
       emit(SignUpLoading());
 
-      final requestUrl = Uri.parse(
-        APIEndPoints.signup,
-      ); // Replace with actual URL
+      final requestUrl = Uri.parse(APIEndPoints.signup);
 
       final Map<String, dynamic> requestBody = {
         "name": event.name,
         "email": event.email,
         "password": event.password,
       };
+
+      if (event.gender != null && event.gender!.trim().isNotEmpty) {
+        requestBody["gender"] = event.gender!.trim();
+      }
+      if (event.dateOfBirth != null && event.dateOfBirth!.trim().isNotEmpty) {
+        requestBody["date_of_birth"] = event.dateOfBirth!.trim();
+      }
+      if (event.placeOfBirth != null && event.placeOfBirth!.trim().isNotEmpty) {
+        requestBody["place_of_birth"] = event.placeOfBirth!.trim();
+      }
 
       print("Signup API Request URL: $requestUrl");
       print("Signup API Request Body: ${jsonEncode(requestBody)}");
@@ -119,7 +161,6 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
         print("Exception occurred: $e");
       }
     });
-
     // Login Bloc
     on<LoginEventHandler>((event, emit) async {
       if (!await ConnectivityService.isConnected()) {
@@ -312,11 +353,15 @@ class AuthFlowBloc extends Bloc<AuthFlowEvent, AuthFlowState> {
 
       final requestUrl = Uri.parse(APIEndPoints.socialLogin);
       final Map<String, dynamic> requestBody = {
-        "email": event.email,
         "name": event.name,
         "social_id": event.socialId,
         "social_type": event.socialType,
       };
+
+      // Add email only if it exists
+      if (event.email.trim().isNotEmpty) {
+        requestBody["email"] = event.email.trim();
+      }
 
       print("Login API Request URL: $requestUrl");
       print("Login API Request Body: ${jsonEncode(requestBody)}");

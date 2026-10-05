@@ -1,5 +1,6 @@
 import 'package:divine_arc/Utils/custompopup.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class CustomBottomNavBar extends StatefulWidget {
   const CustomBottomNavBar({super.key});
@@ -11,18 +12,11 @@ class CustomBottomNavBar extends StatefulWidget {
 class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
   int _selectedIndex = 0;
 
-  final List<String> _selectedImages = [
-    'assets/images/homeSelected.svg',
-    'assets/images/bookmarkSelected.svg',
-    'assets/images/historySelected.svg',
-    'assets/images/profileSelected.svg',
-  ];
-
-  final List<String> _unselectedImages = [
-    'assets/images/homeUnselected.svg',
-    'assets/images/bookmarkUnselected.svg',
-    'assets/images/historyUnselected.svg',
-    'assets/images/profileUnselected.svg',
+  final List<IconData> _icons = [
+    LucideIcons.house500,
+    LucideIcons.bookmark500,
+    LucideIcons.history500,
+    LucideIcons.user500,
   ];
 
   final List<Widget> _screens = [
@@ -58,10 +52,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
-
-    /// ✅ Respect safe area (gesture nav / modern phones)
     final double safeBottom = mediaQuery.padding.bottom;
-
     final List<String> labels = [
       AppLocalizations.of(context)!.translate('home'),
       AppLocalizations.of(context)!.translate('bookmark'),
@@ -86,21 +77,35 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
           body: _screens[_selectedIndex],
 
           bottomNavigationBar: Container(
-            margin: EdgeInsets.fromLTRB(20, 0, 20, 20 + safeBottom),
+            margin: EdgeInsets.fromLTRB(
+              20,
+              0,
+              20,
+              Platform.isAndroid ? 20 + safeBottom : safeBottom,
+            ),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.orangeAccent, width: 1.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.gradientStart.withValues(alpha: 0.3),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.gradientStart.withValues(alpha: 0.16),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(labels.length, (index) {
                 final bool isSelected = _selectedIndex == index;
 
-                return GestureDetector(
-                  behavior: HitTestBehavior.opaque,
+                return InkWell(
+                  borderRadius: BorderRadius.circular(12),
                   onTap: () {
-                    /// 🔥 Instantly hide snackbar
                     ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
                     if (_selectedIndex == index) return;
@@ -114,9 +119,10 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                     width: isSelected ? null : 60,
                     child: Center(
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
+                        duration: const Duration(milliseconds: 250),
+                        curve: Curves.easeOut,
                         padding: EdgeInsets.symmetric(
-                          horizontal: isSelected ? 16 : 0,
+                          horizontal: isSelected ? 10 : 0,
                           vertical: 10,
                         ),
                         decoration:
@@ -128,24 +134,45 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                                       AppColors.gradientEnd,
                                     ],
                                   ),
-                                  borderRadius: BorderRadius.circular(10),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.gradientStart.withValues(
+                                        alpha: 0.35,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
                                 )
                                 : null,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            SvgPicture.asset(
-                              isSelected
-                                  ? _selectedImages[index]
-                                  : _unselectedImages[index],
-                              height: 16,
-                              width: 16,
+                            Icon(
+                              _icons[index],
+                              size: 20,
+                              color:
+                                  isSelected
+                                      ? Colors.white
+                                      : AppColors.gradientStart,
                             ),
                             if (isSelected) ...[
                               const SizedBox(width: 8),
                               Text(
                                 labels[index],
-                                style: FTextStyle.tabbarTextStyle,
+                                style: FTextStyle.tabbarTextStyle1.copyWith(
+                                  fontSize: 13,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                      blurRadius: 3,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ],

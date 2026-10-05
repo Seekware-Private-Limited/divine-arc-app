@@ -158,8 +158,17 @@ class ChatFeedbackEvent extends HomeFlowEvent {
 // Update Profile Name Event
 class UpdateProfileEvent extends HomeFlowEvent {
   final String name;
+  final String gender;
+  final String dateOfBirth;
+  final String placeOfBirth;
   final String profilePicture;
-  UpdateProfileEvent({required this.name, required this.profilePicture});
+  UpdateProfileEvent({
+    required this.name,
+    required this.gender,
+    required this.dateOfBirth,
+    required this.placeOfBirth,
+    required this.profilePicture,
+  });
 }
 
 // Get Single Chat History
@@ -202,6 +211,13 @@ class ViewAllContent extends HomeFlowEvent {
   ViewAllContent({required this.language});
 }
 
+// View Content By Id
+class ViewContentById extends HomeFlowEvent {
+  final String id;
+  final String language;
+  ViewContentById({required this.id, required this.language});
+}
+
 // Send Regenerate Chat API Response Event
 class SendRegenerateAPIResponseEvent extends HomeFlowEvent {
   final String messageId;
@@ -223,3 +239,10 @@ class SendRegenerateAPIResponseEvent extends HomeFlowEvent {
 
 // Fetch All Trending Questions
 class FetchAllTrendingQuestionEvent extends HomeFlowEvent {}
+
+// Report An Issue Event
+class ReportIssue extends HomeFlowEvent {
+  final String title;
+  final String description;
+  ReportIssue({required this.title, required this.description});
+}

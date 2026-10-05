@@ -1,5 +1,8 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
+import 'dart:ui';
+
+import 'package:flutter_glass_morphism/flutter_glass_morphism.dart';
 
 class AudioPlayerWidget extends StatefulWidget {
   final String audioPath;
@@ -13,27 +16,45 @@ class AudioPlayerWidget extends StatefulWidget {
 class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
-  bool _isMuted = false;
   Duration _currentPosition = Duration.zero;
   Duration _totalDuration = Duration.zero;
 
   @override
   void initState() {
     super.initState();
-
+    _setupAudioPlayer();
     _preloadAudio();
+  }
+
+  Future<void> _setupAudioPlayer() async {
+    // Set release mode to stop after completion (good default for single tracks)
+    await _audioPlayer.setReleaseMode(ReleaseMode.stop);
 
     _audioPlayer.onPositionChanged.listen((position) {
-      if (mounted) setState(() => _currentPosition = position);
+      if (mounted) {
+        setState(() => _currentPosition = position);
+      }
     });
 
     _audioPlayer.onDurationChanged.listen((duration) {
-      if (mounted) setState(() => _totalDuration = duration);
+      if (mounted) {
+        setState(() => _totalDuration = duration);
+      }
     });
 
     _audioPlayer.onPlayerStateChanged.listen((state) {
       if (mounted) {
         setState(() => _isPlaying = state == PlayerState.playing);
+      }
+    });
+
+    // Handle completion
+    _audioPlayer.onPlayerComplete.listen((_) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = false;
+          _currentPosition = Duration.zero;
+        });
       }
     });
   }
@@ -56,43 +77,39 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
   Future<void> _toggleAudio() async {
     try {
       if (_isPlaying) {
-        _currentPosition =
-            await _audioPlayer.getCurrentPosition() ?? Duration.zero;
         await _audioPlayer.pause();
       } else {
-        if (_currentPosition.inSeconds > 0) {
+        // Resume from current position or start from beginning
+        await _audioPlayer.play(UrlSource(widget.audioPath));
+        if (_currentPosition > Duration.zero) {
           await _audioPlayer.seek(_currentPosition);
         }
-        await _audioPlayer.play(UrlSource(widget.audioPath));
       }
     } catch (e) {
-      print("Error playing audio: $e");
+      debugPrint("Error toggling audio: $e");
     }
-  }
-
-  void _toggleMute() {
-    setState(() {
-      _isMuted = !_isMuted;
-      _audioPlayer.setVolume(_isMuted ? 0.0 : 1.0);
-    });
   }
 
   Future<void> _seek(int seconds) async {
-    final newPosition = _currentPosition + Duration(seconds: seconds);
+    Duration newPosition = _currentPosition + Duration(seconds: seconds);
     if (newPosition < Duration.zero) {
-      await _audioPlayer.seek(Duration.zero);
-    } else if (newPosition > _totalDuration) {
-      await _audioPlayer.seek(_totalDuration);
-    } else {
-      await _audioPlayer.seek(newPosition);
+      newPosition = Duration.zero;
+    } else if (_totalDuration > Duration.zero && newPosition > _totalDuration) {
+      newPosition = _totalDuration;
     }
-    setState(() => _currentPosition = newPosition);
+
+    await _audioPlayer.seek(newPosition);
+    if (mounted) {
+      setState(() => _currentPosition = newPosition);
+    }
   }
 
   void _onSliderChanged(double value) {
     final newPosition = Duration(seconds: value.toInt());
     _audioPlayer.seek(newPosition);
-    setState(() => _currentPosition = newPosition);
+    if (mounted) {
+      setState(() => _currentPosition = newPosition);
+    }
   }
 
   String _formatDuration(Duration duration) {
@@ -104,92 +121,97 @@ class _AudioPlayerWidgetState extends State<AudioPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
+    return GlassMorphismContainer(
+      padding: const EdgeInsets.all(12),
+      blurIntensity: 20,
+      opacity: 0.70,
+      glassThickness: 1.0,
+      tintColor: Colors.black,
+      borderRadius: BorderRadius.circular(10),
+      enableBackgroundDistortion: true,
+      enableGlassBorder: true,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          /// Progress bar
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Slider(
-                  activeColor: AppColors.gradientStart,
-                  inactiveColor: Colors.white24,
-                  value: _currentPosition.inSeconds.toDouble().clamp(
-                    0,
-                    _totalDuration.inSeconds.toDouble(),
-                  ),
-                  max: _totalDuration.inSeconds.toDouble(),
-                  onChanged: _onSliderChanged,
-                ),
+          // Progress Bar
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 3.5,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+              activeTrackColor: Colors.white,
+              inactiveTrackColor: Colors.white24,
+              thumbColor: Colors.white,
+            ),
+            child: Slider(
+              value: _currentPosition.inSeconds.toDouble().clamp(
+                0.0,
+                _totalDuration.inSeconds.toDouble().clamp(1.0, double.infinity),
               ),
-            ],
+              max: _totalDuration.inSeconds.toDouble().clamp(
+                1.0,
+                double.infinity,
+              ),
+              onChanged: _onSliderChanged,
+            ),
           ),
-          const SizedBox(height: 8),
 
-          /// Time labels
+          // Time Labels
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 6),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   _formatDuration(_currentPosition),
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  style: FTextStyle.tabbarTextStyle,
                 ),
                 Text(
                   _formatDuration(_totalDuration),
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  style: FTextStyle.tabbarTextStyle,
                 ),
               ],
             ),
           ),
 
-          /// Audio control buttons
+          const SizedBox(height: 8),
+
+          // Control Buttons
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              const SizedBox(width: 50),
+              // Rewind 10s
               IconButton(
-                icon: Icon(
-                  _isMuted ? Icons.volume_off : Icons.volume_up,
-                  color: Colors.white,
-                ),
-                onPressed: _toggleMute,
-              ),
-              IconButton(
-                icon: const Icon(Icons.replay_10, color: Colors.white),
+                icon: const Icon(Icons.replay_10, size: 30),
+                color: Colors.white,
                 onPressed: () => _seek(-10),
               ),
-              IconButton(
-                icon: Icon(
-                  _isPlaying
-                      ? Icons.pause_circle_filled
-                      : Icons.play_circle_fill,
-                  color: Colors.white,
-                  size: 40,
+
+              // Play/Pause Button
+              GestureDetector(
+                onTap: _toggleAudio,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white,
+                  ),
+                  padding: const EdgeInsets.all(10),
+                  child: Icon(
+                    _isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    color: Colors.black,
+                    size: 28,
+                  ),
                 ),
-                onPressed: _toggleAudio,
-              ),
-              IconButton(
-                icon: const Icon(Icons.forward_10, color: Colors.white),
-                onPressed: () => _seek(10),
               ),
 
-              /// Empty space (replaces the favorite icon)
-              const SizedBox(width: 48),
+              // Forward 10s
+              IconButton(
+                icon: const Icon(Icons.forward_10, size: 30),
+                color: Colors.white,
+                onPressed: () => _seek(10),
+              ),
+              const SizedBox(width: 50),
             ],
           ),
         ],

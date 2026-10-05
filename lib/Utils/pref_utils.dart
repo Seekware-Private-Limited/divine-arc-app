@@ -132,6 +132,15 @@ class PrefUtils {
     return value ?? false;
   }
 
+  static void setAiPrivacyConsent(bool value) {
+    Prefs.prefs?.setBool(SharedPrefsKeys.aiPrivacyConsent, value);
+  }
+
+  static bool getAiPrivacyConsent() {
+    final bool? value = Prefs.prefs?.getBool(SharedPrefsKeys.aiPrivacyConsent);
+    return value ?? false;
+  }
+
   static void setUnreadNotificationCount(int value) {
     Prefs.prefs?.setInt(SharedPrefsKeys.unreadNotificationCount, value);
   }
@@ -178,6 +187,7 @@ class SharedPrefsKeys {
   static const sessionID = 'sessionID';
   static const onboardingVisible = 'onboardingVisible';
   static const isLogin = 'isLogin';
+  static const aiPrivacyConsent = 'aiPrivacyConsent';
   static const storedChatID = 'ChatID';
   static const isGuest = 'isGuest';
   static const isSocialLogin = 'isSocialLogin';

@@ -1,8 +1,10 @@
 import 'package:divine_arc/Screens/CustomAudioPlayer.dart';
 import 'package:divine_arc/Utils/app_imports.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class GptScreenChatList extends StatelessWidget {
+  final String? chatId;
   final List<Map<String, dynamic>> chatHistory;
   final ScrollController scrollController;
   final Map<int, bool> responseLoadingStates;
@@ -27,6 +29,7 @@ class GptScreenChatList extends StatelessWidget {
 
   const GptScreenChatList({
     super.key,
+    required this.chatId,
     required this.chatHistory,
     required this.scrollController,
     required this.responseLoadingStates,
@@ -108,7 +111,7 @@ class GptScreenChatList extends StatelessWidget {
       children: [
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(10),
           margin: const EdgeInsets.only(bottom: 20),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -119,7 +122,9 @@ class GptScreenChatList extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildQuestionHeader(context, index, question, isUserAudio),
-              const SizedBox(height: 16),
+              const SizedBox(height: 5),
+              const Divider(color: Colors.grey, thickness: 0.5),
+              const SizedBox(height: 5),
               _buildAnswerSection(
                 context,
                 index,
@@ -131,7 +136,9 @@ class GptScreenChatList extends StatelessWidget {
                 isUserAudio,
                 hasError,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 5),
+              const Divider(color: Colors.grey, thickness: 0.2),
+              const SizedBox(height: 5),
               // Only show action buttons when response is complete and not loading
               if (!isUserAudio &&
                   !isLoading &&
@@ -427,7 +434,7 @@ class GptScreenChatList extends StatelessWidget {
             const SizedBox(width: 10),
             _buildBookmarkButton(messageId, is_bookmarked, index),
             const SizedBox(width: 10),
-            _buildShareButton(context, question, answer),
+            _buildShareButton(context, index, question, answer),
           ],
         ),
       ],
@@ -439,11 +446,13 @@ class GptScreenChatList extends StatelessWidget {
       onTap: () => onRegenerate(index),
       child: Row(
         children: [
-          Image.asset('assets/images/refresh.png', height: 14, width: 14),
+          Icon(LucideIcons.rotateCw, size: 16, color: Colors.black),
           const SizedBox(width: 10),
           Text(
             AppLocalizations.of(context)!.translate('regenerate'),
-            style: FTextStyle.selectedRadioColorText,
+            style: FTextStyle.selectedRadioColorText.copyWith(
+              color: Colors.black,
+            ),
           ),
         ],
       ),
@@ -456,9 +465,11 @@ class GptScreenChatList extends StatelessWidget {
     bool isDisliked,
     int index,
   ) {
+    final bool isInactive = isLiked || isDisliked;
+
     return GestureDetector(
       onTap:
-          (isLiked || isDisliked)
+          isInactive
               ? null
               : () {
                 if (messageId.isNotEmpty) {
@@ -470,13 +481,11 @@ class GptScreenChatList extends StatelessWidget {
                 }
               },
       child: Opacity(
-        opacity: (isLiked || isDisliked) ? 0.5 : 1.0,
-        child: Image.asset(
-          isLiked
-              ? 'assets/images/thumbsuplike.png'
-              : 'assets/images/thumbsupunlike.png',
-          height: 16,
-          width: 16,
+        opacity: isInactive ? 0.5 : 1.0,
+        child: Icon(
+          LucideIcons.thumbsUp,
+          size: 16,
+          color: isLiked ? AppColors.gradientStart : Colors.black,
         ),
       ),
     );
@@ -488,11 +497,11 @@ class GptScreenChatList extends StatelessWidget {
     bool isDisliked,
     int index,
   ) {
-    final double iconSize = isDisliked ? 15 : 17;
+    final bool isInactive = isLiked || isDisliked;
 
     return GestureDetector(
       onTap:
-          (isLiked || isDisliked)
+          isInactive
               ? null
               : () {
                 if (messageId.isNotEmpty) {
@@ -504,13 +513,11 @@ class GptScreenChatList extends StatelessWidget {
                 }
               },
       child: Opacity(
-        opacity: (isLiked || isDisliked) ? 0.5 : 1.0,
-        child: Image.asset(
-          isDisliked
-              ? 'assets/images/thumbsdownlike.png'
-              : 'assets/images/thumbsdownunlike.png',
-          height: iconSize,
-          width: iconSize,
+        opacity: isInactive ? 0.5 : 1.0,
+        child: Icon(
+          LucideIcons.thumbsDown,
+          size: 16,
+          color: isDisliked ? AppColors.gradientStart : Colors.black,
         ),
       ),
     );
@@ -526,18 +533,11 @@ class GptScreenChatList extends StatelessWidget {
           );
         }
       },
-      child: Image.asset('assets/images/unsave.png', height: 16, width: 16),
+      child: Icon(LucideIcons.copy, size: 16, color: Colors.black),
     );
   }
 
   Widget _buildBookmarkButton(String messageId, bool is_bookmarked, int index) {
-    // if (kDebugMode) {
-    //   debugPrint('📚 Bookmark Button Debug:');
-    //   debugPrint('  - Index: $index');
-    //   debugPrint('  - Message ID: $messageId');
-    //   debugPrint('  - is_bookmarked: $is_bookmarked');
-    // }
-
     return GestureDetector(
       onTap: () {
         if (messageId.isNotEmpty) {
@@ -546,7 +546,6 @@ class GptScreenChatList extends StatelessWidget {
               '🎯 Bookmark tapped: ${is_bookmarked ? 'UNBOOKMARK' : 'BOOKMARK'}',
             );
           }
-          // Don't change state optimistically - let the API response handle it
           onBookmark(messageId, index, is_bookmarked);
         } else {
           if (kDebugMode) {
@@ -555,18 +554,17 @@ class GptScreenChatList extends StatelessWidget {
           CommonUtils.showErrorToast('Cannot bookmark: Message ID is missing');
         }
       },
-      child: Image.asset(
-        is_bookmarked
-            ? 'assets/images/bookmark.png'
-            : 'assets/images/unbookmark.png',
-        height: 14,
-        width: 14,
+      child: Icon(
+        LucideIcons.bookmark,
+        size: 16,
+        color: is_bookmarked ? AppColors.gradientStart : Colors.black,
       ),
     );
   }
 
   Widget _buildShareButton(
     BuildContext context,
+    int index,
     String question,
     String answer,
   ) {
@@ -575,9 +573,26 @@ class GptScreenChatList extends StatelessWidget {
         return GestureDetector(
           onTap: () async {
             if (question.isNotEmpty && answer.isNotEmpty) {
-              final shareText = '''Question: $question
+              final String chatSessionId =
+                  (chatHistory[index]['chatId']?.toString().trim().isNotEmpty ==
+                          true
+                      ? chatHistory[index]['chatId']?.toString().trim()
+                      : chatId?.trim()) ??
+                  '';
+              if (chatSessionId.isEmpty) {
+                CommonUtils.showErrorToast(
+                  'Cannot share: Chat ID is unavailable',
+                );
+                return;
+              }
 
-Answer: $answer''';
+              final deepLink = 'https://divinearc.in/chat/$chatSessionId';
+              final playStoreUrl =
+                  'https://play.google.com/store/apps/details?id=com.divinearc.app';
+              final appStoreUrl =
+                  'https://apps.apple.com/us/app/divine-arc/id6758439307';
+              final shareText =
+                  '''Open this chat in Divine ARC App : \n$deepLink\n\nIf the app is not installed, install it here : \n\nAndroid :  $playStoreUrl\n\niOS :  $appStoreUrl''';
 
               final box = context.findRenderObject() as RenderBox?;
               final Rect? sharePositionOrigin =
@@ -602,11 +617,7 @@ Answer: $answer''';
               );
             }
           },
-          child: Image.asset(
-            'assets/images/unshare.png',
-            height: 14,
-            width: 14,
-          ),
+          child: Icon(LucideIcons.share2, size: 16, color: Colors.black),
         );
       },
     );
